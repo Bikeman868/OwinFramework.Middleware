@@ -1,0 +1,14 @@
+﻿rect { stroke-width: 0.4; }
+text { stroke-width: 0.1; }
+
+line.route { stroke:#00008B }
+line.segment { stroke:#00008B }
+
+g.router rect{ stroke:#FF0000; fill:#FFE4C4; }
+g.router text{ stroke:#000000; fill:#000000; }
+
+g.segment rect { stroke: #6A5ACD; fill: #FFE4E1; }
+g.segment text{ stroke:#000000; fill:#000000; }
+
+g.middleware rect{ stroke:#808080; fill:#F5F5DC; }
+g.middleware text{ stroke:#696969; fill:#696969; }

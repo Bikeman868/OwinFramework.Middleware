@@ -1,0 +1,102 @@
+﻿<html>
+    <head>
+        <title>OwinFramework visualizer middleware configuration</title>
+        <style type="text/css">
+             body{
+                 font-family: verdana,arial,sans-serif;
+                 font-size: 11px;
+             }
+
+             span.code{
+                 font-family: courrier;
+                 font-size: 13px;
+             }
+
+             table.properties {
+                 font-size: 11px;
+                 color: #333333;
+                 border-width: 1px;
+                 border-color: #666666;
+                 border-collapse: collapse;
+             }
+
+            table.properties th {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #dedede;
+            }
+
+            table.properties td {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #ffffff;
+            }
+
+            table.properties td.property {
+                font-weight: bold
+            }
+        </style>    
+    </head>
+    <body>
+        <h1>Owin Framework visualizer middleware configuration</h1>
+        <p>The visualizer middleware in the OwinFramework support the following configuration options:</p>
+        <table class="properties">
+            <tr>
+                <th>Property</th>
+                <th>Default</th>
+                <th>Current</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td class="property">Path</td>
+                <td>{path.default}</td>
+                <td>{path}</td>
+                <td>
+                    <p>Configures the relative path within your application where the visualizer will be available.</p>
+                    <p>
+                        For example if your web site is hosted at <span class="code">http://mydomain.com/</span> and 
+                        you set this path property to <span class="code">/owin/visualizer</span> then the full url of 
+                        the visualizer will be <span class="code">http://mydomain.com/owin/visualizer</span>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">Enabled</td>
+                <td>{enabled.default}</td>
+                <td>{enabled}</td>
+                <td>
+                    <p>The Enabled property allows you to turn off the visualizer.</p>
+                    <p>
+                        You might want to disable the Owin pipeline visualizer in a production web site to prevent 
+                        public users from seeing internal details of your application implementation. You could 
+                        also limit the availability of the visualizer by placing middleware in front of it
+                        that restricts access to only certain people instead of disabling it.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">RequiredPermission</td>
+                <td>{requiredPermission.default}</td>
+                <td>{requiredPermission}</td>
+                <td>
+                    <p>The RequiredPermission property allows you to restrict acess to the visualizer.</p>
+                    <p>
+                        For this to work you must have some Authorization middleware configured in your Owin 
+                        pipeline. The name of the permission that you specify here is any permission recognized
+                        by the Authorization middleware that you configured.
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <p>
+            This middleware is configured the same way as all other middleware in the Owin Framework; you need 
+            to construct a class that implements <span class="code">IConfiguration</span> then add a fluid 
+            <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin 
+            Framework builder. Please read Owin Framework documentation on configuration for full details with examples.
+        </p>
+    </body>
+</html>

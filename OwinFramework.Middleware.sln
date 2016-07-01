@@ -1,0 +1,53 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.RouteVisualizer.Net40", "OwinFramework.RouteVisualizer\OwinFramework.RouteVisualizer.Net40.csproj", "{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestServer", "TestServer\TestServer.csproj", "{31AA3ECA-763A-429D-933E-B52B1BBAB7A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.RouteVisualizer.Net45", "OwinFramework.RouteVisualizer\OwinFramework.RouteVisualizer.Net45.csproj", "{83474FEB-8DEC-49F1-BB40-833A7DD81932}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7E4DEB16-BBB8-46A5-84BC-FCAED244E99D}"
+	ProjectSection(SolutionItems) = preProject
+		NuGet\Owin.Framework.AnalysisReporter.nuspec = NuGet\Owin.Framework.AnalysisReporter.nuspec
+		NuGet\Owin.Framework.RouteVisualizer.nuspec = NuGet\Owin.Framework.RouteVisualizer.nuspec
+		readme.md = readme.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.AnalysisReporter.Net40", "OwinFramework.AnalysisReporter\OwinFramework.AnalysisReporter.Net40.csproj", "{A5787AA0-8C7C-4570-AD4D-E8F093E77434}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.AnalysisReporter.Net45", "OwinFramework.AnalysisReporter\OwinFramework.AnalysisReporter.Net45.csproj", "{BB10F37C-A3B3-4901-852F-64915BC12A61}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{31AA3ECA-763A-429D-933E-B52B1BBAB7A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{31AA3ECA-763A-429D-933E-B52B1BBAB7A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{31AA3ECA-763A-429D-933E-B52B1BBAB7A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{31AA3ECA-763A-429D-933E-B52B1BBAB7A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{83474FEB-8DEC-49F1-BB40-833A7DD81932}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{83474FEB-8DEC-49F1-BB40-833A7DD81932}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{83474FEB-8DEC-49F1-BB40-833A7DD81932}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{83474FEB-8DEC-49F1-BB40-833A7DD81932}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5787AA0-8C7C-4570-AD4D-E8F093E77434}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5787AA0-8C7C-4570-AD4D-E8F093E77434}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5787AA0-8C7C-4570-AD4D-E8F093E77434}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5787AA0-8C7C-4570-AD4D-E8F093E77434}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB10F37C-A3B3-4901-852F-64915BC12A61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BB10F37C-A3B3-4901-852F-64915BC12A61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BB10F37C-A3B3-4901-852F-64915BC12A61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB10F37C-A3B3-4901-852F-64915BC12A61}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

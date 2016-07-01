@@ -1,0 +1,68 @@
+﻿<html>
+    <head>
+        <title>Owin Framework Analytics</title>
+        <style type="text/css">
+             body{
+                 font-family: verdana,arial,sans-serif;
+                 font-size: 11px;
+             }
+             
+             h1{
+                 color:darkblue;
+                 font-family: arial,sans-serif;
+                 font-size: 18px;
+                 font-weight:bold;
+             }
+
+             h2{
+                 color:darkblue;
+                 font-family: arial,sans-serif;
+                 font-size: 16px;
+                 font-weight:bold;
+             }
+
+             span.code{
+                 font-family: 'Courier New';
+                 font-size: 12px;
+             }
+
+             table.statistics {
+                 font-size: 11px;
+                 color: #333333;
+                 border-width: 1px;
+                 border-color: #666666;
+                 border-collapse: collapse;
+             }
+
+            table.statistics th {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #dedede;
+            }
+
+            table.statistics td {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #ffffff;
+            }
+
+            table.statistics td.statistic {
+                font-weight: bold
+            }
+        </style>    
+    </head>
+    <body>
+        <h1>Owin Framework Analytics</h1>
+        <p>The following middleware components in this web site gather analytics information</p>
+        {analysables}
+        <p>
+            If you want to include more information in this report, implement the
+            <span class="code">IAnalysable</span> and <span class="code">ISelfDocumenting</span> 
+            interfaces in your middleware components.
+        </p>
+    </body>
+</html>
