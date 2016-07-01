@@ -7,11 +7,13 @@
     <ProjectGuid>{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OwinFramework.RouteVisualizer</RootNamespace>
+    <RootNamespace>OwinFramework.Middleware</RootNamespace>
     <AssemblyName>OwinFramework.RouteVisualizer</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
+    <BaseIntermediateOutputPath>obj\Net40\</BaseIntermediateOutputPath>
+    <BuildInParallel>false</BuildInParallel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -62,7 +64,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Configuration.cs" />
+    <Compile Include="RouteVisualizerConfiguration.cs" />
     <Compile Include="RouteVisualizer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

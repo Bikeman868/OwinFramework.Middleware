@@ -1,15 +1,15 @@
 ﻿using System;
 
-namespace OwinFramework.RouteVisualizer
+namespace OwinFramework.Middleware
 {
     [Serializable]
-    public class Configuration
+    public class RouteVisualizerConfiguration
     {
         public string Path { get; set; }
         public bool Enabled { get; set; }
         public string RequiredPermission { get; set; }
 
-        public Configuration()
+        public RouteVisualizerConfiguration()
         {
             Path = "/owin/visualization";
             Enabled = true;

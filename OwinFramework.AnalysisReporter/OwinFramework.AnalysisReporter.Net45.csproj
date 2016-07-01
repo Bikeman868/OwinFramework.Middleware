@@ -7,11 +7,13 @@
     <ProjectGuid>{BB10F37C-A3B3-4901-852F-64915BC12A61}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OwinFramework.AnalysisReporter</RootNamespace>
+    <RootNamespace>OwinFramework.Middleware</RootNamespace>
     <AssemblyName>OwinFramework.AnalysisReporter</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
+    <BaseIntermediateOutputPath>obj\Net45\</BaseIntermediateOutputPath>
+    <BuildInParallel>false</BuildInParallel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -63,7 +65,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AnalysisReporter.cs" />
-    <Compile Include="Configuration.cs" />
+    <Compile Include="AnalysisReporterConfiguration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

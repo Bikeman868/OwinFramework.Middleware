@@ -1,7 +1,7 @@
 ﻿using System;
 using Microsoft.Owin.Hosting;
 
-namespace TestServer
+namespace OwinFramework.Middleware.TestServer
 {
     /// <summary>
     /// This console application uses the Microsoft self hosted Owin package to

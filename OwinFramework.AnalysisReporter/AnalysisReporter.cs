@@ -14,7 +14,7 @@ using Newtonsoft.Json.Linq;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 
-namespace OwinFramework.AnalysisReporter
+namespace OwinFramework.Middleware
 {
     public class AnalysisReporter:
         IMiddleware<object>, 
@@ -396,7 +396,7 @@ namespace OwinFramework.AnalysisReporter
         #region IConfigurable
 
         private IDisposable _configurationRegistration;
-        private Configuration _configuration = new Configuration();
+        private AnalysisReporterConfiguration _configuration = new AnalysisReporterConfiguration();
 
         private bool IsForThisMiddleware(IOwinContext context, out string path)
         {
@@ -412,7 +412,7 @@ namespace OwinFramework.AnalysisReporter
         void IConfigurable.Configure(IConfiguration configuration, string path)
         {
             _configurationRegistration = configuration.Register(
-                path, cfg => _configuration = cfg, new Configuration());
+                path, cfg => _configuration = cfg, new AnalysisReporterConfiguration());
         }
 
 
@@ -429,7 +429,7 @@ namespace OwinFramework.AnalysisReporter
             document = document.Replace("{requiredPermission}", _configuration.RequiredPermission ?? "<none>");
             document = document.Replace("{defaultFormat}", _configuration.DefaultFormat);
 
-            var defaultConfiguration = new Configuration();
+            var defaultConfiguration = new AnalysisReporterConfiguration();
             document = document.Replace("{path.default}", defaultConfiguration.Path);
             document = document.Replace("{enabled.default}", defaultConfiguration.Enabled.ToString());
             document = document.Replace("{requiredPermission.default}", defaultConfiguration.RequiredPermission ?? "<none>");

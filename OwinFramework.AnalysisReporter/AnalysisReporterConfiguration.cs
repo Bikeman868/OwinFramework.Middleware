@@ -1,16 +1,16 @@
 ﻿using System;
 
-namespace OwinFramework.AnalysisReporter
+namespace OwinFramework.Middleware
 {
     [Serializable]
-    public class Configuration
+    public class AnalysisReporterConfiguration
     {
         public string Path { get; set; }
         public bool Enabled { get; set; }
         public string RequiredPermission { get; set; }
         public string DefaultFormat { get; set; }
 
-        public Configuration()
+        public AnalysisReporterConfiguration()
         {
             Path = "/owin/analytics";
             Enabled = true;

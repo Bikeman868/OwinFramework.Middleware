@@ -3,14 +3,12 @@ using System.IO;
 using Ioc.Modules;
 using Ninject;
 using Owin;
-using OwinFramework.AnalysisReporter;
 using OwinFramework.Builder;
 using OwinFramework.Configuration.Urchin;
 using OwinFramework.Interfaces.Builder;
-using OwinFramework.RouteVisualizer;
 using Urchin.Client.Sources;
 
-namespace TestServer
+namespace OwinFramework.Middleware.TestServer
 {
     // You can use this as a template for the Owin Statup class in your application.
     public class Startup

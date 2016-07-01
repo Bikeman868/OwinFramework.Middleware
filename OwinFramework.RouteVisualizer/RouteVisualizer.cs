@@ -17,7 +17,7 @@ using OwinFramework.InterfacesV1.Upstream;
 using Svg;
 using Svg.Transforms;
 
-namespace OwinFramework.RouteVisualizer
+namespace OwinFramework.Middleware
 {
     public class RouteVisualizer: 
         IMiddleware<object>, 
@@ -44,7 +44,7 @@ namespace OwinFramework.RouteVisualizer
         public string Name { get; set; }
 
         private IDisposable _configurationRegistration;
-        private Configuration _configuration = new Configuration();
+        private RouteVisualizerConfiguration _configuration = new RouteVisualizerConfiguration();
 
         public RouteVisualizer()
         {
@@ -102,7 +102,7 @@ namespace OwinFramework.RouteVisualizer
         void IConfigurable.Configure(IConfiguration configuration, string path)
         {
             _configurationRegistration = configuration.Register(
-                path, cfg => _configuration = cfg, new Configuration());
+                path, cfg => _configuration = cfg, new RouteVisualizerConfiguration());
         }
 
         private Task VisualizeRouting(IOwinContext context)
@@ -126,7 +126,7 @@ namespace OwinFramework.RouteVisualizer
             document = document.Replace("{enabled}", _configuration.Enabled.ToString());
             document = document.Replace("{requiredPermission}", _configuration.RequiredPermission ?? "<none>");
 
-            var defaultConfiguration = new Configuration();
+            var defaultConfiguration = new RouteVisualizerConfiguration();
             document = document.Replace("{path.default}", defaultConfiguration.Path);
             document = document.Replace("{enabled.default}", defaultConfiguration.Enabled.ToString());
             document = document.Replace("{requiredPermission.default}", defaultConfiguration.RequiredPermission ?? "<none>");
