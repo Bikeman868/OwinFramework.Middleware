@@ -11,7 +11,7 @@
     <copyright>Copyright Martin Halliday 2016</copyright>
     <releaseNotes>Fix bug with displaying analytics</releaseNotes>
     <summary>Generates an SVG visualization of the OWIN pipeline. Needs Owin.Framework to work.</summary>
-    <projectUrl>https://github.com/Bikeman868/OwinFramework/tree/master/OwinFramework.Middleware</projectUrl>
+    <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.RouteVisualizer</projectUrl>
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
     <tags>OWIN framework svg pipeline visualization</tags>
     <dependencies>

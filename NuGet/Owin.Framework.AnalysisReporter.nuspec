@@ -11,7 +11,7 @@
     <copyright>Copyright Martin Halliday 2016</copyright>
     <releaseNotes>Added support for all output formats</releaseNotes>
     <summary>Generates reports in various formats from the middleware components that gather analytics data.</summary>
-    <projectUrl>https://github.com/Bikeman868/OwinFramework/tree/master/OwinFramework.Middleware</projectUrl>
+    <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.AnalysisReporter</projectUrl>
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
     <tags>OWIN framework analytics report</tags>
     <dependencies>
