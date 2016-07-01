@@ -4,6 +4,17 @@
             "path": "/owin/pipeline",
             "enabled": true,
             "requiredPermission": "administrator"
+        },
+        "analysis": {
+            "path": "/owin/analytics",
+            "enabled": true,
+            "requiredPermission": "",
+            "defaultFormat": "application/xml"
+        },
+        "documenter": {
+            "path": "/owin/endpoints",
+            "enabled": true,
+            "requiredPermission": ""
         }
     }
 }

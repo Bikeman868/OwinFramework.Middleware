@@ -12,6 +12,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7E4DEB16-BBB8-46A5-84BC-FCAED244E99D}"
 	ProjectSection(SolutionItems) = preProject
 		NuGet\Owin.Framework.AnalysisReporter.nuspec = NuGet\Owin.Framework.AnalysisReporter.nuspec
+		NuGet\Owin.Framework.Documenter.nuspec = NuGet\Owin.Framework.Documenter.nuspec
 		NuGet\Owin.Framework.RouteVisualizer.nuspec = NuGet\Owin.Framework.RouteVisualizer.nuspec
 		readme.md = readme.md
 	EndProjectSection
@@ -19,6 +20,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.AnalysisReporter.Net40", "OwinFramework.AnalysisReporter\OwinFramework.AnalysisReporter.Net40.csproj", "{A5787AA0-8C7C-4570-AD4D-E8F093E77434}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.AnalysisReporter.Net45", "OwinFramework.AnalysisReporter\OwinFramework.AnalysisReporter.Net45.csproj", "{BB10F37C-A3B3-4901-852F-64915BC12A61}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Documenter.Net40", "OwinFramework.Documenter\OwinFramework.Documenter.Net40.csproj", "{E62FAA03-58E9-4AE7-9634-9D880FD17C3D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Documenter.Net45", "OwinFramework.Documenter\OwinFramework.Documenter.Net45.csproj", "{D50BA415-30F5-40AF-824E-93386F85765D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -46,6 +51,14 @@ Global
 		{BB10F37C-A3B3-4901-852F-64915BC12A61}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BB10F37C-A3B3-4901-852F-64915BC12A61}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BB10F37C-A3B3-4901-852F-64915BC12A61}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E62FAA03-58E9-4AE7-9634-9D880FD17C3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E62FAA03-58E9-4AE7-9634-9D880FD17C3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E62FAA03-58E9-4AE7-9634-9D880FD17C3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E62FAA03-58E9-4AE7-9634-9D880FD17C3D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D50BA415-30F5-40AF-824E-93386F85765D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D50BA415-30F5-40AF-824E-93386F85765D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D50BA415-30F5-40AF-824E-93386F85765D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D50BA415-30F5-40AF-824E-93386F85765D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

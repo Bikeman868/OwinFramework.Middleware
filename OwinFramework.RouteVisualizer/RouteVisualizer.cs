@@ -522,6 +522,60 @@ namespace OwinFramework.Middleware
             get { return "Produces an SVG visualization of the OWIN pipeline"; }
         }
 
+        IList<IEndpointDocumentation> ISelfDocumenting.Endpoints
+        {
+            get
+            {
+                var documentation = new List<IEndpointDocumentation>
+                {
+                    new EndpointDocumentation
+                    {
+                        RelativePath = _configuration.Path,
+                        Description = "An SVG drawing of the OWIN pipeline. Useful for diagnosing issues with your web application.",
+                        Attributes = new List<IEndpointAttributeDocumentation>
+                        {
+                            new EndpointAttributeDocumentation
+                            {
+                                Type = "Method",
+                                Name = "GET",
+                                Description = "Returns a drawing of the OWIN pipeline in SVG format"
+                            }
+                        }
+                    },
+                    new EndpointDocumentation
+                    {
+                        RelativePath = _configuration.Path + ConfigDocsPath,
+                        Description = "Documentation of the configuration options for the route visualizer middleware",
+                        Attributes = new List<IEndpointAttributeDocumentation>
+                        {
+                            new EndpointAttributeDocumentation
+                            {
+                                Type = "Method",
+                                Name = "GET",
+                                Description = "Returns route visualizer configuration documentation in HTML format"
+                            }
+                        }
+                    },
+                };
+                return documentation;
+            }
+        }
+
+        private class EndpointDocumentation: IEndpointDocumentation
+        {
+            public string RelativePath { get; set; }
+            public string Description { get; set; }
+            public string Examples { get; set; }
+            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
+        }
+
+        private class EndpointAttributeDocumentation: IEndpointAttributeDocumentation
+        {
+            public string Type { get; set; }
+            public string Name { get; set; }
+            public string Description { get; set; }
+        }
+
         #endregion
 
         #region IAnalysable
@@ -598,6 +652,5 @@ namespace OwinFramework.Middleware
         }
 
         #endregion
-
     }
 }

@@ -1,0 +1,80 @@
+﻿<html>
+    <head>
+        <title>Endpoint Documentation for Developers</title>
+        <style type="text/css">
+             body{
+                 font-family: verdana,arial,sans-serif;
+                 font-size: 11px;
+             }
+             
+             h1{
+                 color:darkblue;
+                 font-family: arial,sans-serif;
+                 font-size: 18px;
+                 font-weight:bold;
+             }
+
+             h2{
+                 color:darkblue;
+                 font-family: arial,sans-serif;
+                 font-size: 16px;
+                 font-weight:bold;
+             }
+
+             h3{
+                 font-family: arial,sans-serif;
+                 font-size: 13px;
+                 font-weight:bold;
+             }
+
+             span.code{
+                 font-family: 'Courier New';
+                 font-size: 12px;
+             }
+
+             div.margin{
+                 width:10%;
+                 display: inline-block;
+             }
+             
+             div.margin::before{
+                  content:""
+              }
+
+             table.attribute {
+                 font-size: 11px;
+                 color: #333333;
+                 border-width: 1px;
+                 border-color: #666666;
+                 border-collapse: collapse;
+                 width:90%;
+                 margin-left:50px;
+             }
+
+            table.attribute th {
+                font-size: 11px;
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+            }
+
+            table.attribute td {
+                font-size: 11px;
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+            }
+        </style>    
+    </head>
+    <body>
+        <h1>Endpoint Documentation for Developers</h1>
+        <p>The following endpoints are available in this web application</p>
+        {endpoints}
+        <p>
+            If you want to include more information in this documentation, implement the
+            <span class="code">ISelfDocumenting</span> interfaces in your middleware components.
+        </p>
+    </body>
+</html>

@@ -446,7 +446,7 @@ namespace OwinFramework.Middleware
                 case DocumentationTypes.Configuration:
                     return new Uri(_configuration.Path + ConfigDocsPath, UriKind.Relative);
                 case DocumentationTypes.Overview:
-                    return new Uri(_configuration.Path + "https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
+                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
             }
             return null;
         }
@@ -459,6 +459,70 @@ namespace OwinFramework.Middleware
         string ISelfDocumenting.ShortDescription
         {
             get { return "Generates a report with analytic information from middleware"; }
+        }
+
+        IList<IEndpointDocumentation> ISelfDocumenting.Endpoints
+        {
+            get
+            {
+                var documentation = new List<IEndpointDocumentation>
+                {
+                    new EndpointDocumentation
+                    {
+                        RelativePath = _configuration.Path,
+                        Description = "Analytic information gathered from all the configured middleware that implements the IAnalysable interface.",
+                        Attributes = new List<IEndpointAttributeDocumentation>
+                        {
+                            new EndpointAttributeDocumentation
+                            {
+                                Type = "Method",
+                                Name = "GET",
+                                Description = "Returns analytics data for all analysable middleware in this web site"
+                            },
+                            new EndpointAttributeDocumentation
+                            {
+                                Type = "Header",
+                                Name = "Accept",
+                                Description =
+                                    "Determines the format of the analytics returned. The following MIME types are supported" +
+                                    "<ul><li>" + string.Join("</li><li>", _supportedFormats )+ "</li><li>*/*</li></ul>" +
+                                    "When the Accept header contains */* then the default format is returned. You can change " +
+                                    "this default via configuration."
+                            }
+                        }
+                    },
+                    new EndpointDocumentation
+                    {
+                        RelativePath = _configuration.Path + ConfigDocsPath,
+                        Description = "Documentation of the configuration options for the analysis reporter middleware",
+                        Attributes = new List<IEndpointAttributeDocumentation>
+                        {
+                            new EndpointAttributeDocumentation
+                            {
+                                Type = "Method",
+                                Name = "GET",
+                                Description = "Returns analysis reporter configuration documentation in HTML format"
+                            }
+                        }
+                    },
+                };
+                return documentation;
+            }
+        }
+
+        private class EndpointDocumentation : IEndpointDocumentation
+        {
+            public string RelativePath { get; set; }
+            public string Description { get; set; }
+            public string Examples { get; set; }
+            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
+        }
+
+        private class EndpointAttributeDocumentation : IEndpointAttributeDocumentation
+        {
+            public string Type { get; set; }
+            public string Name { get; set; }
+            public string Description { get; set; }
         }
 
         #endregion

@@ -39,14 +39,19 @@ namespace OwinFramework.Middleware.TestServer
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<RouteVisualizer>())
-                .As("RouteVisualizer")
+                .As("Route visualizer")
                 .ConfigureWith(urchin, "/middleware/visualizer")
                 .RunFirst();
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<AnalysisReporter>())
-                .As("AnalysisReporter")
+                .As("Analysis reporter")
                 .ConfigureWith(urchin, "/middleware/analysis");
+
+            // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
+            builder.Register(ninject.Get<Documenter>())
+                .As("Documenter")
+                .ConfigureWith(urchin, "/middleware/documenter");
 
             // Tell Owin to add our Owin Framework middleware to the Owin pipeline
             app.UseBuilder(builder);

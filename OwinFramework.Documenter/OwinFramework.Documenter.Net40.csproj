@@ -4,14 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}</ProjectGuid>
+    <ProjectGuid>{E62FAA03-58E9-4AE7-9634-9D880FD17C3D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>OwinFramework.Middleware</RootNamespace>
-    <AssemblyName>OwinFramework.RouteVisualizer</AssemblyName>
+    <AssemblyName>OwinFramework.Documenter</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile />
     <BaseIntermediateOutputPath>obj\Net40\</BaseIntermediateOutputPath>
     <BuildInParallel>false</BuildInParallel>
   </PropertyGroup>
@@ -23,7 +22,6 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -32,7 +30,6 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Owin, Version=2.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
@@ -43,31 +40,34 @@
       <HintPath>..\packages\Owin.Framework.2.0.3\lib\net40\OwinFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="Svg, Version=2.2.1.1459, Culture=neutral, PublicKeyToken=12a0bac221edeae2, processorArchitecture=MSIL">
-      <HintPath>..\packages\Svg.2.2.1\lib\net35\Svg.dll</HintPath>
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="RouteVisualizerConfiguration.cs" />
-    <Compile Include="RouteVisualizer.cs" />
+    <Compile Include="Documenter.cs" />
+    <Compile Include="DocumenterConfiguration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="svg.css" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="svg.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Include="configuration.html" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="packages.OwinFramework.RouteVisualizer.Net40.config" />
+    <None Include="packages.OwinFramework.Documenter.Net40.config" />
     <None Include="readme.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="html\configuration.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="html\pageTemplate.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="html\endpointTemplate.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="html\attributeListTemplate.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="html\attributeTemplate.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
