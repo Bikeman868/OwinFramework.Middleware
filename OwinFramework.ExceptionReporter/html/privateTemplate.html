@@ -1,0 +1,184 @@
+﻿<html>
+    <head>
+        <title>Unhandled Exception</title>
+        <style type="text/css">
+             body{
+                 font-family: verdana,arial,sans-serif;
+                 font-size: 11px;
+             }
+             
+             h1{
+                 color:darkblue;
+                 font-family: arial,sans-serif;
+                 font-size: 18px;
+                 font-weight:bold;
+             }
+
+             h2{
+                 color:darkblue;
+                 font-family: arial,sans-serif;
+                 font-size: 16px;
+                 font-weight:bold;
+             }
+
+             h3{
+                 font-family: arial,sans-serif;
+                 font-size: 13px;
+                 font-weight:bold;
+             }
+
+             span.code{
+                 font-family: 'Courier New';
+                 font-size: 12px;
+             }
+
+             div.margin{
+                 width:10%;
+                 display: inline-block;
+             }
+             
+             div.margin::before{
+                  content:""
+              }
+
+             table.attribute {
+                 font-size: 11px;
+                 color: #333333;
+                 border-width: 1px;
+                 border-color: #666666;
+                 border-collapse: collapse;
+                 width:90%;
+                 margin-left:50px;
+             }
+
+            table.attribute th {
+                font-size: 11px;
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+            }
+
+            table.attribute td {
+                font-size: 11px;
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+            }
+
+            table.properties {
+                 font-size: 11px;
+                 color: #333333;
+                 border-width: 1px;
+                 border-color: #666666;
+                 border-collapse: collapse;
+             }
+
+            table.properties th {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #dedede;
+            }
+
+            table.properties td {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #ffffff;
+            }
+
+            table.properties td.property {
+                font-weight: bold
+            }
+        </style>    
+    </head>
+    <body>
+        <h1>Unhandled Exception</h1>
+        <p>
+            An unhandled exception was caught during the processing of this request.
+            Please review the information below to determine the source of the problem.
+        </p>
+        {request}
+        {exceptions}
+        <h1>Owin Framework exception reporter middleware configuration</h1>
+        <p>The exception reporter middleware in the Owin Framework supports the following configuration options:</p>
+        <table class="properties">
+            <tr>
+                <th>Property</th>
+                <th>Default</th>
+                <th>Current</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td class="property">Message</td>
+                <td>{message.default}</td>
+                <td>{message}</td>
+                <td>
+                    <p>
+                        Optional additional HTML to insert into the body of the page when viewed by a public
+                        visitor to your site. If you configured a custom template you can insert this message into
+                        your content by adding a <span class="code">&#7B;message&#7D;</span> placeholder in your template.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">Template</td>
+                <td>{template.default}</td>
+                <td>{template}</td>
+                <td>
+                    <p>
+                        The relative file path of a static html file containing the page to send back
+                        to public site visitors. If this property is blank (the default) then a default
+                        template will be used. In the default template you can insert some custom HTML
+                        by configuring the <span class="code">Message</span> property.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">RequiredPermission</td>
+                <td>{requiredPermission.default}</td>
+                <td>{requiredPermission}</td>
+                <td>
+                    <p>
+                        If the logged on user has the RequiredPermission assigned to them then they will
+                        see a detailed description of th exception instead of the public message. If you
+                        leave this blank then permissions will not be used to determine if the user sees
+                        a public message or detailed tecnical information.
+                    </p>
+                    <p>
+                        For this to work you must have some Authorization middleware configured in your Owin
+                        pipeline, and you must configure the Authorization middleware to run before the
+                        exception reporter. If you do this then the exception reporter will not report
+                        on unhandled exceptions in the Authorization middleware.
+                    </p>
+                    <p>
+                        The name of the permission that you specify here is any permission recognized
+                        by the Authorization middleware that you configured.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">Localhost</td>
+                <td>{localhost.default}</td>
+                <td>{localhost}</td>
+                <td>
+                    <p>
+                        When this is <span class="code">True</span> requests that originate from the
+                        machine hosting the web site will see detaild technical information insread of
+                        the generic public message.
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <p>
+            This middleware is configured the same way as all other middleware in the Owin Framework; you need
+            to construct a class that implements <span class="code">IConfiguration</span> then add a fluid
+            <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin
+            Framework builder. Please read Owin Framework documentation on configuration for full details and examples.
+        </p>
+    </body>
+</html>
