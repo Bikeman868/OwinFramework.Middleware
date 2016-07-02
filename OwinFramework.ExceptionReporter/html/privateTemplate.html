@@ -37,11 +37,19 @@
                  display: inline-block;
              }
              
-             div.margin::before{
-                  content:""
+             div.stacktrace{
+                  margin-left: 10px;
+                  padding:5px;
+                  background-color: antiquewhite;
               }
 
-             table.attribute {
+             div.exceptionMessage{
+                  padding:10px;
+                  font-size: 15px;
+                  background-color: lightpink;
+              }
+
+             table.headers {
                  font-size: 11px;
                  color: #333333;
                  border-width: 1px;
@@ -49,22 +57,25 @@
                  border-collapse: collapse;
                  width:90%;
                  margin-left:50px;
+                 padding:1px;
              }
 
-            table.attribute th {
+            table.headers th {
                 font-size: 11px;
                 border-width: 1px;
                 padding: 8px;
                 border-style: solid;
                 border-color: #666666;
+                padding:5px;
             }
 
-            table.attribute td {
+            table.headers td {
                 font-size: 11px;
                 border-width: 1px;
                 padding: 8px;
                 border-style: solid;
                 border-color: #666666;
+                padding:3px;
             }
 
             table.properties {
@@ -121,7 +132,7 @@
                     <p>
                         Optional additional HTML to insert into the body of the page when viewed by a public
                         visitor to your site. If you configured a custom template you can insert this message into
-                        your content by adding a <span class="code">&#7B;message&#7D;</span> placeholder in your template.
+                        your content by adding a <span class="code">&#x7B;message&#x7D;</span> placeholder in your template.
                     </p>
                 </td>
             </tr>

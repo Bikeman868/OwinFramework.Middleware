@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Mail;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,7 +18,8 @@ namespace OwinFramework.Middleware
     public class ExceptionReporter:
         IMiddleware<object>, 
         IConfigurable, 
-        ISelfDocumenting
+        ISelfDocumenting,
+        IRoutingProcessor
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         public IList<IDependency> Dependencies { get { return _dependencies; } }
@@ -29,7 +31,12 @@ namespace OwinFramework.Middleware
             this.RunFirst();
         }
 
-        public Task Invoke(IOwinContext context, Func<Task> next)
+        Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
+        {
+            return next();
+        }
+
+        Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
             try
             {
@@ -39,15 +46,22 @@ namespace OwinFramework.Middleware
             {
                 try
                 {
+                    context.Response.StatusCode = 500;
+                    context.Response.ReasonPhrase = "Server Error";
+
                     SendEmail(context, ex);
-                    return IsPrivate(context) ? PrivateResponse(context, ex) : PublicResponse(context);
+
+                    if (IsPrivate(context))
+                        return PrivateResponse(context, ex);
+
+                    return PublicResponse(context);
                 }
                 catch
                 {
                     context.Response.ContentType = "text/plain";
                     return context.Response.WriteAsync(
-                        "An exception occurred and a report was being generated, but then a further exception "+
-                        "was thrown during the generation of that report. Please contact technical support so that "+
+                        "An exception occurred and a report was being generated, but then a further exception " +
+                        "was thrown during the generation of that report. Please contact technical support so that " +
                         "we can resolve this issue as soon as possible. Thank you.");
                 }
             }
@@ -55,7 +69,32 @@ namespace OwinFramework.Middleware
 
         private bool IsPrivate(IOwinContext context)
         {
-            return true;
+            if (_configuration.Localhost)
+            {
+                if (string.Equals(context.Request.Uri.Host, "localhost", StringComparison.OrdinalIgnoreCase))
+                    return true;
+                if (context.Request.RemoteIpAddress == "127.0.0.1")
+                    return true;
+                if (context.Request.RemoteIpAddress == "::1")
+                    return true;
+            }
+
+            var permission = _configuration.RequiredPermission;
+            if(!string.IsNullOrEmpty(permission))
+            {
+                var authorization = context.GetFeature<IAuthorization>();
+                if (authorization != null && authorization.HasPermission(permission))
+                    return true;
+            }
+            return false;
+        }
+
+        private string MapPath(string relativePath)
+        {
+            var applicationBase = String.IsNullOrEmpty(AppDomain.CurrentDomain.RelativeSearchPath)
+                ? AppDomain.CurrentDomain.BaseDirectory
+                : AppDomain.CurrentDomain.RelativeSearchPath;
+            return Path.GetFullPath(Path.Combine(applicationBase, relativePath));
         }
 
         private Task PublicResponse(IOwinContext context)
@@ -65,7 +104,16 @@ namespace OwinFramework.Middleware
             var customTemplate = _configuration.Template; // Note: can change in background thread
             if (!string.IsNullOrEmpty(customTemplate))
             {
-                // TODO: Load template from file
+                var fullFileName = MapPath(customTemplate);
+                var fileInfo = new FileInfo(fullFileName);
+                if (fileInfo.Exists)
+                {
+                    using (var fileStream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        var reader = new StreamReader(fileStream, true);
+                        pageTemplate = reader.ReadToEnd();
+                    }
+                }
             }
 
             context.Response.ContentType = "text/html";
@@ -77,15 +125,49 @@ namespace OwinFramework.Middleware
             var pageTemplate = GetScriptResource("privateTemplate.html");
             var requestTemplate = GetScriptResource("requestTemplate.html");
             var exceptionTemplate = GetScriptResource("exceptionTemplate.html");
+            var headerTemplate = GetScriptResource("headerTemplate.html");
 
             var requestContent = new StringBuilder();
+            var request = context.Request;
+            var requestHtml = requestTemplate
+                .Replace("{url}", request.Uri.ToString())
+                .Replace("{method}", request.Method)
+                .Replace("{scheme}", request.Scheme)
+                .Replace("{host}", request.Host.ToString())
+                .Replace("{path}", request.Path.ToString())
+                .Replace("{queryString}", request.QueryString.ToString())
+                .Replace("{ipaddress}", request.RemoteIpAddress)
+                .Replace("{port}", request.RemotePort.ToString());
+
+            var headerContent = new StringBuilder();
+            foreach (var key in request.Headers.Keys)
+            {
+                var headerHtml = headerTemplate
+                    .Replace("{key}", key)
+                    .Replace("{value}", request.Headers[key]);
+                headerContent.Append(headerHtml);
+            }
+            requestHtml = requestHtml.Replace("{headers}", headerContent.ToString());
+
+            requestContent.Append(requestHtml);
 
             var exceptionsContent = new StringBuilder();
             while (ex != null)
             {
-                var exceptionHtml = exceptionTemplate
-                    .Replace("{message}", ex.Message)
-                    .Replace("{stackTrace}", ex.StackTrace);
+                var exceptionHtml = exceptionTemplate.Replace("{message}", ex.Message);
+
+                if (ex.StackTrace == null)
+                    exceptionHtml = exceptionHtml.Replace("{stackTrace}", "");
+                else
+                {
+                    var stackTraceLines = ex.StackTrace
+                        .Split('\n')
+                        .Where(l => !string.IsNullOrEmpty(l))
+                        .Where(l => l.IndexOf(typeof(Routing.Router).FullName, StringComparison.OrdinalIgnoreCase) < 0)
+                        .Where(l => l.IndexOf(typeof(Builder.Builder).FullName, StringComparison.OrdinalIgnoreCase) < 0);
+                    exceptionHtml = exceptionHtml.Replace("{stackTrace}", string.Join("<br/>", stackTraceLines));
+                }
+
                 exceptionsContent.Append(exceptionHtml);
 
                 ex = ex.InnerException;
@@ -99,7 +181,35 @@ namespace OwinFramework.Middleware
 
         private void SendEmail(IOwinContext context, Exception ex)
         {
-            // TODO: format and send email to ops
+            var email = _configuration.EmailAddress;
+            var subject = _configuration.EmailSubject;
+            if (string.IsNullOrEmpty(email)) return;
+
+            try
+            {
+                if (string.IsNullOrEmpty(subject)) subject = "Exception in " + context.Request.Host;
+
+                var message = new StringBuilder();
+                message.AppendLine("The Owin exception reporter caught an exception in the following request:");
+                message.AppendLine("Url: " + context.Request.Uri);
+                message.AppendLine("IP: " + context.Request.RemoteIpAddress);
+                message.AppendLine("Headers:");
+                foreach (var header in context.Request.Headers)
+                    message.AppendLine("   " + header.Key + " = " + header.Value);
+                while (ex != null)
+                {
+                    message.AppendLine();
+                    message.AppendLine(ex.Message);
+                    message.AppendLine(ex.StackTrace);
+                    ex = ex.InnerException;
+                }
+
+                var mailMessage = new MailMessage(email, email, subject, message.ToString());
+                var smtp = new SmtpClient();
+                smtp.SendMailAsync(mailMessage);
+            }
+            catch
+            { }
         }
 
         #region IConfigurable
@@ -129,7 +239,7 @@ namespace OwinFramework.Middleware
                 .Replace("{subject}", _configuration.EmailSubject ?? "<none>");
 
             var defaultConfiguration = new ExceptionReporterConfiguration();
-            pageTemplate.Replace("{message.default}", defaultConfiguration.Message ?? "<default>")
+            pageTemplate = pageTemplate.Replace("{message.default}", defaultConfiguration.Message ?? "<default>")
                 .Replace("{template.default}", defaultConfiguration.Template ?? "<default>")
                 .Replace("{localhost.default}", defaultConfiguration.Localhost.ToString())
                 .Replace("{requiredPermission.default}", defaultConfiguration.RequiredPermission ?? "<none>")
@@ -193,5 +303,6 @@ namespace OwinFramework.Middleware
         }
 
         #endregion
+
     }
 }

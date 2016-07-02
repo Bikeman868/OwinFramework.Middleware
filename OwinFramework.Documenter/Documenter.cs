@@ -124,8 +124,11 @@ namespace OwinFramework.Middleware
             var selfDocumenting = middleware as ISelfDocumenting;
             if (selfDocumenting != null)
             {
-                foreach (var endpoint in selfDocumenting.Endpoints)
-                    documentation.Add(endpoint);
+                if (selfDocumenting.Endpoints != null)
+                {
+                    foreach (var endpoint in selfDocumenting.Endpoints)
+                        documentation.Add(endpoint);
+                }
             }
 
             var router = middleware as IRouter;

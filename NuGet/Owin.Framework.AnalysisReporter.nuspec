@@ -15,7 +15,7 @@
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
     <tags>OWIN framework analytics report</tags>
     <dependencies>
-      <dependency id="Owin.Framework" version="2.0.3" />
+      <dependency id="Owin.Framework" version="2.1.0" />
       <dependency id="Newtonsoft.Json" version="7.0.1" />
     </dependencies>
     <references>

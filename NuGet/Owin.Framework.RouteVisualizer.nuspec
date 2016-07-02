@@ -15,7 +15,7 @@
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
     <tags>OWIN framework svg pipeline visualization</tags>
     <dependencies>
-      <dependency id="Owin.Framework" version="2.0.3" />
+      <dependency id="Owin.Framework" version="2.1.0" />
       <dependency id="Svg" version="2.2.1" />
     </dependencies>
     <references>

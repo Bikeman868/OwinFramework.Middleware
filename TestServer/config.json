@@ -15,6 +15,13 @@
             "path": "/owin/endpoints",
             "enabled": true,
             "requiredPermission": ""
+        },
+        "exceptions": {
+            "message": "<p>This is a <i>custom</i> message.</p>",
+            "template": "exception.html",
+            "localhost": true,
+            "emailAddress": "bitbucket@mailinator.com",
+            "subject": "Test server unhandled exception"
         }
     }
 }

@@ -4,7 +4,6 @@ using Ioc.Modules;
 using Ninject;
 using Owin;
 using OwinFramework.Builder;
-using OwinFramework.Configuration.Urchin;
 using OwinFramework.Interfaces.Builder;
 using Urchin.Client.Sources;
 
@@ -31,27 +30,37 @@ namespace OwinFramework.Middleware.TestServer
             var configFile = new FileInfo(AppDomain.CurrentDomain.SetupInformation.ApplicationBase + "config.json");
             _configurationFileSource = ninject.Get<FileSource>().Initialize(configFile, TimeSpan.FromSeconds(5));
 
-            // Construct an adapter between the Owin Framework and Urchin configuration management system
-            var urchin = ninject.Get<UrchinConfiguration>();
+            // Construct the configuration implementation that is registered with IoC (Urchin)
+            var config = ninject.Get<IConfiguration>();
 
-            // We will use the Owin Framework builder to build the Owin pipeline
+            // Get the Owin Framework builder registered with IoC
             var builder = ninject.Get<IBuilder>();
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<RouteVisualizer>())
                 .As("Route visualizer")
-                .ConfigureWith(urchin, "/middleware/visualizer")
+                .ConfigureWith(config, "/middleware/visualizer")
                 .RunFirst();
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<AnalysisReporter>())
                 .As("Analysis reporter")
-                .ConfigureWith(urchin, "/middleware/analysis");
+                .ConfigureWith(config, "/middleware/analysis");
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<Documenter>())
                 .As("Documenter")
-                .ConfigureWith(urchin, "/middleware/documenter");
+                .ConfigureWith(config, "/middleware/documenter");
+
+            // The exception reporter middleware will catch exceptions and produce diagnostic output
+            builder.Register(ninject.Get<ExceptionReporter>())
+                .As("Exception reporter")
+                .ConfigureWith(config, "/middleware/exceptions");
+
+            // The exception generator middleware will throw exceptions so that you can test the handler
+            builder.Register(ninject.Get<ExceptionGenerator>())
+                .As("Exception generator")
+                .RunLast();
 
             // Tell Owin to add our Owin Framework middleware to the Owin pipeline
             app.UseBuilder(builder);

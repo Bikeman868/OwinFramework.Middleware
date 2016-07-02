@@ -71,8 +71,8 @@
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OwinFramework, Version=2.0.3.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.2.0.3\lib\net45\OwinFramework.dll</HintPath>
+    <Reference Include="OwinFramework, Version=2.1.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.2.1.1\lib\net45\OwinFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="OwinFramework.Configuration.Urchin, Version=2.0.3.0, Culture=neutral, processorArchitecture=MSIL">
@@ -113,10 +113,19 @@
       <Project>{d50ba415-30f5-40af-824e-93386f85765d}</Project>
       <Name>OwinFramework.Documenter.Net45</Name>
     </ProjectReference>
+    <ProjectReference Include="..\OwinFramework.ExceptionReporter\OwinFramework.ExceptionReporter.Net45.csproj">
+      <Project>{d0d8971b-e05e-4206-9d36-612cd201abe9}</Project>
+      <Name>OwinFramework.ExceptionReporter.Net45</Name>
+    </ProjectReference>
     <ProjectReference Include="..\OwinFramework.RouteVisualizer\OwinFramework.RouteVisualizer.Net45.csproj">
       <Project>{83474feb-8dec-49f1-bb40-833a7dd81932}</Project>
       <Name>OwinFramework.RouteVisualizer.Net45</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="exception.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

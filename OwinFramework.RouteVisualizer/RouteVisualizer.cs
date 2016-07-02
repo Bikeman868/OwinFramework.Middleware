@@ -51,7 +51,7 @@ namespace OwinFramework.Middleware
             this.RunAfter<IAuthorization>(null, false);
         }
 
-        public void RouteRequest(IOwinContext context, Action next)
+        public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
             // This code asks the authorization middleware to enforce the required
             // permission to run this middleware. This only applies when the
@@ -68,7 +68,7 @@ namespace OwinFramework.Middleware
                         authorization.AddRequiredPermission(requiredPermission);
                 }
             }
-            next();
+            return next.Invoke();
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
