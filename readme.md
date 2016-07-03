@@ -22,3 +22,7 @@ have to implement the very simple `IMiddleware<T>` interface for their middlewar
 to work with the OWIN Framework, and implementing this interface does not
 change how the middleware is used for application developers that choose not
 to use the OWIN Framework.
+
+Middleware devlopers of the world, please go ahead and implement `IMiddleware<object>`
+in your middleware so that application developers can configure it using the Owin
+Framework if they choose to.
