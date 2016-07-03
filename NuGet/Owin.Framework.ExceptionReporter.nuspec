@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Owin.Framework.ExceptionReporter</id>
+    <version>2.1.0</version>
+    <title>Owin.Framework.ExceptionReporter</title>
+    <authors>Martin Halliday</authors>
+    <owners>Martin Halliday</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Owin middleware to catch and report exceptions</description>
+    <copyright>Copyright Martin Halliday 2016</copyright>
+    <releaseNotes>First release</releaseNotes>
+    <summary>Catches exceptions in middleware and reports them via email. If calling from local machine displays detailed technical information.</summary>
+    <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.ExceptionReporter</projectUrl>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <tags>OWIN framework exception</tags>
+    <dependencies>
+      <dependency id="Owin.Framework" version="2.1.0" />
+    </dependencies>
+    <references>
+    </references>
+  </metadata>
+  <files>
+    <file src="..\OwinFramework.ExceptionReporter\bin\Net40\Release\OwinFramework.ExceptionReporter.dll" target="lib\net40"/>
+    <file src="..\OwinFramework.ExceptionReporter\bin\Net45\Release\OwinFramework.ExceptionReporter.dll" target="lib\net45"/>
+    <file src="..\*.md" target=""/>
+  </files>
+</package>

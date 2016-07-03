@@ -152,24 +152,50 @@ namespace OwinFramework.Middleware
             requestContent.Append(requestHtml);
 
             var exceptionsContent = new StringBuilder();
-            while (ex != null)
+
+            Action<Exception> addException = e =>
             {
-                var exceptionHtml = exceptionTemplate.Replace("{message}", ex.Message);
+                var exceptionHtml = exceptionTemplate.Replace("{message}", e.Message);
+
+                var typeLoadException = e as TypeLoadException;
+                if (typeLoadException != null)
+                {
+                    exceptionHtml += "<p>Type name: " + typeLoadException.TypeName + "</p>";
+                }
+
+                var argumentNullException = e as ArgumentNullException;
+                if (argumentNullException != null)
+                {
+                    exceptionHtml += "<p>Parameter name: " + argumentNullException.ParamName + "</p>";
+                }
 
                 if (ex.StackTrace == null)
-                    exceptionHtml = exceptionHtml.Replace("{stackTrace}", "");
+                    exceptionHtml = exceptionHtml.Replace("{stackTrace}", "[no stack trace available]");
                 else
                 {
-                    var stackTraceLines = ex.StackTrace
+                    var stackTraceLines = e.StackTrace
                         .Split('\n')
                         .Where(l => !string.IsNullOrEmpty(l))
-                        .Where(l => l.IndexOf(typeof(Routing.Router).FullName, StringComparison.OrdinalIgnoreCase) < 0)
-                        .Where(l => l.IndexOf(typeof(Builder.Builder).FullName, StringComparison.OrdinalIgnoreCase) < 0);
+                        .Where(l => l.IndexOf(typeof (Routing.Router).FullName, StringComparison.OrdinalIgnoreCase) < 0)
+                        .Where(l => l.IndexOf(typeof (Builder.Builder).FullName, StringComparison.OrdinalIgnoreCase) < 0);
                     exceptionHtml = exceptionHtml.Replace("{stackTrace}", string.Join("<br/>", stackTraceLines));
                 }
 
                 exceptionsContent.Append(exceptionHtml);
+            };
 
+            while (ex != null)
+            {
+                var aggregateException = ex as AggregateException;
+
+                if (aggregateException != null)
+                {
+                    foreach (var inner in aggregateException.InnerExceptions)
+                    {
+                        addException(inner);
+                    }
+                }
+                else addException(ex);
                 ex = ex.InnerException;
             }
 
@@ -206,7 +232,7 @@ namespace OwinFramework.Middleware
 
                 var mailMessage = new MailMessage(email, email, subject, message.ToString());
                 var smtp = new SmtpClient();
-                smtp.SendMailAsync(mailMessage);
+                smtp.SendAsync(mailMessage, null);
             }
             catch
             { }
