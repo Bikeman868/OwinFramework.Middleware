@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Owin.Framework.ExceptionReporter</id>
-    <version>2.1.0</version>
+    <version>2.1.1</version>
     <title>Owin.Framework.ExceptionReporter</title>
     <authors>Martin Halliday</authors>
     <owners>Martin Halliday</owners>

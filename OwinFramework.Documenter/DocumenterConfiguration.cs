@@ -11,7 +11,7 @@ namespace OwinFramework.Middleware
 
         public DocumenterConfiguration()
         {
-            Path = "/owin/analytics";
+            Path = "/owin/endpoints";
             Enabled = true;
         }
     }

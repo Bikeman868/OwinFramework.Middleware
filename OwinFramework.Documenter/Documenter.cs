@@ -56,6 +56,7 @@ namespace OwinFramework.Middleware
             var endpointTemplate = GetScriptResource("endpointTemplate.html");
             var attributeListTemplate = GetScriptResource("attributeListTemplate.html");
             var attributeTemplate = GetScriptResource("attributeTemplate.html");
+            var examplesTemplate = GetScriptResource("examplesTemplate.html");
 
             var endpointsContent = new StringBuilder();
             var attributesContent = new StringBuilder();
@@ -77,10 +78,16 @@ namespace OwinFramework.Middleware
                     attributeListHtml = attributeListTemplate.Replace("{attributes}", attributesContent.ToString());
                 }
 
+                var examplesHtml = "";
+                if (!string.IsNullOrEmpty(endpoint.Examples))
+                {
+                    examplesHtml = examplesTemplate.Replace("{examples}", endpoint.Examples);
+                }
+
                 var endpointHtml = endpointTemplate
                     .Replace("{path}", endpoint.RelativePath)
                     .Replace("{description}", endpoint.Description)
-                    .Replace("{examples}", endpoint.Examples)
+                    .Replace("{examples}", examplesHtml)
                     .Replace("{attributes}", attributeListHtml);
                 endpointsContent.AppendLine(endpointHtml);
             }

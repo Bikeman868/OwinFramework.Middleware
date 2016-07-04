@@ -26,11 +26,6 @@ namespace OwinFramework.Middleware
 
         public string Name { get; set; }
 
-        public ExceptionReporter()
-        {
-            this.RunFirst();
-        }
-
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
             return next();
