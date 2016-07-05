@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Owin.Framework.StaticFiles</id>
+    <version>2.1.0</version>
+    <title>Owin.Framework.StaticFiles</title>
+    <authors>Martin Halliday</authors>
+    <owners>Martin Halliday</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Owin middleware to serve static files</description>
+    <copyright>Copyright Martin Halliday 2016</copyright>
+    <releaseNotes>First release</releaseNotes>
+    <summary>Serves static files from your web site.</summary>
+    <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.StaticFiles</projectUrl>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <tags>OWIN framework static-files</tags>
+    <dependencies>
+      <dependency id="Owin.Framework" version="2.1.0" />
+    </dependencies>
+    <references>
+    </references>
+  </metadata>
+  <files>
+    <file src="..\OwinFramework.StaticFiles\bin\Net40\Release\OwinFramework.StaticFiles.dll" target="lib\net40"/>
+    <file src="..\OwinFramework.StaticFiles\bin\Net45\Release\OwinFramework.StaticFiles.dll" target="lib\net45"/>
+    <file src="..\*.md" target=""/>
+  </files>
+</package>

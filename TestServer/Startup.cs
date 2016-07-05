@@ -5,6 +5,7 @@ using Ninject;
 using Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
+using Urchin.Client.Interfaces;
 using Urchin.Client.Sources;
 
 namespace OwinFramework.Middleware.TestServer
@@ -36,11 +37,16 @@ namespace OwinFramework.Middleware.TestServer
             // Get the Owin Framework builder registered with IoC
             var builder = ninject.Get<IBuilder>();
 
+            // The static files middleware will allow remote clients to retrieve files from within this project
+            // Configuration options limit the files that can be retrieved this way.
+            builder.Register(ninject.Get<StaticFiles>())
+                .As("Static files")
+                .ConfigureWith(config, "/middleware/staticFiles");
+
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<RouteVisualizer>())
                 .As("Route visualizer")
-                .ConfigureWith(config, "/middleware/visualizer")
-                .RunFirst();
+                .ConfigureWith(config, "/middleware/visualizer");
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<AnalysisReporter>())
@@ -55,7 +61,8 @@ namespace OwinFramework.Middleware.TestServer
             // The exception reporter middleware will catch exceptions and produce diagnostic output
             builder.Register(ninject.Get<ExceptionReporter>())
                 .As("Exception reporter")
-                .ConfigureWith(config, "/middleware/exceptions");
+                .ConfigureWith(config, "/middleware/exceptions")
+                .RunFirst();
 
             // The exception generator middleware will throw exceptions so that you can test the handler
             builder.Register(ninject.Get<ExceptionGenerator>())

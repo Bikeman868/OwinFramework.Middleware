@@ -121,6 +121,10 @@
       <Project>{83474feb-8dec-49f1-bb40-833a7dd81932}</Project>
       <Name>OwinFramework.RouteVisualizer.Net45</Name>
     </ProjectReference>
+    <ProjectReference Include="..\OwinFramework.StaticFiles\OwinFramework.StaticFiles.Net45.csproj">
+      <Project>{5868e1ee-3827-4c66-a267-9b8f69a7d471}</Project>
+      <Name>OwinFramework.StaticFiles.Net45</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <None Include="exception.html">

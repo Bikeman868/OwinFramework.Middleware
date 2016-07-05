@@ -22,6 +22,21 @@
             "localhost": true,
             "emailAddress": "bitbucket@mailinator.com",
             "subject": "Test server unhandled exception"
+        },
+        "staticFiles": {
+            "staticFilesRootUrl": "/",
+            "documentationRootUrl": "/owin/staticFiles",
+            "rootDirectory": "",
+            "enabled": "true",
+            "includeSubFolders": "true",
+            "FileExtensions": [
+                {"extension": ".html","mimeType": "text/html"},
+                {"extension": ".css","mimeType": "text/css"}
+            ],
+            "maximumFileSizeToCache": 10000,
+            "totalCacheSize": 1000000,
+            "maximumCacheTime": "00:30:00",
+            "requiredPermission": ""
         }
     }
 }
