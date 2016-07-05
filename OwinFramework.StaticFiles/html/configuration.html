@@ -1,0 +1,199 @@
+﻿<html>
+    <head>
+        <title>OwinFramework static files middleware configuration</title>
+        <style type="text/css">
+             body{
+                 font-family: verdana,arial,sans-serif;
+                 font-size: 11px;
+             }
+
+             span.code{
+                 font-family: courrier;
+                 font-size: 13px;
+             }
+
+             table.properties {
+                 font-size: 11px;
+                 color: #333333;
+                 border-width: 1px;
+                 border-color: #666666;
+                 border-collapse: collapse;
+             }
+
+            table.properties th {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #dedede;
+            }
+
+            table.properties td {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #ffffff;
+            }
+
+            table.properties td.property {
+                font-weight: bold
+            }
+        </style>    
+    </head>
+    <body>
+        <h1>OwinFramework static files middleware configuration</h1>
+        <p>The static files middleware in the OwinFramework support the following configuration options:</p>
+        <table class="properties">
+            <tr>
+                <th>Property</th>
+                <th>Default</th>
+                <th>Current</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td class="property">StaticFilesRootUrl</td>
+                <td>{staticFilesRootUrl.default}</td>
+                <td>{staticFilesRootUrl}</td>
+                <td>
+                    <p>
+                        Configures the URL within your web site where static files will be served. If you
+                        leave this property empty then the root folder for the web site will be the root
+                        url for static files.
+                    </p>
+                    <p>
+                        For example setting this property to <span class="code">/assets</span> means that any requests
+                        to your site that begin with <span class="code">/assets</span> could be served as static files
+                        (provided all of the other criteria are met). So for example a URL like
+                        <span class="code">/assets/logo.jpg</span> would be a potential static file resource.
+                    </p>
+                    <p>
+                        This middleware will only serve files that actually exist in the file system. If the
+                        request is for a non-existent file then the request will be passed to the next middleware
+                        in the OWIN pipeline. If you want 404 to be returned in this situation, then place some
+                        middleware behind this one in the OWIN pipeline that returns a 404 response.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">DocumentationRootUrl</td>
+                <td>{documentationRootUrl.default}</td>
+                <td>{documentationRootUrl}</td>
+                <td>
+                    <p>
+                        Configures the URL within your web site where configutation documentation for this
+                        middleware will be avialble. Set this to an empty string to disable this documentation
+                        in a production environment.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">RootDirectory</td>
+                <td>{rootDirectory.default}</td>
+                <td>{rootDirectory}</td>
+                <td>
+                    <p>
+                        Configures the path in the file system where static files reside. This path can be
+                        relative to the root folder of the site, or an absolute path to anywhere on the file system
+                        including a UNC path to a network resource.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">Enabled</td>
+                <td>{enabled.default}</td>
+                <td>{enabled}</td>
+                <td>
+                    <p>The Enabled property allows you to turn off the static file handler.</p>
+                    <p>
+                        Note that you can also limit the availability of static files by placing middleware in front of it
+                        that restricts access to only certain people instead of disabling it, or you can include
+                        Authorization middleware in your pipeline and set the requiredPermission attribute on this
+                        middleware.
+                    </p>
+                    <p>
+                        Note that you can include multiple static file handlers in your OWIN pipeline, and configure
+                        each one to serve files from a different folder and have different restrictions.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">IncludeSubFolders</td>
+                <td>{includeSubFolders.default}</td>
+                <td>{includeSubFolders}</td>
+                <td>
+                    <p>The RequiredPermission property allows you to restrict acess to static files.</p>
+                    <p>
+                        For this to work you must have some Authorization middleware configured in your Owin 
+                        pipeline. The name of the permission that you specify here is any permission recognized
+                        by the Authorization middleware that you configured.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">FileExtensions</td>
+                <td>{fileExtensions.default}</td>
+                <td>{fileExtensions}</td>
+                <td>
+                    <p>
+                        An array of file extensions to serve. Any files with extensions not on this list will not be served.
+                        To allow all file types to be served, configure this property with an empty array.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">RequiredPermission</td>
+                <td>{requiredPermission.default}</td>
+                <td>{requiredPermission}</td>
+                <td>
+                    <p>The RequiredPermission property allows you to restrict acess to static files.</p>
+                    <p>
+                        For this to work you must have some Authorization middleware configured in your Owin
+                        pipeline. The name of the permission that you specify here is any permission recognized
+                        by the Authorization middleware that you configured.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">MaximumFileSizeToCache</td>
+                <td>{maximumFileSizeToCache.default}</td>
+                <td>{maximumFileSizeToCache}</td>
+                <td>
+                    <p>
+                        Files larger than this size will not be cached, but served from the file system on every request
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">MaximumCacheTime</td>
+                <td>{maximumCacheTime.default}</td>
+                <td>{maximumCacheTime}</td>
+                <td>
+                    <p>
+                        Files will not be cached in memory for longer than this timespan. This enabled you
+                        to replace the files on the file system and have them gradually replace the old ones.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">TotalCacheSize</td>
+                <td>{totalCacheSize.default}</td>
+                <td>{totalCacheSize}</td>
+                <td>
+                    <p>
+                        The maximum amount of memeory that will be occupied by cached copies of files.
+                        You can set this to zero to cache all files, but if this results in the operating
+                        system swapping virtual memory to disk then performance of your site will be severely
+                        impaired.
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <p>
+            This middleware is configured the same way as all other middleware in the Owin Framework; you need 
+            to construct a class that implements <span class="code">IConfiguration</span> then add a fluid 
+            <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin 
+            Framework builder. Please read Owin Framework documentation on configuration for full details with examples.
+        </p>
+    </body>
+</html>
