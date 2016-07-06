@@ -109,6 +109,10 @@
       <Project>{bb10f37c-a3b3-4901-852f-64915bc12a61}</Project>
       <Name>OwinFramework.AnalysisReporter.Net45</Name>
     </ProjectReference>
+    <ProjectReference Include="..\OwinFramework.DefaultDocument\OwinFramework.DefaultDocument.Net45.csproj">
+      <Project>{7AEBA527-28B2-4081-BEF5-32C98316CC90}</Project>
+      <Name>OwinFramework.DefaultDocument.Net45</Name>
+    </ProjectReference>
     <ProjectReference Include="..\OwinFramework.Documenter\OwinFramework.Documenter.Net45.csproj">
       <Project>{d50ba415-30f5-40af-824e-93386f85765d}</Project>
       <Name>OwinFramework.Documenter.Net45</Name>
@@ -116,6 +120,10 @@
     <ProjectReference Include="..\OwinFramework.ExceptionReporter\OwinFramework.ExceptionReporter.Net45.csproj">
       <Project>{d0d8971b-e05e-4206-9d36-612cd201abe9}</Project>
       <Name>OwinFramework.ExceptionReporter.Net45</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\OwinFramework.NotFound\OwinFramework.NotFound.Net45.csproj">
+      <Project>{e00f670d-3ae1-41f2-bdfe-98f42fee537e}</Project>
+      <Name>OwinFramework.NotFound.Net45</Name>
     </ProjectReference>
     <ProjectReference Include="..\OwinFramework.RouteVisualizer\OwinFramework.RouteVisualizer.Net45.csproj">
       <Project>{83474feb-8dec-49f1-bb40-833a7dd81932}</Project>
@@ -127,9 +135,14 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="exception.html">
+    <Content Include="exception.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="index.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

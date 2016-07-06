@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Owin.Framework.NotFound</id>
+    <version>2.1.0</version>
+    <title>Owin.Framework.NotFound</title>
+    <authors>Martin Halliday</authors>
+    <owners>Martin Halliday</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Owin middleware to return 404 responses</description>
+    <copyright>Copyright Martin Halliday 2016</copyright>
+    <releaseNotes>First release</releaseNotes>
+    <summary>This middleware always returns a 404 response when no other middleware handled the request</summary>
+    <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.NotFound</projectUrl>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <tags>OWIN framework 404 not-found</tags>
+    <dependencies>
+      <dependency id="Owin.Framework" version="2.1.0" />
+    </dependencies>
+    <references>
+    </references>
+  </metadata>
+  <files>
+    <file src="..\OwinFramework.NotFound\bin\Net40\Release\OwinFramework.NotFound.dll" target="lib\net40"/>
+    <file src="..\OwinFramework.NotFound\bin\Net45\Release\OwinFramework.NotFound.dll" target="lib\net45"/>
+    <file src="..\*.md" target=""/>
+  </files>
+</package>

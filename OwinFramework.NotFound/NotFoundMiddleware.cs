@@ -8,13 +8,11 @@ using System.Threading.Tasks;
 using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
-using OwinFramework.Interfaces.Routing;
 
-namespace OwinFramework.DefaultDocument
+namespace OwinFramework.NotFound
 {
-    public class DefaultDocumentMiddleware:
+    public class NotFoundMiddleware:
         IMiddleware<object>,
-        IRoutingProcessor,
         InterfacesV1.Capability.IConfigurable
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
@@ -22,36 +20,42 @@ namespace OwinFramework.DefaultDocument
 
         string IMiddleware.Name { get; set; }
 
-        public DefaultDocumentMiddleware()
+        public NotFoundMiddleware()
         {
-            ConfigurationChanged(new DefaultDocumentConfiguration());
-            this.RunFirst();
+            ConfigurationChanged(new NotFoundConfiguration());
+            this.RunLast();
         }
+
+        #region IConfigurable
+
+        private IDisposable _configurationRegistration;
+        private NotFoundConfiguration _configuration;
+        private FileInfo _pageTemplateFile;
+        private PathString _configPage;
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
             if (context.Request.Path == _configPage)
                 return DocumentConfiguration(context);
 
-            return next();
-        }
-
-        public Task RouteRequest(IOwinContext context, Func<Task> next)
-        {
-            if (!context.Request.Path.HasValue || context.Request.Path.Value == "/" || context.Request.Path.Value == "")
+            string template;
+            if (_pageTemplateFile != null && _pageTemplateFile.Exists)
             {
-                context.Request.Path = _defaultPage;
+                using (var stream = _pageTemplateFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    var reader = new StreamReader(stream, true);
+                    template = reader.ReadToEnd();
+                }
+            }
+            else
+            {
+                template = GetEmbeddedResource("template.html");
             }
 
-            return next();
+            context.Response.StatusCode = 404;
+            context.Response.ReasonPhrase = "Not Found";
+            return context.Response.WriteAsync(template);
         }
-
-        #region IConfigurable
-
-        private IDisposable _configurationRegistration;
-        private DefaultDocumentConfiguration _configuration;
-        private PathString _defaultPage;
-        private PathString _configPage;
 
         public void Configure(IConfiguration configuration, string path)
         {
@@ -61,12 +65,14 @@ namespace OwinFramework.DefaultDocument
                 _configuration);
         }
 
-        private void ConfigurationChanged(DefaultDocumentConfiguration configuration)
+        private void ConfigurationChanged(NotFoundConfiguration configuration)
         {
-            if (string.IsNullOrEmpty(configuration.DefaultPage))
-                configuration.DefaultPage = "/";
-            else if (!configuration.DefaultPage.StartsWith("/"))
-                configuration.DefaultPage = "/" + configuration.DefaultPage;
+            FileInfo pageTemplateFile = null;
+            if (!string.IsNullOrEmpty(configuration.Template))
+            {
+                var fullPath = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase, configuration.Template);
+                pageTemplateFile = new FileInfo(fullPath);
+            }
 
             if (string.IsNullOrEmpty(configuration.DocumentationRootUrl))
                 configuration.DocumentationRootUrl = null;
@@ -74,8 +80,8 @@ namespace OwinFramework.DefaultDocument
                 configuration.DocumentationRootUrl = "/" + configuration.DocumentationRootUrl;
 
             _configuration = configuration;
-            _defaultPage = new PathString(configuration.DefaultPage);
             _configPage = configuration.DocumentationRootUrl == null ? PathString.Empty : new PathString(configuration.DocumentationRootUrl);
+            _pageTemplateFile = pageTemplateFile;
         }
 
         #endregion
@@ -85,12 +91,12 @@ namespace OwinFramework.DefaultDocument
         private Task DocumentConfiguration(IOwinContext context)
         {
             var document = GetEmbeddedResource("configuration.html");
-            document = document.Replace("{defaultPage}", _configuration.DefaultPage);
-            document = document.Replace("{configUrl}", _configuration.DocumentationRootUrl);
+            document = document.Replace("{template}", _configuration.Template);
+            document = document.Replace("{documentationUrl}", _configuration.DocumentationRootUrl);
 
-            var defaultConfiguration = new DefaultDocumentConfiguration();
-            document = document.Replace("{defaultPage.default}", defaultConfiguration.DefaultPage);
-            document = document.Replace("{configUrl}", defaultConfiguration.DocumentationRootUrl);
+            var defaultConfiguration = new NotFoundConfiguration();
+            document = document.Replace("{template.default}", defaultConfiguration.Template);
+            document = document.Replace("{documentationUrl}", defaultConfiguration.DocumentationRootUrl);
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
