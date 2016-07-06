@@ -317,8 +317,9 @@ namespace OwinFramework.StaticFiles
             var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
             if (outputCache != null && outputCache.CachedContentIsAvailable)
             {
-                // TODO: Expire content that was cached for too long or if the file changed on disk
-                outputCache.UseCachedContent = true;
+                if (outputCache.TimeInCache.HasValue && 
+                    outputCache.TimeInCache > staticFileContext.Configuration.MaximumCacheTime)
+                    outputCache.UseCachedContent = false;
             }
 
             if (!string.IsNullOrEmpty(staticFileContext.Configuration.RequiredPermission))

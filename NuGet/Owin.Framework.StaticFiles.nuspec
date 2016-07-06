@@ -15,7 +15,7 @@
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
     <tags>OWIN framework static-files</tags>
     <dependencies>
-      <dependency id="Owin.Framework" version="2.1.0" />
+      <dependency id="Owin.Framework" version="2.1.2" />
     </dependencies>
     <references>
     </references>
