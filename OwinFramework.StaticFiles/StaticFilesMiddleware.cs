@@ -10,9 +10,9 @@ using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
 
-namespace OwinFramework.Middleware
+namespace OwinFramework.StaticFiles
 {
-    public class StaticFiles:
+    public class StaticFilesMiddleware:
         IMiddleware<object>, 
         InterfacesV1.Capability.IConfigurable,
         InterfacesV1.Capability.ISelfDocumenting,
@@ -25,7 +25,7 @@ namespace OwinFramework.Middleware
 
         private readonly string _contextKey;
 
-        public StaticFiles()
+        public StaticFilesMiddleware()
         {
             _contextKey = Guid.NewGuid().ToShortString(false);
             this.RunAfter<InterfacesV1.Middleware.IOutputCache>(null, false);

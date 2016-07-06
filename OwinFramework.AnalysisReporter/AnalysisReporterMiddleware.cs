@@ -7,16 +7,16 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.Owin;
+using Newtonsoft.Json.Linq;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
-using Newtonsoft.Json.Linq;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 
-namespace OwinFramework.Middleware
+namespace OwinFramework.AnalysisReporter
 {
-    public class AnalysisReporter:
+    public class AnalysisReporterMiddleware:
         IMiddleware<object>, 
         IConfigurable, 
         ISelfDocumenting
@@ -28,7 +28,7 @@ namespace OwinFramework.Middleware
 
         public string Name { get; set; }
 
-        public AnalysisReporter()
+        public AnalysisReporterMiddleware()
         {
             this.RunAfter<IAuthorization>(null, false);
         }

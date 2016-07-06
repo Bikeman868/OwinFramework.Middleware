@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace OwinFramework.Middleware
+namespace OwinFramework.ExceptionReporter
 {
     [Serializable]
-    public class ExceptionReporterConfiguration
+    internal class ExceptionReporterConfiguration
     {
         public string Message { get; set; }
         public string Template { get; set; }

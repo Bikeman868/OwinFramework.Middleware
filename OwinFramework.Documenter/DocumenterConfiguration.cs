@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace OwinFramework.Middleware
+namespace OwinFramework.Documenter
 {
     [Serializable]
-    public class DocumenterConfiguration
+    internal class DocumenterConfiguration
     {
         public string Path { get; set; }
         public bool Enabled { get; set; }

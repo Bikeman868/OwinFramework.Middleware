@@ -13,9 +13,9 @@ using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 
-namespace OwinFramework.Middleware
+namespace OwinFramework.ExceptionReporter
 {
-    public class ExceptionReporter:
+    public class ExceptionReporterMiddleware:
         IMiddleware<object>, 
         IConfigurable, 
         ISelfDocumenting,

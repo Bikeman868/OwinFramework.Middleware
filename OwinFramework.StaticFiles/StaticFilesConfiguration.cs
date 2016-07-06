@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace OwinFramework.Middleware
+namespace OwinFramework.StaticFiles
 {
     [Serializable]
     internal class StaticFilesConfiguration

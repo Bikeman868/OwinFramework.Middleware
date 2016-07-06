@@ -17,9 +17,9 @@ using OwinFramework.InterfacesV1.Upstream;
 using Svg;
 using Svg.Transforms;
 
-namespace OwinFramework.Middleware
+namespace OwinFramework.RouteVisualizer
 {
-    public class RouteVisualizer: 
+    public class RouteVisualizerMiddleware: 
         IMiddleware<object>, 
         IConfigurable, 
         ISelfDocumenting, 
@@ -46,7 +46,7 @@ namespace OwinFramework.Middleware
         private IDisposable _configurationRegistration;
         private RouteVisualizerConfiguration _configuration = new RouteVisualizerConfiguration();
 
-        public RouteVisualizer()
+        public RouteVisualizerMiddleware()
         {
             this.RunAfter<IAuthorization>(null, false);
         }
@@ -628,16 +628,16 @@ namespace OwinFramework.Middleware
 
         private class RequestCountStatistic: Statistic
         {
-            private readonly RouteVisualizer _routeVisualizer;
+            private readonly RouteVisualizerMiddleware _routeVisualizerMiddleware;
 
-            public RequestCountStatistic(RouteVisualizer routeVisualizer)
+            public RequestCountStatistic(RouteVisualizerMiddleware routeVisualizerMiddleware)
             {
-                _routeVisualizer = routeVisualizer;
+                _routeVisualizerMiddleware = routeVisualizerMiddleware;
             }
 
             public override IStatistic Refresh()
             {
-                Value = _routeVisualizer._requestCount;
+                Value = _routeVisualizerMiddleware._requestCount;
                 Denominator = 1;
 
                 if (Value < 2000)

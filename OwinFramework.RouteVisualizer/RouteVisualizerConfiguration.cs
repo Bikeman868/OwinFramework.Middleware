@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace OwinFramework.Middleware
+namespace OwinFramework.RouteVisualizer
 {
     [Serializable]
-    public class RouteVisualizerConfiguration
+    internal class RouteVisualizerConfiguration
     {
         public string Path { get; set; }
         public bool Enabled { get; set; }

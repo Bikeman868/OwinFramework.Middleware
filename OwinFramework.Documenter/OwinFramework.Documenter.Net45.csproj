@@ -7,7 +7,7 @@
     <ProjectGuid>{D50BA415-30F5-40AF-824E-93386F85765D}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OwinFramework.Middleware</RootNamespace>
+    <RootNamespace>OwinFramework.Documenter</RootNamespace>
     <AssemblyName>OwinFramework.Documenter</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -55,8 +55,8 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Documenter.cs" />
     <Compile Include="DocumenterConfiguration.cs" />
+    <Compile Include="DocumenterMiddleware.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

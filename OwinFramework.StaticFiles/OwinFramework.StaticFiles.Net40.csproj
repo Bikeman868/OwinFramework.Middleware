@@ -7,7 +7,7 @@
     <ProjectGuid>{DD5CE544-F99C-4C29-B14D-87BE4003AA62}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OwinFramework.Middleware</RootNamespace>
+    <RootNamespace>OwinFramework.StaticFiles</RootNamespace>
     <AssemblyName>OwinFramework.StaticFiles</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -54,7 +54,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="StaticFilesConfiguration.cs" />
-    <Compile Include="StaticFiles.cs" />
+    <Compile Include="StaticFilesMiddleware.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

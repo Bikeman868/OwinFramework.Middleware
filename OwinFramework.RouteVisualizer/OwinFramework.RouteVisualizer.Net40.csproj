@@ -7,7 +7,7 @@
     <ProjectGuid>{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OwinFramework.Middleware</RootNamespace>
+    <RootNamespace>OwinFramework.RouteVisualizer</RootNamespace>
     <AssemblyName>OwinFramework.RouteVisualizer</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -61,7 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="RouteVisualizerConfiguration.cs" />
-    <Compile Include="RouteVisualizer.cs" />
+    <Compile Include="RouteVisualizerMiddleware.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

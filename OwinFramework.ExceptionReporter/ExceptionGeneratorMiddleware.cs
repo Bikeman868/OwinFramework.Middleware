@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using OwinFramework.Interfaces.Builder;
 
-namespace OwinFramework.Middleware
+namespace OwinFramework.ExceptionReporter
 {
-    public class ExceptionGenerator: IMiddleware<object>
+    public class ExceptionGeneratorMiddleware: IMiddleware<object>
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         public IList<IDependency> Dependencies { get { return _dependencies; } }

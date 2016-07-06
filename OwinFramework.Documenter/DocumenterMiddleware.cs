@@ -12,9 +12,9 @@ using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 
-namespace OwinFramework.Middleware
+namespace OwinFramework.Documenter
 {
-    public class Documenter:
+    public class DocumenterMiddleware:
         IMiddleware<object>, 
         IConfigurable, 
         ISelfDocumenting
@@ -26,7 +26,7 @@ namespace OwinFramework.Middleware
 
         public string Name { get; set; }
 
-        public Documenter()
+        public DocumenterMiddleware()
         {
             this.RunAfter<IAuthorization>(null, false);
         }

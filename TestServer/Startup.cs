@@ -39,33 +39,33 @@ namespace OwinFramework.Middleware.TestServer
 
             // The static files middleware will allow remote clients to retrieve files from within this project
             // Configuration options limit the files that can be retrieved this way.
-            builder.Register(ninject.Get<StaticFiles>())
+            builder.Register(ninject.Get<StaticFiles.StaticFilesMiddleware>())
                 .As("Static files")
                 .ConfigureWith(config, "/middleware/staticFiles");
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
-            builder.Register(ninject.Get<RouteVisualizer>())
+            builder.Register(ninject.Get<RouteVisualizer.RouteVisualizerMiddleware>())
                 .As("Route visualizer")
                 .ConfigureWith(config, "/middleware/visualizer");
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
-            builder.Register(ninject.Get<AnalysisReporter>())
+            builder.Register(ninject.Get<AnalysisReporter.AnalysisReporterMiddleware>())
                 .As("Analysis reporter")
                 .ConfigureWith(config, "/middleware/analysis");
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
-            builder.Register(ninject.Get<Documenter>())
+            builder.Register(ninject.Get<Documenter.DocumenterMiddleware>())
                 .As("Documenter")
                 .ConfigureWith(config, "/middleware/documenter");
 
             // The exception reporter middleware will catch exceptions and produce diagnostic output
-            builder.Register(ninject.Get<ExceptionReporter>())
+            builder.Register(ninject.Get<ExceptionReporter.ExceptionReporterMiddleware>())
                 .As("Exception reporter")
                 .ConfigureWith(config, "/middleware/exceptions")
                 .RunFirst();
 
             // The exception generator middleware will throw exceptions so that you can test the handler
-            builder.Register(ninject.Get<ExceptionGenerator>())
+            builder.Register(ninject.Get<ExceptionReporter.ExceptionGeneratorMiddleware>())
                 .As("Exception generator")
                 .RunLast();
 

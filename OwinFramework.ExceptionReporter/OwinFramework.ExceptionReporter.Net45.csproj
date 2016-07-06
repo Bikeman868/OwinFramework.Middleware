@@ -7,7 +7,7 @@
     <ProjectGuid>{D0D8971B-E05E-4206-9D36-612CD201ABE9}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OwinFramework.Middleware</RootNamespace>
+    <RootNamespace>OwinFramework.ExceptionReporter</RootNamespace>
     <AssemblyName>OwinFramework.ExceptionReporter</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -55,9 +55,9 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ExceptionGenerator.cs" />
-    <Compile Include="ExceptionReporter.cs" />
+    <Compile Include="ExceptionGeneratorMiddleware.cs" />
     <Compile Include="ExceptionReporterConfiguration.cs" />
+    <Compile Include="ExceptionReporterMiddleware.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

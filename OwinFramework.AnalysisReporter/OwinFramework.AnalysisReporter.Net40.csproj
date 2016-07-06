@@ -7,7 +7,7 @@
     <ProjectGuid>{A5787AA0-8C7C-4570-AD4D-E8F093E77434}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OwinFramework.Middleware</RootNamespace>
+    <RootNamespace>OwinFramework.AnalysisReporter</RootNamespace>
     <AssemblyName>OwinFramework.AnalysisReporter</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -58,7 +58,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AnalysisReporter.cs" />
+    <Compile Include="AnalysisReporterMiddleware.cs" />
     <Compile Include="AnalysisReporterConfiguration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

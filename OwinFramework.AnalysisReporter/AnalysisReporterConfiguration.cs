@@ -1,9 +1,9 @@
 ﻿using System;
 
-namespace OwinFramework.Middleware
+namespace OwinFramework.AnalysisReporter
 {
     [Serializable]
-    public class AnalysisReporterConfiguration
+    internal class AnalysisReporterConfiguration
     {
         public string Path { get; set; }
         public bool Enabled { get; set; }
