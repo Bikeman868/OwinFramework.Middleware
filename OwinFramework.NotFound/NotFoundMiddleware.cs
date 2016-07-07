@@ -96,7 +96,7 @@ namespace OwinFramework.NotFound
 
             var defaultConfiguration = new NotFoundConfiguration();
             document = document.Replace("{template.default}", defaultConfiguration.Template);
-            document = document.Replace("{documentationUrl}", defaultConfiguration.DocumentationRootUrl);
+            document = document.Replace("{documentationUrl.default}", defaultConfiguration.DocumentationRootUrl);
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
