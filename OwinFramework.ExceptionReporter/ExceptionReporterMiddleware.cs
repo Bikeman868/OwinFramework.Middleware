@@ -39,6 +39,7 @@ namespace OwinFramework.ExceptionReporter
             }
             catch (Exception ex)
             {
+                bool isPrivate = false;
                 try
                 {
                     context.Response.StatusCode = 500;
@@ -46,18 +47,26 @@ namespace OwinFramework.ExceptionReporter
 
                     SendEmail(context, ex);
 
-                    if (IsPrivate(context))
-                        return PrivateResponse(context, ex);
+                    isPrivate = IsPrivate(context);
+                    if (isPrivate) return PrivateResponse(context, ex);
 
                     return PublicResponse(context);
                 }
-                catch
+                catch (Exception ex2)
                 {
                     context.Response.ContentType = "text/plain";
+                    if (isPrivate)
+                    {
+                        return context.Response.WriteAsync(
+                            "An exception occurred and a report was being generated, but then a further exception " +
+                            "was thrown during the generation of that report. \nThe original exception that was throws was " +
+                            ex.Message + ". During report generation the exception thrown was " + ex2.Message + ".");
+                    }
                     return context.Response.WriteAsync(
                         "An exception occurred and a report was being generated, but then a further exception " +
-                        "was thrown during the generation of that report. Please contact technical support so that " +
-                        "we can resolve this issue as soon as possible. Thank you.");
+                        "was thrown during the generation of that report. Please contact support and provide " +
+                        "details of what you were doing at the time so that we can resolve this problem as soon " +
+                        "as possible. Thank you.");
                 }
             }
         }
