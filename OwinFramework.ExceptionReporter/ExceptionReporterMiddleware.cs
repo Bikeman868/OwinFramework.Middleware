@@ -12,6 +12,7 @@ using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
+using System.Web;
 
 namespace OwinFramework.ExceptionReporter
 {
@@ -37,9 +38,15 @@ namespace OwinFramework.ExceptionReporter
             {
                 return next();
             }
+            catch(HttpException httpException)
+            {
+                context.Response.StatusCode = httpException.GetHttpCode();
+                context.Response.ReasonPhrase = httpException.GetHtmlErrorMessage();
+                return context.Response.WriteAsync("");
+            }
             catch (Exception ex)
             {
-                bool isPrivate = false;
+                var isPrivate = false;
                 try
                 {
                     context.Response.StatusCode = 500;

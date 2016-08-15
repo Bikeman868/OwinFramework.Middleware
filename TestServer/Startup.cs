@@ -53,9 +53,9 @@ namespace OwinFramework.Middleware.TestServer
                 .ConfigureWith(config, "/middleware/defaultDocument");
 
             // The default document middleware will rewrite a request for the root document to an actual page on the site
-            builder.Register(ninject.Get<NotFound.NotFoundMiddleware>())
-                .As("Not found")
-                .ConfigureWith(config, "/middleware/notFound");
+            //builder.Register(ninject.Get<NotFound.NotFoundMiddleware>())
+            //    .As("Not found")
+            //    .ConfigureWith(config, "/middleware/notFound");
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<AnalysisReporter.AnalysisReporterMiddleware>())
