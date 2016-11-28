@@ -2,15 +2,15 @@
 <package >
   <metadata>
     <id>Owin.Framework.DefaultDocument</id>
-    <version>2.1.0</version>
+    <version>2.1.2</version>
     <title>Owin.Framework.DefaultDocument</title>
     <authors>Martin Halliday</authors>
     <owners>Martin Halliday</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Owin middleware to serve static files</description>
+    <description>Owin middleware to map requests for the site root to a specific page on the site</description>
     <copyright>Copyright Martin Halliday 2016</copyright>
-    <releaseNotes>First release</releaseNotes>
-    <summary>When a request is received for the root document, the request URL is rewritten to the default document url</summary>
+    <releaseNotes>Fixed a bug with displaying the configuration of this middleware</releaseNotes>
+    <summary>When a request is received for the root document, the request URL is rewriten to the default document url</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.DefaultDocument</projectUrl>
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
     <tags>OWIN framework default-document</tags>

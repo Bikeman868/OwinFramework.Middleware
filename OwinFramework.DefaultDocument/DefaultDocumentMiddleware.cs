@@ -58,13 +58,15 @@ namespace OwinFramework.DefaultDocument
             _configurationRegistration = configuration.Register(
                 path,
                 ConfigurationChanged,
-                _configuration);
+                new DefaultDocumentConfiguration());
         }
 
         private void ConfigurationChanged(DefaultDocumentConfiguration configuration)
         {
+            var defaultConfiguration = new DefaultDocumentConfiguration();
+
             if (string.IsNullOrEmpty(configuration.DefaultPage))
-                configuration.DefaultPage = "/";
+                configuration.DefaultPage = defaultConfiguration.DefaultPage;
             else if (!configuration.DefaultPage.StartsWith("/"))
                 configuration.DefaultPage = "/" + configuration.DefaultPage;
 
@@ -90,7 +92,7 @@ namespace OwinFramework.DefaultDocument
 
             var defaultConfiguration = new DefaultDocumentConfiguration();
             document = document.Replace("{defaultPage.default}", defaultConfiguration.DefaultPage);
-            document = document.Replace("{configUrl}", defaultConfiguration.DocumentationRootUrl);
+            document = document.Replace("{configUrl.default}", defaultConfiguration.DocumentationRootUrl);
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);

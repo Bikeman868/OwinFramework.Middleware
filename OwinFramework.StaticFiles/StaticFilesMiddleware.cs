@@ -29,6 +29,7 @@ namespace OwinFramework.StaticFiles
         {
             _contextKey = Guid.NewGuid().ToShortString(false);
             this.RunAfter<InterfacesV1.Middleware.IOutputCache>(null, false);
+            this.RunAfter<InterfacesV1.Middleware.IAuthorization>(null, false);
         }
 
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)

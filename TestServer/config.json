@@ -30,13 +30,17 @@
             "enabled": "true",
             "includeSubFolders": "true",
             "FileExtensions": [
-                {"extension": ".html","mimeType": "text/html"},
-                {"extension": ".css","mimeType": "text/css"}
+                { "extension": ".html", "mimeType": "text/html" },
+                { "extension": ".css", "mimeType": "text/css" }
             ],
             "maximumFileSizeToCache": 10000,
             "totalCacheSize": 1000000,
             "maximumCacheTime": "00:30:00",
             "requiredPermission": ""
+        },
+        "defaultDocument": {
+            "defaultPage": "/home.html",
+            "documentationRootUrl": "/owin/defaultDocument"
         }
     }
 }

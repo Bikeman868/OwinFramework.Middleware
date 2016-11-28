@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.RouteVisualizer.Net40", "OwinFramework.RouteVisualizer\OwinFramework.RouteVisualizer.Net40.csproj", "{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}"
 EndProject
@@ -12,6 +12,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7E4DEB16-BBB8-46A5-84BC-FCAED244E99D}"
 	ProjectSection(SolutionItems) = preProject
 		NuGet\Owin.Framework.AnalysisReporter.nuspec = NuGet\Owin.Framework.AnalysisReporter.nuspec
+		NuGet\Owin.Framework.DefaultDocument.nuspec = NuGet\Owin.Framework.DefaultDocument.nuspec
 		NuGet\Owin.Framework.Documenter.nuspec = NuGet\Owin.Framework.Documenter.nuspec
 		NuGet\Owin.Framework.ExceptionReporter.nuspec = NuGet\Owin.Framework.ExceptionReporter.nuspec
 		NuGet\Owin.Framework.NotFound.nuspec = NuGet\Owin.Framework.NotFound.nuspec
