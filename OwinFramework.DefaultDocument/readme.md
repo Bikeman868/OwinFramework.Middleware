@@ -19,3 +19,34 @@ for details.
 
 The default configuration will serve `/index.html`, this means that if visitors to
 your site type `http://yoursite.com/` the owin pipeline will see `http://yoursite.com/index.html`.
+
+This is an example of adding the default document middleware to the OWIN Framework pipeline builder.
+
+```
+builder.Register(ninject.Get<OwinFramework.DefaultDocument.DefaultDocumentMiddleware>())
+    .As("Default document")
+    .ConfigureWith(config, "/middleware/defaultDocument");
+```
+
+If you uses the above code, and you use [Urchin](https://github.com/Bikeman868/Urchin) for 
+configuration management then you configuration file can be set up like this:
+
+```
+{
+    "middleware": {
+        "defaultDocument": {
+            "defaultPage": "/home.html",
+            "documentationRootUrl": "/config/defaultDocument"
+        }
+    }
+}
+
+```
+
+This configuration specifies that:
+
+* When users visit the web site http://mysite.com/ without specifying a path this will produce the same result
+as if they had requeted http://mysite.com/home.html.
+
+* You can check the configuration of the default document middleware on the page 
+http://mysite.com/config/defaultDocument

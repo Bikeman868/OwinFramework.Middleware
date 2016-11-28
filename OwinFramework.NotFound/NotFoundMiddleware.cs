@@ -20,18 +20,16 @@ namespace OwinFramework.NotFound
 
         string IMiddleware.Name { get; set; }
 
+        private IDisposable _configurationRegistration;
+        private NotFoundConfiguration _configuration;
+        private FileInfo _pageTemplateFile;
+        private PathString _configPage;
+
         public NotFoundMiddleware()
         {
             ConfigurationChanged(new NotFoundConfiguration());
             this.RunLast();
         }
-
-        #region IConfigurable
-
-        private IDisposable _configurationRegistration;
-        private NotFoundConfiguration _configuration;
-        private FileInfo _pageTemplateFile;
-        private PathString _configPage;
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
@@ -56,6 +54,8 @@ namespace OwinFramework.NotFound
             context.Response.ReasonPhrase = "Not Found";
             return context.Response.WriteAsync(template);
         }
+
+        #region IConfigurable
 
         public void Configure(IConfiguration configuration, string path)
         {

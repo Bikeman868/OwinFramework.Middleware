@@ -24,3 +24,38 @@ middleware is also self documenting, and can produce configuration documentation
 
 The most important configuration value is the `path` which defaults to `/owin/visualization`. 
 This is the URL within your application where the visualizer will be available.
+
+This is an example of adding the not found middleware to the OWIN Framework pipeline builder.
+
+```
+builder.Register(ninject.Get<OwinFramework.RouteVisualizer.RouteVisualizerMiddleware>())
+    .As("Route visualizer")
+    .ConfigureWith(config, "/middleware/routeVisualizer");
+```
+
+If you use the above code, and you use [Urchin](https://github.com/Bikeman868/Urchin) for 
+configuration management then your configuration file can be set up like this:
+
+```
+{
+    "middleware": {
+        "routeVisualizer": {
+            "path": "/config/routes",
+			"enabled": true,
+			"requiredPermission":"developer"
+        }
+    }
+}
+
+```
+
+This configuration specifies that:
+
+* The route visualization will be available at http://mycompany.com/config/routes. Please ensure that 
+the route visualizer middleware is configured on the route that this request will be routed to.
+
+* The route visualizer is enabled. This setting exists so that you can disable the visualizer in
+other environments via configuration.
+
+* The route visualizer requires the "developer" permission. This setting only has any effect if you
+configured some authorization middleware to run before the route visualizer middleware.
