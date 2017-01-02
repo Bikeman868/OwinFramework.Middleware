@@ -1,0 +1,258 @@
+﻿<html>
+    <head>
+        <title>OwinFramework Dart middleware configuration</title>
+        <style type="text/css">
+             body{
+                 font-family: verdana,arial,sans-serif;
+                 font-size: 11px;
+             }
+
+             span.code{
+                 font-family: courrier;
+                 font-size: 13px;
+             }
+
+             table.properties {
+                 font-size: 11px;
+                 color: #333333;
+                 border-width: 1px;
+                 border-color: #666666;
+                 border-collapse: collapse;
+             }
+
+            table.properties th {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #dedede;
+            }
+
+            table.properties td {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #ffffff;
+            }
+
+            table.properties td.property {
+                font-weight: bold
+            }
+        </style>    
+    </head>
+    <body>
+        <h1>OwinFramework Dart middleware configuration</h1>
+        <p>
+            This middleware provides an easy way to serve user interfaces written in the Dart programming
+            language. See https://www.dartlang.org/ for more details about this language. In brief, Dart
+            is a modern language that is very similar to C# and Java that compiles into JavaScript. The
+            resulting JavaScript is var compact and highly optimized for best performance in current
+            browsers. Dart has a very small footprint and very fast startup times.
+        </p>
+        <p>
+            This middleware exists because some browsers can natively execute Dart directly whereas other
+            browsers require the compiled JavaScript. This middleware is similar to the static files
+            middleware, and can be used in place of it, but adds browser detection, and serving of
+            either the raw Dart code or the compiled JavaScript if the browser does not support Dart 
+            natively.
+        </p>
+        <p>The Dart middleware in the OwinFramework supports the following configuration options:</p>
+        <table class="properties">
+            <tr>
+                <th>Property</th>
+                <th>Default</th>
+                <th>Current</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td class="property">DartUiRootUrl</td>
+                <td>{dartUiRootUrl.default}</td>
+                <td>{dartUiRootUrl}</td>
+                <td>
+                    <p>
+                        Configures the URL within your web site where the Dart UI will be served. If your whole web site
+                        is written as Dart Single Page Application you can set this to / so that when visitors to your
+                        site go to http://mysite.com/ they will be presented with the Dart authored UI.
+                    </p>
+                    <p>
+                        The default setting for this property is <span class="code">/ui</span> which means that any requests
+                        to your site that begin with <span class="code">/ui</span> could be served as Dart files or related
+                        assets (provided all of the other criteria are met). So for example a URL like
+                        <span class="code">/ui/images/logo.jpg</span> would be a potential UI file resource.
+                    </p>
+                    <p>
+                        This middleware will only serve files that actually exist in the file system. If the
+                        request is for a non-existent file then the request will be passed to the next middleware
+                        in the OWIN pipeline. If you want 404 to be returned in this situation, then place some
+                        middleware behind this one in the OWIN pipeline that returns a 404 response.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">DefaultDocument</td>
+                <td>{defaultDocument.default}</td>
+                <td>{defaultDocument}</td>
+                <td>
+                    <p>
+                        Configures the file that will be served when the Dart UI folder URL is requested with no
+                        file name in the URL. For example if the <span class="code">DartUiRootUrl</span> is configured
+                        to <span class="code">/ui</span> and this property is configured to <span class="code">index.html</span>
+                        then a request for <span class="code">http://mysite.com/ui</span> will serve up the contents of 
+                        the <span class="code">index.html</span> file.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">DocumentationRootUrl</td>
+                <td>{documentationRootUrl.default}</td>
+                <td>{documentationRootUrl}</td>
+                <td>
+                    <p>
+                        Configures the URL within your web site where configutation documentation for this
+                        middleware will be avialble. Set this to an empty string to disable this documentation
+                        in a production environment.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">RootDartDirectory</td>
+                <td>{rootDartDirectory.default}</td>
+                <td>{rootDartDirectory}</td>
+                <td>
+                    <p>
+                        Configures the path in the file system where Dart source files reside. This path can be
+                        relative to the root folder of the site, or an absolute path to anywhere on the file system
+                        including a UNC path to a network resource.
+                    </p>
+                    <p>
+                        These files will only be served to browsers that natively support execution of Dart code.
+                        Using one of these browsers makes it easy to debug your Dart code using the developer tools
+                        built into the browser. Debugging the compiled JavaScript in the browser is extremely challenging.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">RootBuildDirectory</td>
+                <td>{rootDartDirectory.default}</td>
+                <td>{rootDartDirectory}</td>
+                <td>
+                    <p>
+                        Configures the path in the file system where compiled JavaScript files reside. This path can be
+                        relative to the root folder of the site, or an absolute path to anywhere on the file system
+                        including a UNC path to a network resource.
+                    </p>
+                    <p>
+                        The Dart compiler outputs to a <span class="code">build</span> folder by default. This is the
+                        default location for this middleware too, so the default configuration of every component will
+                        work right away out of the box.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">Enabled</td>
+                <td>{enabled.default}</td>
+                <td>{enabled}</td>
+                <td>
+                    <p>The Enabled property allows you to turn off the Dart handler.</p>
+                    <p>
+                        This can be useful in cases where the Dart UI is some type of diagnostic tool that only
+                        operates in certain environments and not in others, but you want to deploy the same build
+                        to all environments.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">FileExtensions</td>
+                <td>{fileExtensions.default}</td>
+                <td>{fileExtensions}</td>
+                <td>
+                    <p>
+                        An array of file extensions to serve. Any files with extensions not on this list will not be served.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">RequiredPermission</td>
+                <td>{requiredPermission.default}</td>
+                <td>{requiredPermission}</td>
+                <td>
+                    <p>
+                        The RequiredPermission property allows you to restrict access to the Dart UI. For example
+                        the Dart UI might be an administration UI that should only be availble to administrators. Note
+                        that this will not work well if the authorized users use the UI from a shared browsers because
+                        the broswer can cache the dart code and associated assets and display the UI to users that
+                        are not authorized.
+                    </p>
+                    <p>
+                        For this to work you must have some Authorization middleware configured in your Owin
+                        pipeline. The name of the permission that you specify here is any permission recognized
+                        by the Authorization middleware that you configured.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">MaximumFileSizeToCache</td>
+                <td>{maximumFileSizeToCache.default}</td>
+                <td>{maximumFileSizeToCache}</td>
+                <td>
+                    <p>
+                        Files larger than this size will not be cached, but served from the file system on every request
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">MaximumCacheTime</td>
+                <td>{maximumCacheTime.default}</td>
+                <td>{maximumCacheTime}</td>
+                <td>
+                    <p>
+                        Files will not be cached in memory for longer than this timespan. This enabled you
+                        to replace the files on the file system and have them gradually replace the old ones.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">TotalCacheSize</td>
+                <td>{totalCacheSize.default}</td>
+                <td>{totalCacheSize}</td>
+                <td>
+                    <p>
+                        The maximum amount of memeory that will be occupied by cached copies of files.
+                        You can set this to zero to cache all files, but if this results in the operating
+                        system swapping virtual memory to disk then performance of your site will be severely
+                        impaired.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">Version</td>
+                <td>{version.default}</td>
+                <td>{version}</td>
+                <td>
+                    <p>
+                        So that browser caching works efficiently, static files can be versioned in the URL
+                        without having to be versioned on disk. This middleware will replace occurences of
+                        <span class="code">{_V_}</span> in your HTML with this version number and instruct
+                        the broswer to cache the file and not request it from the server again.
+                    </p>
+                    <p>
+                        When the files have actually changed on disk and you want all the browsers to fetch
+                        and cache the new version you should increase this version number by 1.
+                    </p>
+                    <p>
+                        When this middleware receives a request for a versioned asset, it will strip off the
+                        version number before identifying the file to serve, so that the developer does not
+                        have to be concerned with the versioning of the files.
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <p>
+            This middleware is configured the same way as all other middleware in the Owin Framework; you need 
+            to construct a class that implements <span class="code">IConfiguration</span> then add a fluid 
+            <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin 
+            Framework builder. Please read Owin Framework documentation on configuration for full details with examples.
+        </p>
+    </body>
+</html>

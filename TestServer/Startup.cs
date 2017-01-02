@@ -40,7 +40,14 @@ namespace OwinFramework.Middleware.TestServer
             // Configuration options limit the files that can be retrieved this way.
             builder.Register(ninject.Get<StaticFiles.StaticFilesMiddleware>())
                 .As("Static files")
-                .ConfigureWith(config, "/middleware/staticFiles");
+                .ConfigureWith(config, "/middleware/staticFiles")
+                .RunAfter("Dart");
+
+            // The dart middleware will allow the example Dart UI to run in browsers that support Dart
+            // natively as well as those that do not.
+            builder.Register(ninject.Get<Dart.DartMiddleware>())
+                .As("Dart")
+                .ConfigureWith(config, "/middleware/dart");
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<RouteVisualizer.RouteVisualizerMiddleware>())

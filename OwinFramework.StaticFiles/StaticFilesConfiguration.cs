@@ -26,7 +26,7 @@ namespace OwinFramework.StaticFiles
             FileExtensions = new [] 
             {
                 new ExtensionConfiguration{Extension = ".bmp", MimeType = "image/bmp"},
-                new ExtensionConfiguration{Extension = ".jpg", MimeType = "image/jpg"},
+                new ExtensionConfiguration{Extension = ".jpg", MimeType = "image/jpeg"},
                 new ExtensionConfiguration{Extension = ".png", MimeType = "image/png"},
                 new ExtensionConfiguration{Extension = ".html", MimeType = "text/html"},
                 new ExtensionConfiguration{Extension = ".css", MimeType = "text/css"},

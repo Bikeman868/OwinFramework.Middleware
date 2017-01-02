@@ -109,6 +109,10 @@
       <Project>{bb10f37c-a3b3-4901-852f-64915bc12a61}</Project>
       <Name>OwinFramework.AnalysisReporter.Net45</Name>
     </ProjectReference>
+    <ProjectReference Include="..\OwinFramework.Dart\OwinFramework.Dart.Net45.csproj">
+      <Project>{dfee722d-6370-40bc-ad4a-821b842b293b}</Project>
+      <Name>OwinFramework.Dart.Net45</Name>
+    </ProjectReference>
     <ProjectReference Include="..\OwinFramework.DefaultDocument\OwinFramework.DefaultDocument.Net45.csproj">
       <Project>{7AEBA527-28B2-4081-BEF5-32C98316CC90}</Project>
       <Name>OwinFramework.DefaultDocument.Net45</Name>
