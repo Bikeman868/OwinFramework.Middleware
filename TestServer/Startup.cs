@@ -1,10 +1,12 @@
 ﻿using System;
 using System.IO;
+using System.Reflection;
 using Ioc.Modules;
 using Ninject;
 using Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
+using OwinFramework.Interfaces.Utility;
 using Urchin.Client.Sources;
 
 namespace OwinFramework.Middleware.TestServer
@@ -21,13 +23,16 @@ namespace OwinFramework.Middleware.TestServer
 
         public void Configuration(IAppBuilder app)
         {
-            var packageLocator = new PackageLocator().ProbeBinFolderAssemblies();
+            var packageLocator = new PackageLocator()
+                .ProbeBinFolderAssemblies()
+                .Add(Assembly.GetExecutingAssembly());
             var ninject = new StandardKernel(new Ioc.Modules.Ninject.Module(packageLocator));
             
             // Tell urchin to get its configuration from the config.json file in this project. Note that if
             // you edit this file whilst the application is running the changes will be applied without 
             // restarting the application.
-            var configFile = new FileInfo(AppDomain.CurrentDomain.SetupInformation.ApplicationBase + "config.json");
+            var hostingEnvironment = ninject.Get<IHostingEnvironment>();
+            var configFile = new FileInfo(hostingEnvironment.MapPath("config.json"));
             _configurationFileSource = ninject.Get<FileSource>().Initialize(configFile, TimeSpan.FromSeconds(5));
 
             // Construct the configuration implementation that is registered with IoC (Urchin)
@@ -59,10 +64,12 @@ namespace OwinFramework.Middleware.TestServer
                 .As("Default document")
                 .ConfigureWith(config, "/middleware/defaultDocument");
 
-            // The default document middleware will rewrite a request for the root document to an actual page on the site
+            // The not found middleware will always return a 404 response. Configure it to run after all
+            // other middleware to catch requests that no other middleware handled
             //builder.Register(ninject.Get<NotFound.NotFoundMiddleware>())
             //    .As("Not found")
-            //    .ConfigureWith(config, "/middleware/notFound");
+            //    .ConfigureWith(config, "/middleware/notFound")
+            //    .RunLast();
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<AnalysisReporter.AnalysisReporterMiddleware>())

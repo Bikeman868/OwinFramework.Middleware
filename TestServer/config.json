@@ -27,9 +27,9 @@
             "staticFilesRootUrl": "/",
             "documentationRootUrl": "/owin/staticFiles",
             "rootDirectory": "",
-            "enabled": "true",
-            "includeSubFolders": "true",
-            "FileExtensions": [
+            "enabled": true,
+            "includeSubFolders": true,
+            "fileExtensions": [
                 { "extension": ".html", "mimeType": "text/html" },
                 { "extension": ".css", "mimeType": "text/css" }
             ],
@@ -41,6 +41,19 @@
         "defaultDocument": {
             "defaultPage": "/home.html",
             "documentationRootUrl": "/owin/defaultDocument"
+        },
+        "dart": { 
+            "dartUiRootUrl": "/ui",
+            "defaultDocument": "index.html",
+            "documentationRootUrl": "/owin/dart",
+            "rootDartDirectory": "~\\ui\\web",
+            "rootBuildDirectory": "~\\ui\\build\\web",
+            "enabled": true,
+            "version": 1,
+            "maximumFileSizeToCache": 50000,
+            "totalCacheSize": 1000000,
+            "maximumCacheTime": "01:00:00",
+            "requiredPermission": ""
         }
     }
 }

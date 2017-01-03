@@ -12,6 +12,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7E4DEB16-BBB8-46A5-84BC-FCAED244E99D}"
 	ProjectSection(SolutionItems) = preProject
 		NuGet\Owin.Framework.AnalysisReporter.nuspec = NuGet\Owin.Framework.AnalysisReporter.nuspec
+		NuGet\Owin.Framework.Dart.nuspec = NuGet\Owin.Framework.Dart.nuspec
 		NuGet\Owin.Framework.DefaultDocument.nuspec = NuGet\Owin.Framework.DefaultDocument.nuspec
 		NuGet\Owin.Framework.Documenter.nuspec = NuGet\Owin.Framework.Documenter.nuspec
 		NuGet\Owin.Framework.ExceptionReporter.nuspec = NuGet\Owin.Framework.ExceptionReporter.nuspec

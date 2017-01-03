@@ -1,9 +1,8 @@
 ﻿# OWIN Framework Dart Middleware
 
-This middleware will serve a UI writtenn in Dart from your web site. Dart is a Google
-language that compiles to JavaScript for older browsers that can not run Dart code
-natively. This middleware detects browsers that support Dart natively and serves Dart
-code to them and compiled JavaScript otherwise.
+This middleware will serve a UI written in Dart. Dart is a Google language that compiles to 
+JavaScript for older browsers that can not run Dart code natively. This middleware detects 
+browsers that support Dart natively and serves Dart code to them and compiled JavaScript otherwise.
 
 ## Configuration
 
@@ -94,3 +93,52 @@ If you want to add a Dart UI to your web site, follow these steps.
 
 10. Open the `/ui` path of your web site in Dartium and other browsers. Use the developer tools built into the browser
     to see which ones run native Dart code and which ones run the compiled JavaScript.
+
+## Versioning
+
+To make your web site more efficient, this middleware will add headers to all responses telling
+the browser to cache the response. This will result in a more responsive site and lower load on
+your servers, but what happens when I changed some files and I want the browser to get a fresh
+copy rather than using the cached one?
+
+This middleware can modify all the HTML that it serves to replace {_v_} with a version number. You
+can use this to add a version number to any asset that should be cached by the browser. The version
+number must be placed immediately before the file extension.
+
+For example instead of writing this in the head of your html
+
+```
+    <link rel="stylesheet" href="/ui/styles.css" />
+
+```
+
+You can write this
+
+```
+    <link rel="stylesheet" href="/ui/styles{_v_}.css" />
+
+```
+
+Which will get translated into this on its way to the browser
+
+```
+    <link rel="stylesheet" href="/ui/styles_v1.css" />
+
+```
+
+When this middleware receives requests for static files, it will accept requests with and without the version 
+number, and it will still serve the same file, so `http://mysite/ui/styles.css` and `http://mysite/ui/styles_v1.css`
+will return the same file.
+
+If you make a request for the wrong version number, then this middleware will not handle the request, and pass it
+down the pipeline. In most configurations you would want this to be handled by middleware that returns a 404 response.
+
+Although  `http://mysite/ui/styles.css` and `http://mysite/ui/styles_v1.css` return the contents of the same file, the
+cache headers that are returned are different. The browser will be instructed to cache the versioned asset but not
+cache the unversioned one.
+
+The current version number is configured in the Urchin configuration. If you deploy a new version of your application
+you should increment the version number so that all the browsers will fetch the updated assets. You can also set the
+version number to `null` or delete it from your configuration to disable the versioning of assets. In this case
+assets will not be versioned, and will therefore not be cached. This can be useful during debugging, but is rarely
+the best configuration for a production deployment.

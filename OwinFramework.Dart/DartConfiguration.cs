@@ -1,22 +1,45 @@
 ﻿using System;
+using Newtonsoft.Json;
 
 namespace OwinFramework.Dart
 {
-    [Serializable]
     internal class DartConfiguration
     {
+        [JsonProperty("dartUiRootUrl")]
         public string DartUiRootUrl { get; set; }
+
+        [JsonProperty("defaultDocument")]
         public string DefaultDocument { get; set; }
+
+        [JsonProperty("documentationRootUrl")]
         public string DocumentationRootUrl { get; set; }
+
+        [JsonProperty("rootDartDirectory")]
         public string RootDartDirectory { get; set; }
+
+        [JsonProperty("rootBuildDirectory")]
         public string RootBuildDirectory { get; set; }
+
+        [JsonProperty("enabled")]
         public bool Enabled { get; set; }
+
+        [JsonProperty("fileExtensions")]
         public ExtensionConfiguration[] FileExtensions { get; set; }
+
+        [JsonProperty("maximumFileSizeToCache")]
         public long MaximumFileSizeToCache { get; set; }
+
+        [JsonProperty("maximumCacheTime")]
         public TimeSpan MaximumCacheTime { get; set; }
+
+        [JsonProperty("totalCacheSize")]
         public long TotalCacheSize { get; set; }
+
+        [JsonProperty("requiredPermission")]
         public string RequiredPermission { get; set; }
-        public int Version { get; set; }
+
+        [JsonProperty("version")]
+        public int? Version { get; set; }
 
         public DartConfiguration()
         {
@@ -26,7 +49,9 @@ namespace OwinFramework.Dart
             RootDartDirectory = "~\\ui\\web";
             RootBuildDirectory = "~\\ui\\build\\web";
             Enabled = true;
+#if !DEBUG
             Version = 1;
+#endif
 
             var oneWeek = TimeSpan.FromDays(7);
             var oneHour = TimeSpan.FromHours(1);
@@ -68,9 +93,16 @@ namespace OwinFramework.Dart
 
     internal class ExtensionConfiguration
     {
+        [JsonProperty("expiry")]
         public TimeSpan? Expiry { get; set; }
+
+        [JsonProperty("extension")]
         public string Extension { get; set; }
+
+        [JsonProperty("mimeType")]
         public string MimeType { get; set; }
+
+        [JsonProperty("processing")]
         public FileProcessing Processing { get; set; }
 
         public ExtensionConfiguration()

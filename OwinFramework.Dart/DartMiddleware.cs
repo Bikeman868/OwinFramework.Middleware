@@ -9,6 +9,8 @@ using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
+using OwinFramework.Interfaces.Utility;
+using OwinFramework.InterfacesV1.Capability;
 
 namespace OwinFramework.Dart
 {
@@ -18,15 +20,22 @@ namespace OwinFramework.Dart
         InterfacesV1.Capability.ISelfDocumenting,
         IRoutingProcessor
     {
+        private readonly IHostingEnvironment _hostingEnvironment;
+
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
 
         private readonly string _contextKey;
+        private const string _versionPrefix = "_v";
+        private const string _versionMarker = "{_v_}";
 
-        public DartMiddleware()
+        public DartMiddleware(
+            IHostingEnvironment hostingEnvironment)
         {
+            _hostingEnvironment = hostingEnvironment;
+
             _contextKey = Guid.NewGuid().ToShortString(false);
             this.RunAfter<InterfacesV1.Middleware.IOutputCache>(null, false);
             this.RunAfter<InterfacesV1.Middleware.IAuthorization>(null, false);
@@ -65,10 +74,9 @@ namespace OwinFramework.Dart
                     : InterfacesV1.Middleware.CachePriority.High;
             }
 
-            if (fileContext.Configuration != null)
+            if (fileContext.Configuration != null && fileContext.IsVersioned)
             {
-                context.Response.ContentType = fileContext.Configuration.MimeType;
-                if (fileContext.Configuration.Expiry.HasValue)
+                if (fileContext.Configuration.Expiry.HasValue && _versionSuffix.Length > 0)
                 {
                     context.Response.Expires = DateTime.UtcNow + fileContext.Configuration.Expiry;
                     context.Response.Headers.Set(
@@ -81,20 +89,40 @@ namespace OwinFramework.Dart
                 }
             }
 
+            return ServeFile(context, fileContext, file);
+        }
+
+        private Task ServeFile(IOwinContext context, DartFileContext fileContext, FileInfo fileInfo)
+        {
             return Task.Factory.StartNew(() =>
+            {
+                byte[] content;
+                using (var stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
-                    var buffer = new byte[32 * 1024];
-                    using (var stream = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+                    content = new byte[stream.Length];
+                    stream.Read(content, 0, content.Length);
+                }
+
+                if (fileContext.Configuration.Processing != FileProcessing.None)
+                {
+                    var encoding = Encoding.UTF8;
+                    var text = encoding.GetString(content);
+                    switch (fileContext.Configuration.Processing)
                     {
-                        while (true)
-                        {
-                            var length = stream.Read(buffer, 0, buffer.Length);
-                            if (length == 0) break;
-                            context.Response.Write(buffer, 0, length);
-                            if (length < buffer.Length) break;
-                        }
+                        case FileProcessing.Html:
+                        case FileProcessing.JavaScript:
+                            text = text.Replace(_versionMarker, _versionSuffix);
+                            break;
+                        case FileProcessing.Dart:
+                        case FileProcessing.Css:
+                            break;
                     }
-                });
+                    content = encoding.GetBytes(text);
+                }
+                context.Response.ContentType = fileContext.Configuration.MimeType;
+                context.Response.ContentLength = content.Length;
+                context.Response.Write(content, 0, content.Length);
+            });
         }
 
         #region IConfigurable
@@ -117,12 +145,15 @@ namespace OwinFramework.Dart
                 return false;
 
             // Extract the path relative to the Dart UI root
-            var path = request.Path.Value.Substring(_rootUrl.Value.Length + 1);
-            var fileName = path.Replace('/', '\\');
+            var relativePath = request.Path.Value.Substring(_rootUrl.Value.Length);
+            var fileName = relativePath.Replace('/', '\\');
 
             // Serve the default document for requests to the root folder
-            if (string.IsNullOrWhiteSpace(fileName))
+            if (string.IsNullOrWhiteSpace(fileName) || fileName == "\\")
                 fileName = _configuration.DefaultDocument;
+
+            if (fileName.StartsWith("\\"))
+                fileName = fileName.Substring(1);
 
             // Parse out pieces of the file name
             var lastDirectorySeparatorIndex = fileName.LastIndexOf('\\');
@@ -136,7 +167,7 @@ namespace OwinFramework.Dart
             var baseFileName = firstPeriodIndex < 0 ? fileName : fileName.Substring(0, firstPeriodIndex);
 
             // Check if the requested file includes a version number suffix
-            var versionSuffix = "_v" + _configuration.Version;
+            var versionSuffix = _versionPrefix + _configuration.Version;
             fileContext.IsVersioned = baseFileName.EndsWith(versionSuffix);
             if (fileContext.IsVersioned)
             {
@@ -146,45 +177,20 @@ namespace OwinFramework.Dart
 
             // Get the configuration appropriate to this file extension
             fileContext.Configuration = _configuration.FileExtensions
-                .FirstOrDefault(c => string.Equals(c.Extension, fullExtension, StringComparison.OrdinalIgnoreCase));
+                .FirstOrDefault(c => string.Equals(c.Extension, extension, StringComparison.OrdinalIgnoreCase));
             if (fileContext.Configuration == null)
                 return false;
 
-            var requestPath = request.Path.Value;
-            if (requestPath.StartsWith("/")) requestPath = requestPath.Substring(1);
-
-            if (_rootUrl.Value.Length == 0)
-            {
-                if (requestPath.IndexOf("/", StringComparison.OrdinalIgnoreCase) < 0)
-                {
-                    fileContext.NativeFile = GetPhysicalFile(_configuration.RootDartDirectory, requestPath, 0);
-                    fileContext.CompiledFile = GetPhysicalFile(_configuration.RootBuildDirectory, requestPath, 0);
-                }
-            }
-            else
-            {
-                if (requestPath.Length <= _rootUrl.Value.Length)
-                    return false;
-
-                if (requestPath.StartsWith(_rootUrl.Value, StringComparison.OrdinalIgnoreCase))
-                {
-                    fileContext.NativeFile = GetPhysicalFile(_configuration.RootDartDirectory, requestPath, _rootUrl.Value.Length);
-                    fileContext.CompiledFile = GetPhysicalFile(_configuration.RootBuildDirectory, requestPath, _rootUrl.Value.Length);
-                }
-            }
+            fileContext.NativeFile = new FileInfo(Path.Combine(_rootDartFolder, fileName));
+            fileContext.CompiledFile = new FileInfo(Path.Combine(_rootBuildFolder, fileName));
 
             return true;
         }
 
-        private FileInfo GetPhysicalFile(string rootPath, string requestPath, int prefixLength)
-        {
-            var relativeFileName = requestPath.Substring(prefixLength).Replace("/", "\\");
-            return new FileInfo(Path.Combine(_configuration.RootBuildDirectory, relativeFileName));
-        }
-
-        private string _rootDartFolder; // Fully qualified path ending with \
-        private string _rootBuildFolder; // Fully qualified path ending with \
-        private PathString _rootUrl; // Never starts with /. Ends in / unless it is the site root
+        private string _rootDartFolder;
+        private string _rootBuildFolder;
+        private PathString _rootUrl;
+        private string _versionSuffix;
 
         public void Configure(IConfiguration configuration, string path)
         {
@@ -201,21 +207,18 @@ namespace OwinFramework.Dart
                             if (p.Length > 0 && !p.EndsWith("\\"))
                                 p = p + "\\";
 
-                            if (p.StartsWith("~\\"))
-                                p = p.Substring(2);
-
-                            return Path.IsPathRooted(p) ? p : Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase, p);
+                            return _hostingEnvironment.MapPath(p);
                         };
 
                         Func<string, PathString> normalizeUrl = u =>
                         {
                             u = u.Replace("\\", "/");
 
-                            if (u.StartsWith("/"))
-                                u = u.Substring(1);
+                            if (u.Length > 0 && u.EndsWith("/"))
+                                u = u.Substring(0, u.Length - 1);
 
-                            if (u.Length > 0 && !u.EndsWith("/"))
-                                u = u + "/";
+                            if (!u.StartsWith("/"))
+                                u = "/" + u;
 
                             return new PathString(u);
                         };
@@ -223,10 +226,10 @@ namespace OwinFramework.Dart
                         _rootDartFolder = normalizeFolder(cfg.RootDartDirectory ?? "");
                         _rootBuildFolder = normalizeFolder(cfg.RootBuildDirectory ?? "");
                         _rootUrl = normalizeUrl(cfg.DartUiRootUrl ?? "");
+                        _versionSuffix = cfg.Version.HasValue ? _versionPrefix + cfg.Version : string.Empty;
                     }, 
                     new DartConfiguration());
         }
-
 
         #endregion
 
@@ -312,8 +315,60 @@ namespace OwinFramework.Dart
             get { return "Maps URLs onto physical files and returns those files to the requestor"; }
         }
 
-        public IList<InterfacesV1.Capability.IEndpointDocumentation> Endpoints { get { return null; } }
+        public IList<IEndpointDocumentation> Endpoints 
+        { 
+            get 
+            {
+                var documentation = new List<IEndpointDocumentation>
+                {
+                    new EndpointDocumentation
+                    {
+                        RelativePath = _configuration.DartUiRootUrl,
+                        Description = "A UI written in the Dart programming language",
+                        Attributes = new List<IEndpointAttributeDocumentation>
+                        {
+                            new EndpointAttributeDocumentation
+                            {
+                                Type = "Method",
+                                Name = "GET",
+                                Description = "Returns static files needed to run a Dart application"
+                            }
+                        }
+                    },
+                    new EndpointDocumentation
+                    {
+                        RelativePath = _configuration.DocumentationRootUrl,
+                        Description = "Documentation of the configuration options for the Dart middleware",
+                        Attributes = new List<IEndpointAttributeDocumentation>
+                        {
+                            new EndpointAttributeDocumentation
+                            {
+                                Type = "Method",
+                                Name = "GET",
+                                Description = "Returns configuration documentation for Dart middleware in HTML format"
+                            }
+                        }
+                    },
+                };
+                return documentation;
+            } 
+        }
 
+        private class EndpointDocumentation : IEndpointDocumentation
+        {
+            public string RelativePath { get; set; }
+            public string Description { get; set; }
+            public string Examples { get; set; }
+            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
+        }
+
+        private class EndpointAttributeDocumentation : IEndpointAttributeDocumentation
+        {
+            public string Type { get; set; }
+            public string Name { get; set; }
+            public string Description { get; set; }
+        }
+        
         #endregion
 
         #region Embedded resources
