@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Owin.Framework.Less</id>
+    <version>2.2.0</version>
+    <title>Owin.Framework.Less</title>
+    <authors>Martin Halliday</authors>
+    <owners>Martin Halliday</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Owin middleware to compile LESS files to CSS files on the fly</description>
+    <copyright>Copyright Martin Halliday 2016</copyright>
+    <releaseNotes>First release</releaseNotes>
+    <summary>Compiles LESS files to CSS files on the fly</summary>
+    <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Less</projectUrl>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <tags>OWIN framework LESS compiler middleware</tags>
+    <dependencies>
+      <dependency id="Owin.Framework" version="2.2.0" />
+      <dependency id="DotlessClientOnly" version="1.5.2" />
+    </dependencies>
+    <references>
+    </references>
+  </metadata>
+  <files>
+    <file src="..\OwinFramework.Less\bin\Net40\Release\OwinFramework.Less.dll" target="lib\net40"/>
+    <file src="..\OwinFramework.Less\bin\Net45\Release\OwinFramework.Less.dll" target="lib\net45"/>
+    <file src="..\*.md" target=""/>
+  </files>
+</package>

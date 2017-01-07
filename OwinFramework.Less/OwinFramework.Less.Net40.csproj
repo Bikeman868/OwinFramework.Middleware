@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{68BF3350-4D07-4245-985C-96725EB37670}</ProjectGuid>
+    <ProjectGuid>{B13679D7-4381-4814-B183-21100B97E8B6}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OwinFramework.DefaultDocument</RootNamespace>
-    <AssemblyName>OwinFramework.DefaultDocument</AssemblyName>
+    <RootNamespace>OwinFramework.Less</RootNamespace>
+    <AssemblyName>OwinFramework.Less</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <BaseIntermediateOutputPath>obj\Net40\</BaseIntermediateOutputPath>
@@ -32,6 +32,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="dotless.ClientOnly">
+      <HintPath>..\packages\DotlessClientOnly.1.5.3-alpha2\lib\dotless.ClientOnly.dll</HintPath>
+    </Reference>
     <Reference Include="Ioc.Modules, Version=1.1.4.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Ioc.Modules.1.1.4\lib\net40\Ioc.Modules.dll</HintPath>
@@ -55,14 +58,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DefaultDocumentMiddleware.cs" />
-    <Compile Include="DefaultDocumentConfiguration.cs" />
+    <Compile Include="LessConfiguration.cs" />
+    <Compile Include="LessMiddleware.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.OwinFramework.DefaultDocument.Net40.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="packages.OwinFramework.Less.Net40.config" />
     <None Include="readme.md" />
   </ItemGroup>
   <ItemGroup>

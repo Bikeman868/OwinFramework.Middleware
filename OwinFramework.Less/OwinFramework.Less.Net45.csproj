@@ -4,21 +4,21 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{68BF3350-4D07-4245-985C-96725EB37670}</ProjectGuid>
+    <ProjectGuid>{D7C1CBD8-ADD7-463A-894F-00521EF173E3}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>OwinFramework.DefaultDocument</RootNamespace>
-    <AssemblyName>OwinFramework.DefaultDocument</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <RootNamespace>OwinFramework.Less</RootNamespace>
+    <AssemblyName>OwinFramework.Less</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <BaseIntermediateOutputPath>obj\Net40\</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>obj\Net45\</BaseIntermediateOutputPath>
     <BuildInParallel>false</BuildInParallel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Net40\Debug\</OutputPath>
+    <OutputPath>bin\Net45\Debug\</OutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
@@ -26,25 +26,28 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Net40\Release\</OutputPath>
+    <OutputPath>bin\Net45\Release\</OutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="dotless.ClientOnly">
+      <HintPath>..\packages\DotlessClientOnly.1.5.3-alpha2\lib\dotless.ClientOnly.dll</HintPath>
+    </Reference>
     <Reference Include="Ioc.Modules, Version=1.1.4.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Ioc.Modules.1.1.4\lib\net40\Ioc.Modules.dll</HintPath>
+      <HintPath>..\packages\Ioc.Modules.1.1.4\lib\net45\Ioc.Modules.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Owin">
-      <HintPath>..\packages\Microsoft.Owin.2.1.0\lib\net40\Microsoft.Owin.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Owin.3.0.1\lib\net45\Microsoft.Owin.dll</HintPath>
     </Reference>
     <Reference Include="Owin">
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
     </Reference>
     <Reference Include="OwinFramework, Version=2.2.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Owin.Framework.2.2.0\lib\net40\OwinFramework.dll</HintPath>
+      <HintPath>..\packages\Owin.Framework.2.2.0\lib\net45\OwinFramework.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -55,14 +58,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="DefaultDocumentMiddleware.cs" />
-    <Compile Include="DefaultDocumentConfiguration.cs" />
+    <Compile Include="LessConfiguration.cs" />
+    <Compile Include="LessMiddleware.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="packages.OwinFramework.DefaultDocument.Net40.config">
-      <SubType>Designer</SubType>
-    </None>
+    <None Include="packages.OwinFramework.Less.Net45.config" />
     <None Include="readme.md" />
   </ItemGroup>
   <ItemGroup>

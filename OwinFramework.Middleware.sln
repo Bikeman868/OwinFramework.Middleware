@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.40629.0
+VisualStudioVersion = 12.0.30501.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.RouteVisualizer.Net40", "OwinFramework.RouteVisualizer\OwinFramework.RouteVisualizer.Net40.csproj", "{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}"
 EndProject
@@ -15,6 +15,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		NuGet\Owin.Framework.DefaultDocument.nuspec = NuGet\Owin.Framework.DefaultDocument.nuspec
 		NuGet\Owin.Framework.Documenter.nuspec = NuGet\Owin.Framework.Documenter.nuspec
 		NuGet\Owin.Framework.ExceptionReporter.nuspec = NuGet\Owin.Framework.ExceptionReporter.nuspec
+		NuGet\Owin.Framework.Less.nuspec = NuGet\Owin.Framework.Less.nuspec
 		NuGet\Owin.Framework.NotFound.nuspec = NuGet\Owin.Framework.NotFound.nuspec
 		NuGet\Owin.Framework.RouteVisualizer.nuspec = NuGet\Owin.Framework.RouteVisualizer.nuspec
 		NuGet\Owin.Framework.StaticFiles.nuspec = NuGet\Owin.Framework.StaticFiles.nuspec
@@ -44,6 +45,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.NotFound.Net40", "OwinFramework.NotFound\OwinFramework.NotFound.Net40.csproj", "{9FF93BEA-60B5-4ADA-8C37-2A0947F070CC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.NotFound.Net45", "OwinFramework.NotFound\OwinFramework.NotFound.Net45.csproj", "{E00F670D-3AE1-41F2-BDFE-98F42FEE537E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Less.Net40", "OwinFramework.Less\OwinFramework.Less.Net40.csproj", "{B13679D7-4381-4814-B183-21100B97E8B6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Less.Net45", "OwinFramework.Less\OwinFramework.Less.Net45.csproj", "{D7C1CBD8-ADD7-463A-894F-00521EF173E3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -111,6 +116,14 @@ Global
 		{E00F670D-3AE1-41F2-BDFE-98F42FEE537E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E00F670D-3AE1-41F2-BDFE-98F42FEE537E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E00F670D-3AE1-41F2-BDFE-98F42FEE537E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B13679D7-4381-4814-B183-21100B97E8B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B13679D7-4381-4814-B183-21100B97E8B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B13679D7-4381-4814-B183-21100B97E8B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B13679D7-4381-4814-B183-21100B97E8B6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

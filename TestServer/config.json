@@ -38,6 +38,12 @@
             "maximumCacheTime": "00:30:00",
             "requiredPermission": ""
         },
+        "less":  {
+            "rootUrl":  "/",
+            "documentationRootUrl": "/owin/less",
+            "rootDirectory": "~\\",
+            "enabled": true
+        },
         "defaultDocument": {
             "defaultPage": "/home.html",
             "documentationRootUrl": "/owin/defaultDocument"

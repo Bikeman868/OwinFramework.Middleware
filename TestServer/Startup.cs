@@ -40,7 +40,13 @@ namespace OwinFramework.Middleware.TestServer
             // Configuration options limit the files that can be retrieved this way.
             builder.Register(ninject.Get<StaticFiles.StaticFilesMiddleware>())
                 .As("Static files")
-                .ConfigureWith(config, "/middleware/staticFiles");
+                .ConfigureWith(config, "/middleware/staticFiles")
+                .RunAfter("LESS compiler");
+
+            // The Less middleware will compile LESS into CSS on the fly
+            builder.Register(ninject.Get<Less.LessMiddleware>())
+                .As("LESS compiler")
+                .ConfigureWith(config, "/middleware/less");
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<RouteVisualizer.RouteVisualizerMiddleware>())

@@ -1,0 +1,116 @@
+﻿<html>
+    <head>
+        <title>OwinFramework less middleware configuration</title>
+        <style type="text/css">
+             body{
+                 font-family: verdana,arial,sans-serif;
+                 font-size: 11px;
+             }
+
+             span.code{
+                 font-family: courrier;
+                 font-size: 13px;
+             }
+
+             table.properties {
+                 font-size: 11px;
+                 color: #333333;
+                 border-width: 1px;
+                 border-color: #666666;
+                 border-collapse: collapse;
+             }
+
+            table.properties th {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #dedede;
+            }
+
+            table.properties td {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #ffffff;
+            }
+
+            table.properties td.property {
+                font-weight: bold
+            }
+        </style>    
+    </head>
+    <body>
+        <h1>OwinFramework less middleware configuration</h1>
+        <p>The less middleware in the OwinFramework support the following configuration options:</p>
+        <table class="properties">
+            <tr>
+                <th>Property</th>
+                <th>Default</th>
+                <th>Current</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td class="property">RootUrl</td>
+                <td>{rootUrl.default}</td>
+                <td>{rootUrl}</td>
+                <td>
+                    <p>
+                        Configures the URL within your web site where css files will be served. If you
+                        leave this property empty then the root folder for the web site will be the root
+                        url for css files.
+                    </p>
+                    <p>
+                        For example setting this property to <span class="code">/styles</span> means that any requests
+                        to your site that follow the pattern <span class="code">/styles/*.css</span> will be served as 
+                        css/less files.
+                    </p>
+                    <p>
+                        This middleware will only serve requests for .css files. If the url maps to a physical file
+                        then this file will be served. If there is a .less file with the same name then it will be
+                        compiled on the fly into css and served.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">DocumentationRootUrl</td>
+                <td>{documentationRootUrl.default}</td>
+                <td>{documentationRootUrl}</td>
+                <td>
+                    <p>
+                        Configures the URL within your web site where configutation documentation for this
+                        middleware will be avialble. Set this to an empty string to disable this documentation
+                        in a production environment.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">RootDirectory</td>
+                <td>{rootDirectory.default}</td>
+                <td>{rootDirectory}</td>
+                <td>
+                    <p>
+                        Configures the path in the file system where css files reside. This path can be
+                        relative to the root folder of the site, or an absolute path to anywhere on the file system
+                        including a UNC path to a network resource.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">Enabled</td>
+                <td>{enabled.default}</td>
+                <td>{enabled}</td>
+                <td>
+                    <p>The Enabled property allows you to turn off the less file handler.</p>
+                </td>
+            </tr>
+        </table>
+        <p>
+            This middleware is configured the same way as all other middleware in the Owin Framework; you need 
+            to construct a class that implements <span class="code">IConfiguration</span> then add a fluid 
+            <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin 
+            Framework builder. Please read Owin Framework documentation on configuration for full details with examples.
+        </p>
+    </body>
+</html>
