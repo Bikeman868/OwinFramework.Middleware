@@ -12,11 +12,13 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7E4DEB16-BBB8-46A5-84BC-FCAED244E99D}"
 	ProjectSection(SolutionItems) = preProject
 		NuGet\Owin.Framework.AnalysisReporter.nuspec = NuGet\Owin.Framework.AnalysisReporter.nuspec
+		NuGet\Owin.Framework.Dart.nuspec = NuGet\Owin.Framework.Dart.nuspec
 		NuGet\Owin.Framework.DefaultDocument.nuspec = NuGet\Owin.Framework.DefaultDocument.nuspec
 		NuGet\Owin.Framework.Documenter.nuspec = NuGet\Owin.Framework.Documenter.nuspec
 		NuGet\Owin.Framework.ExceptionReporter.nuspec = NuGet\Owin.Framework.ExceptionReporter.nuspec
 		NuGet\Owin.Framework.Less.nuspec = NuGet\Owin.Framework.Less.nuspec
 		NuGet\Owin.Framework.NotFound.nuspec = NuGet\Owin.Framework.NotFound.nuspec
+		NuGet\Owin.Framework.OutputCache.nuspec = NuGet\Owin.Framework.OutputCache.nuspec
 		NuGet\Owin.Framework.RouteVisualizer.nuspec = NuGet\Owin.Framework.RouteVisualizer.nuspec
 		NuGet\Owin.Framework.StaticFiles.nuspec = NuGet\Owin.Framework.StaticFiles.nuspec
 		readme.md = readme.md
@@ -48,7 +50,15 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.NotFound.Net4
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Less.Net40", "OwinFramework.Less\OwinFramework.Less.Net40.csproj", "{B13679D7-4381-4814-B183-21100B97E8B6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Dart.Net40", "OwinFramework.Dart\OwinFramework.Dart.Net40.csproj", "{641C7705-C9F3-4BB5-BE55-9B2238F9821B}"
+EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Less.Net45", "OwinFramework.Less\OwinFramework.Less.Net45.csproj", "{D7C1CBD8-ADD7-463A-894F-00521EF173E3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Dart.Net45", "OwinFramework.Dart\OwinFramework.Dart.Net45.csproj", "{DFEE722D-6370-40BC-AD4A-821B842B293B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.OutputCache.Net40", "OwinFramework.OutputCache\OwinFramework.OutputCache.Net40.csproj", "{ED31698F-8A39-4051-8D2F-61B4E898AE87}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.OutputCache.Net45", "OwinFramework.OutputCache\OwinFramework.OutputCache.Net45.csproj", "{48816586-71BB-4BB8-80ED-16839A6B4715}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -124,6 +134,22 @@ Global
 		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{641C7705-C9F3-4BB5-BE55-9B2238F9821B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{641C7705-C9F3-4BB5-BE55-9B2238F9821B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{641C7705-C9F3-4BB5-BE55-9B2238F9821B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{641C7705-C9F3-4BB5-BE55-9B2238F9821B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DFEE722D-6370-40BC-AD4A-821B842B293B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DFEE722D-6370-40BC-AD4A-821B842B293B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DFEE722D-6370-40BC-AD4A-821B842B293B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DFEE722D-6370-40BC-AD4A-821B842B293B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED31698F-8A39-4051-8D2F-61B4E898AE87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED31698F-8A39-4051-8D2F-61B4E898AE87}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED31698F-8A39-4051-8D2F-61B4E898AE87}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED31698F-8A39-4051-8D2F-61B4E898AE87}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48816586-71BB-4BB8-80ED-16839A6B4715}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48816586-71BB-4BB8-80ED-16839A6B4715}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48816586-71BB-4BB8-80ED-16839A6B4715}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48816586-71BB-4BB8-80ED-16839A6B4715}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

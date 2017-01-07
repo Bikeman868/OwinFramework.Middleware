@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Owin.Framework.Dart</id>
+    <version>2.2.1</version>
+    <title>Owin.Framework.Dart</title>
+    <authors>Martin Halliday</authors>
+    <owners>Martin Halliday</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Owin middleware to serve applications written in Dart</description>
+    <copyright>Copyright Martin Halliday 2016</copyright>
+    <releaseNotes>First release version</releaseNotes>
+    <summary>Serves an application written in the Dart programming language.</summary>
+    <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Dart</projectUrl>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <tags>OWIN framework Dart</tags>
+    <dependencies>
+      <dependency id="Owin.Framework" version="2.2.1" />
+      <dependency id="Newtonsoft.Json" version="7.0.1" />
+    </dependencies>
+    <references>
+    </references>
+  </metadata>
+  <files>
+    <file src="..\OwinFramework.Dart\bin\Net40\Release\OwinFramework.Dart.dll" target="lib\net40"/>
+    <file src="..\OwinFramework.Dart\bin\Net45\Release\OwinFramework.Dart.dll" target="lib\net45"/>
+    <file src="..\*.md" target=""/>
+  </files>
+</package>

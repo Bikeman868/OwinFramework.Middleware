@@ -71,13 +71,13 @@
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OwinFramework, Version=2.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\Owin.Framework.2.2.0\lib\net45\OwinFramework.dll</HintPath>
+    <Reference Include="OwinFramework, Version=2.2.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.2.2.1\lib\net45\OwinFramework.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="OwinFramework.Configuration.Urchin, Version=2.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\Owin.Framework.Urchin.2.2.0\lib\net45\OwinFramework.Configuration.Urchin.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -92,6 +92,8 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="HostingEnvironment.cs" />
+    <Compile Include="Package.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
@@ -106,11 +108,17 @@
     </None>
     <None Include="packages.config" />
     <None Include="readme.md" />
+    <None Include="ui\pubspec.yaml" />
+    <None Include="ui\web\main.dart" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OwinFramework.AnalysisReporter\OwinFramework.AnalysisReporter.Net45.csproj">
       <Project>{bb10f37c-a3b3-4901-852f-64915bc12a61}</Project>
       <Name>OwinFramework.AnalysisReporter.Net45</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\OwinFramework.Dart\OwinFramework.Dart.Net45.csproj">
+      <Project>{dfee722d-6370-40bc-ad4a-821b842b293b}</Project>
+      <Name>OwinFramework.Dart.Net45</Name>
     </ProjectReference>
     <ProjectReference Include="..\OwinFramework.DefaultDocument\OwinFramework.DefaultDocument.Net45.csproj">
       <Project>{7AEBA527-28B2-4081-BEF5-32C98316CC90}</Project>
@@ -145,6 +153,9 @@
     <Content Include="exception.html">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="ui\web\favicon.ico" />
+    <Content Include="ui\web\index.html" />
+    <Content Include="ui\web\styles.css" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="home.html">
