@@ -32,9 +32,6 @@ namespace OwinFramework.Dart
         [JsonProperty("maximumCacheTime")]
         public TimeSpan MaximumCacheTime { get; set; }
 
-        [JsonProperty("totalCacheSize")]
-        public long TotalCacheSize { get; set; }
-
         [JsonProperty("requiredPermission")]
         public string RequiredPermission { get; set; }
 
@@ -76,7 +73,7 @@ namespace OwinFramework.Dart
                 new ExtensionConfiguration{Extension = ".htm", MimeType = "text/html", Expiry = oneWeek, Processing = FileProcessing.Html},
                 new ExtensionConfiguration{Extension = ".shtml", MimeType = "text/html", Expiry = oneWeek, Processing = FileProcessing.Html},
                 new ExtensionConfiguration{Extension = ".txt", MimeType = "text/plain", Expiry = oneHour},
-                new ExtensionConfiguration{Extension = ".css", MimeType = "text/css", Expiry = oneWeek, Processing = FileProcessing.Css},
+                new ExtensionConfiguration{Extension = ".css", MimeType = "text/css", Expiry = oneWeek, Processing = FileProcessing.Less},
 
                 new ExtensionConfiguration{Extension = ".js", MimeType = "application/javascript", Expiry = oneHour, Processing = FileProcessing.JavaScript},
                 new ExtensionConfiguration{Extension = ".dart", MimeType = "application/dart", Expiry = oneHour, Processing = FileProcessing.Dart}
@@ -84,11 +81,10 @@ namespace OwinFramework.Dart
 
             MaximumFileSizeToCache = 32 * 1024;
             MaximumCacheTime = TimeSpan.FromHours(1);
-            TotalCacheSize = 50 * 1024 * 1024;
         }
     }
 
-    internal enum FileProcessing { None, Html, Css, Dart, JavaScript }
+    internal enum FileProcessing { None, Html, Css, Dart, JavaScript, Less }
 
 
     internal class ExtensionConfiguration

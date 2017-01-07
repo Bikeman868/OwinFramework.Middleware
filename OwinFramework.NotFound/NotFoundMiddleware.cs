@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
+using OwinFramework.Interfaces.Utility;
 
 namespace OwinFramework.NotFound
 {
@@ -15,6 +16,7 @@ namespace OwinFramework.NotFound
         IMiddleware<object>,
         InterfacesV1.Capability.IConfigurable
     {
+        private readonly IHostingEnvironment _hostingEnvironment;
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
@@ -25,8 +27,9 @@ namespace OwinFramework.NotFound
         private FileInfo _pageTemplateFile;
         private PathString _configPage;
 
-        public NotFoundMiddleware()
+        public NotFoundMiddleware(IHostingEnvironment hostingEnvironment)
         {
+            _hostingEnvironment = hostingEnvironment;
             ConfigurationChanged(new NotFoundConfiguration());
             this.RunLast();
         }
@@ -70,7 +73,7 @@ namespace OwinFramework.NotFound
             FileInfo pageTemplateFile = null;
             if (!string.IsNullOrEmpty(configuration.Template))
             {
-                var fullPath = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase, configuration.Template);
+                var fullPath = _hostingEnvironment.MapPath(configuration.Template);
                 pageTemplateFile = new FileInfo(fullPath);
             }
 

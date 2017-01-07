@@ -10,6 +10,7 @@
              span.code{
                  font-family: courrier;
                  font-size: 13px;
+                 font-weight: bolder;
              }
 
              table.properties {
@@ -34,6 +35,7 @@
                 border-style: solid;
                 border-color: #666666;
                 background-color: #ffffff;
+                vertical-align: top;
             }
 
             table.properties td.property {
@@ -72,14 +74,14 @@
                 <td>
                     <p>
                         Configures the URL within your web site where the Dart UI will be served. If your whole web site
-                        is written as Dart Single Page Application you can set this to / so that when visitors to your
-                        site go to http://mysite.com/ they will be presented with the Dart authored UI.
+                        is written as Dart Single Page Application you can set this to <span class="code">/</span> so that 
+                        when visitors to your site go to http://mysite.com/ they will be presented with the Dart authored UI.
                     </p>
                     <p>
                         The default setting for this property is <span class="code">/ui</span> which means that any requests
                         to your site that begin with <span class="code">/ui</span> could be served as Dart files or related
-                        assets (provided all of the other criteria are met). So for example a URL like
-                        <span class="code">/ui/images/logo.jpg</span> would be a potential UI file resource.
+                        assets. So for example a URL like <span class="code">/ui/images/logo.jpg</span> would be treated as
+                        a resource for your Dart application.
                     </p>
                     <p>
                         This middleware will only serve files that actually exist in the file system. If the
@@ -170,6 +172,25 @@
                     <p>
                         An array of file extensions to serve. Any files with extensions not on this list will not be served.
                     </p>
+                    <p>
+                        Each file extension has some additional parameters that can be configured to specify how these
+                        files should be handled as follows:
+                    </p>
+                    <ul>
+                        <li><span class="code">extension</span><span> is a file extension to serve including leading period</span></li>
+                        <li><span class="code">mimeType</span><span> is what to send back to the browser in the <span class="code">Content-Type</span> header</span></li>
+                        <li><span class="code">processing</span><span> specified what transformations are applied to the file on disk before returning it t the browser (see below)</span></li>
+                        <li><span class="code">expiry</span><span> is how long the broswer can cache this file for. Set to null to disable browser caching</span></li>
+                    </ul>
+                    <p>The possible values for the <span class="code">processing</span> attribute are:</p>
+                    <ul>
+                        <li><span class="code">none</span><span> which means serve the file excatly as it is on disk</span></li>
+                        <li><span class="code">html</span><span> replaces all verson tags with the current version number so that versioned assets will br requested by the browser</span></li>
+                        <li><span class="code">javaScript</span><span> has the same processing as html</span></li>
+                        <li><span class="code">css</span><span> this is the same as <span class="code">none</span> in this version of the code</span></li>
+                        <li><span class="code">dart</span><span> this is the same as <span class="code">none</span> in this version of the code</span></li>
+                        <li><span class="code">less</span><span> runs the file content through the LESS compiler and sends the compiled CSS to the browser</span></li>
+                    </ul>
                 </td>
             </tr>
             <tr>
@@ -209,19 +230,6 @@
                     <p>
                         Files will not be cached in memory for longer than this timespan. This enabled you
                         to replace the files on the file system and have them gradually replace the old ones.
-                    </p>
-                </td>
-            </tr>
-            <tr>
-                <td class="property">TotalCacheSize</td>
-                <td>{totalCacheSize.default}</td>
-                <td>{totalCacheSize}</td>
-                <td>
-                    <p>
-                        The maximum amount of memeory that will be occupied by cached copies of files.
-                        You can set this to zero to cache all files, but if this results in the operating
-                        system swapping virtual memory to disk then performance of your site will be severely
-                        impaired.
                     </p>
                 </td>
             </tr>

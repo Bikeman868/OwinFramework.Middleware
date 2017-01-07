@@ -1,0 +1,80 @@
+﻿<html>
+    <head>
+        <title>Owin Framework output cache middleware configuration</title>
+        <style type="text/css">
+             body{
+                 font-family: verdana,arial,sans-serif;
+                 font-size: 11px;
+             }
+
+             span.code{
+                 font-family: courrier;
+                 font-size: 13px;
+             }
+
+             table.properties {
+                 font-size: 11px;
+                 color: #333333;
+                 border-width: 1px;
+                 border-color: #666666;
+                 border-collapse: collapse;
+             }
+
+            table.properties th {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #dedede;
+            }
+
+            table.properties td {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #ffffff;
+            }
+
+            table.properties td.property {
+                font-weight: bold
+            }
+        </style>    
+    </head>
+    <body>
+        <h1>Owin Framework output cache middleware configuration</h1>
+        <p>The output cache middleware in the Owin  Framework supports the following configuration options:</p>
+        <table class="properties">
+            <tr>
+                <th>Property</th>
+                <th>Default</th>
+                <th>Current</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td class="property">Template</td>
+                <td>{template.default}</td>
+                <td>{template}</td>
+                <td>
+                    <p>
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">DocumentationRootUrl</td>
+                <td>{documentationUrl.default}</td>
+                <td>{documentationUrl}</td>
+                <td>
+                    <p>
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <p>
+            This middleware is configured the same way as all other middleware in the Owin Framework; you need 
+            to construct a class that implements <span class="code">IConfiguration</span> then add a fluid 
+            <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin 
+            Framework builder. Please read Owin Framework documentation on configuration for full details with examples.
+        </p>
+    </body>
+</html>

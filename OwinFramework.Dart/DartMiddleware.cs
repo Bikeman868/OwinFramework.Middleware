@@ -10,7 +10,6 @@ using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
 using OwinFramework.Interfaces.Utility;
-using OwinFramework.InterfacesV1.Capability;
 
 namespace OwinFramework.Dart
 {
@@ -66,12 +65,9 @@ namespace OwinFramework.Dart
             var outputCache = context.GetFeature<InterfacesV1.Middleware.IOutputCache>();
             if (outputCache != null)
             {
-                var largeFile = file.Length > _configuration.MaximumFileSizeToCache;
-                outputCache.Category = largeFile ? "LargeStaticFile" : "SmallStaticFile";
+                outputCache.Category = "StaticFile";
                 outputCache.MaximumCacheTime = _configuration.MaximumCacheTime;
-                outputCache.Priority = largeFile 
-                    ? InterfacesV1.Middleware.CachePriority.Never 
-                    : InterfacesV1.Middleware.CachePriority.High;
+                outputCache.Priority = InterfacesV1.Middleware.CachePriority.High;
             }
 
             if (fileContext.Configuration != null && fileContext.IsVersioned)
@@ -96,17 +92,27 @@ namespace OwinFramework.Dart
         {
             return Task.Factory.StartNew(() =>
             {
-                byte[] content;
-                using (var stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
-                {
-                    content = new byte[stream.Length];
-                    stream.Read(content, 0, content.Length);
-                }
 
-                if (fileContext.Configuration.Processing != FileProcessing.None)
+                context.Response.ContentType = fileContext.Configuration.MimeType;
+
+                if (fileContext.Configuration.Processing == FileProcessing.None)
                 {
-                    var encoding = Encoding.UTF8;
-                    var text = encoding.GetString(content);
+                    byte[] content;
+                    using (var stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+                    {
+                        content = new byte[stream.Length];
+                        stream.Read(content, 0, content.Length);
+                    }
+                    context.Response.ContentLength = content.Length;
+                    context.Response.Write(content, 0, content.Length);
+                }
+                else
+                {
+                    string text;
+                    using (var streamReader = fileInfo.OpenText())
+                    {
+                        text = streamReader.ReadToEnd();
+                    }
                     switch (fileContext.Configuration.Processing)
                     {
                         case FileProcessing.Html:
@@ -116,12 +122,12 @@ namespace OwinFramework.Dart
                         case FileProcessing.Dart:
                         case FileProcessing.Css:
                             break;
+                        case FileProcessing.Less:
+                            text = dotless.Core.Less.Parse(text);
+                            break;
                     }
-                    content = encoding.GetBytes(text);
+                    context.Response.Write(text);
                 }
-                context.Response.ContentType = fileContext.Configuration.MimeType;
-                context.Response.ContentLength = content.Length;
-                context.Response.Write(content, 0, content.Length);
             });
         }
 
@@ -271,7 +277,6 @@ namespace OwinFramework.Dart
             document = document.Replace("{fileExtensions}", formatExtensions(_configuration.FileExtensions));
             document = document.Replace("{maximumFileSizeToCache}", _configuration.MaximumFileSizeToCache.ToString());
             document = document.Replace("{maximumCacheTime}", _configuration.MaximumCacheTime.ToString());
-            document = document.Replace("{totalCacheSize}", _configuration.TotalCacheSize.ToString());
             document = document.Replace("{requiredPermission}", _configuration.RequiredPermission);
             document = document.Replace("{version}", _configuration.Version.ToString());
 
@@ -285,7 +290,6 @@ namespace OwinFramework.Dart
             document = document.Replace("{fileExtensions.default}", formatExtensions(defaultConfiguration.FileExtensions));
             document = document.Replace("{maximumFileSizeToCache.default}", defaultConfiguration.MaximumFileSizeToCache.ToString());
             document = document.Replace("{maximumCacheTime.default}", defaultConfiguration.MaximumCacheTime.ToString());
-            document = document.Replace("{totalCacheSize.default}", defaultConfiguration.TotalCacheSize.ToString());
             document = document.Replace("{requiredPermission.default}", defaultConfiguration.RequiredPermission);
             document = document.Replace("{version.default}", defaultConfiguration.Version.ToString());
 
@@ -315,17 +319,17 @@ namespace OwinFramework.Dart
             get { return "Maps URLs onto physical files and returns those files to the requestor"; }
         }
 
-        public IList<IEndpointDocumentation> Endpoints 
+        public IList<InterfacesV1.Capability.IEndpointDocumentation> Endpoints 
         { 
             get 
             {
-                var documentation = new List<IEndpointDocumentation>
+                var documentation = new List<InterfacesV1.Capability.IEndpointDocumentation>
                 {
                     new EndpointDocumentation
                     {
                         RelativePath = _configuration.DartUiRootUrl,
                         Description = "A UI written in the Dart programming language",
-                        Attributes = new List<IEndpointAttributeDocumentation>
+                        Attributes = new List<InterfacesV1.Capability.IEndpointAttributeDocumentation>
                         {
                             new EndpointAttributeDocumentation
                             {
@@ -339,7 +343,7 @@ namespace OwinFramework.Dart
                     {
                         RelativePath = _configuration.DocumentationRootUrl,
                         Description = "Documentation of the configuration options for the Dart middleware",
-                        Attributes = new List<IEndpointAttributeDocumentation>
+                        Attributes = new List<InterfacesV1.Capability.IEndpointAttributeDocumentation>
                         {
                             new EndpointAttributeDocumentation
                             {
@@ -354,15 +358,15 @@ namespace OwinFramework.Dart
             } 
         }
 
-        private class EndpointDocumentation : IEndpointDocumentation
+        private class EndpointDocumentation : InterfacesV1.Capability.IEndpointDocumentation
         {
             public string RelativePath { get; set; }
             public string Description { get; set; }
             public string Examples { get; set; }
-            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
+            public IList<InterfacesV1.Capability.IEndpointAttributeDocumentation> Attributes { get; set; }
         }
 
-        private class EndpointAttributeDocumentation : IEndpointAttributeDocumentation
+        private class EndpointAttributeDocumentation : InterfacesV1.Capability.IEndpointAttributeDocumentation
         {
             public string Type { get; set; }
             public string Name { get; set; }
