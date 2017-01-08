@@ -65,6 +65,7 @@
   <ItemGroup>
     <Compile Include="DartConfiguration.cs" />
     <Compile Include="DartMiddleware.cs" />
+    <Compile Include="Package.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

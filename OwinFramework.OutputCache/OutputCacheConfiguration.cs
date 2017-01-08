@@ -7,9 +7,6 @@ namespace OwinFramework.OutputCache
     [Serializable]
     internal class OutputCacheConfiguration
     {
-        [JsonProperty("maximumTotalMemory")]
-        public long MaximumTotalMemory { get; set; }
-
         [JsonProperty("fileTypes")]
         public FileTypes FileTypes { get; set; }
 
@@ -21,7 +18,6 @@ namespace OwinFramework.OutputCache
 
         public OutputCacheConfiguration()
         {
-            MaximumTotalMemory = 1000 * 1024 * 1024;
             FileTypes = new FileTypes();
             MaximumCacheTime = TimeSpan.FromHours(1);
             Urls = new[]{ new UrlPatternConfiguration()};

@@ -61,6 +61,12 @@ namespace OwinFramework.Middleware.TestServer
                 .As("Dart")
                 .ConfigureWith(config, "/middleware/dart");
 
+            // The dart middleware will allow the example Dart UI to run in browsers that support Dart
+            // natively as well as those that do not.
+            builder.Register(ninject.Get<OutputCache.OutputCacheMiddleware>())
+                .As("Output cache")
+                .ConfigureWith(config, "/middleware/outputCache");
+
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<RouteVisualizer.RouteVisualizerMiddleware>())
                 .As("Route visualizer")
