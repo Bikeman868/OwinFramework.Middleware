@@ -24,12 +24,10 @@ namespace OwinFramework.OutputCache
 
         private IDisposable _configurationRegistration;
         private OutputCacheConfiguration _configuration;
-        private readonly string _contextKey;
 
         public OutputCacheMiddleware(InterfacesV1.Facilities.ICache cache)
         {
             _cache = cache;
-            _contextKey = Guid.NewGuid().ToShortString(false);
             ConfigurationChanged(new OutputCacheConfiguration());
         }
 
@@ -75,7 +73,7 @@ namespace OwinFramework.OutputCache
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
-            var upstreamOutputCache = new OutputCache(_cache, context);
+            var upstreamOutputCache = new OutputCache(_cache, context, _configuration);
             context.SetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>(upstreamOutputCache);
 
             return next();
@@ -261,21 +259,25 @@ namespace OwinFramework.OutputCache
             InterfacesV1.Upstream.IUpstreamOutputCache,
             InterfacesV1.Middleware.IOutputCache
         {
+            // IUpstreamOutputCache
             public bool CachedContentIsAvailable { get { return Response != null; } }
             public TimeSpan? TimeInCache { get; private set; }
             public bool UseCachedContent { get; set; }
-            public string CacheKey { get; private set; }
-            public CachedResponse Response { get; private set; }
+
+            // IOutputCache
             public string Category { get; set; }
             public TimeSpan MaximumCacheTime { get; set; }
             public InterfacesV1.Middleware.CachePriority Priority { get; set; }
 
+            public string CacheKey { get; private set; }
+            public CachedResponse Response { get; private set; }
             private readonly InterfacesV1.Facilities.ICache _cache;
             private readonly IOwinContext _context;
 
             public OutputCache(
                 InterfacesV1.Facilities.ICache cache, 
-                IOwinContext context)
+                IOwinContext context,
+                OutputCacheConfiguration configuration)
             {
                 _cache = cache;
                 _context = context;
@@ -288,6 +290,11 @@ namespace OwinFramework.OutputCache
                     TimeInCache = DateTime.UtcNow - Response.WhenCached;
                     UseCachedContent = true;
                 }
+
+                // TODO: Examine middleware configuration and compare with the request to decide the caching strategy
+                MaximumCacheTime = configuration.MaximumCacheTime.HasValue ? configuration.MaximumCacheTime.Value : TimeSpan.FromMinutes(10);
+                Category = "Unknown";
+                Priority = InterfacesV1.Middleware.CachePriority.Never;
             }
 
             public void CaptureResponse()

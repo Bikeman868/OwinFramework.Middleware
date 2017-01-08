@@ -205,7 +205,7 @@ namespace OwinFramework.Less
                 if (outputCache.TimeInCache.HasValue)
                 {
                     var timeSinceFileChanged = DateTime.UtcNow - cssFileContext.PhysicalFile.LastWriteTimeUtc;
-                    outputCache.UseCachedContent = outputCache.TimeInCache.Value > timeSinceFileChanged;
+                    outputCache.UseCachedContent = outputCache.TimeInCache.Value < timeSinceFileChanged;
                 }
             }
 
