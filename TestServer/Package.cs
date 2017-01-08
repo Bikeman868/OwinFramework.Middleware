@@ -19,7 +19,8 @@ namespace OwinFramework.Middleware.TestServer
             {
                 return new List<IocRegistration>
                 {
-                    new IocRegistration().Init<IHostingEnvironment, HostingEnvironment>()
+                    new IocRegistration().Init<IHostingEnvironment, HostingEnvironment>(),
+                    new IocRegistration().Init<InterfacesV1.Facilities.ICache, Facilities.Cache>()
                 };
             }
         }

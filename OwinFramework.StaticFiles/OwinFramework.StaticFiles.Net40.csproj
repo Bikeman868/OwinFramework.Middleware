@@ -59,6 +59,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Package.cs" />
     <Compile Include="StaticFilesConfiguration.cs" />
     <Compile Include="StaticFilesMiddleware.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

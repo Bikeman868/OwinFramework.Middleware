@@ -42,7 +42,7 @@
             "defaultPage": "/home.html",
             "documentationRootUrl": "/owin/defaultDocument"
         },
-        "dart": { 
+        "dart": {
             "dartUiRootUrl": "/ui",
             "defaultDocument": "index.html",
             "documentationRootUrl": "/owin/dart",
@@ -54,6 +54,9 @@
             "totalCacheSize": 1000000,
             "maximumCacheTime": "01:00:00",
             "requiredPermission": ""
+        },
+        "outputCache": { 
+            "maximumCacheTime": "01:00:00"
         }
     }
 }

@@ -13,7 +13,6 @@ namespace OwinFramework.StaticFiles
         public ExtensionConfiguration[] FileExtensions { get; set; }
         public long MaximumFileSizeToCache { get; set; }
         public TimeSpan MaximumCacheTime { get; set; }
-        public long TotalCacheSize { get; set; }
         public string RequiredPermission { get; set; }
 
         public StaticFilesConfiguration()
@@ -34,7 +33,6 @@ namespace OwinFramework.StaticFiles
             };
             MaximumFileSizeToCache = 32 * 1024;
             MaximumCacheTime = TimeSpan.FromHours(1);
-            TotalCacheSize = 50 * 1024 * 1024;
         }
     }
 

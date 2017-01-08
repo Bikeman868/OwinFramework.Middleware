@@ -9,6 +9,7 @@ using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
+using OwinFramework.Interfaces.Utility;
 
 namespace OwinFramework.StaticFiles
 {
@@ -24,10 +25,13 @@ namespace OwinFramework.StaticFiles
         string IMiddleware.Name { get; set; }
 
         private readonly string _contextKey;
+        private readonly IHostingEnvironment _hostingEnvironment;
 
-        public StaticFilesMiddleware()
+        public StaticFilesMiddleware(IHostingEnvironment hostingEnvironment)
         {
+            _hostingEnvironment = hostingEnvironment;
             _contextKey = Guid.NewGuid().ToShortString(false);
+
             this.RunAfter<InterfacesV1.Middleware.IOutputCache>(null, false);
             this.RunAfter<InterfacesV1.Middleware.IAuthorization>(null, false);
         }
@@ -182,7 +186,7 @@ namespace OwinFramework.StaticFiles
                         if (Path.IsPathRooted(rootFolder))
                             _rootFolder = rootFolder;
                         else
-                            _rootFolder = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase, rootFolder);
+                            _rootFolder = _hostingEnvironment.MapPath(rootFolder);
 
                         var rootUrl = cfg.StaticFilesRootUrl ?? "";
                         rootUrl = rootUrl.Replace("\\", "/");
@@ -236,7 +240,6 @@ namespace OwinFramework.StaticFiles
             document = document.Replace("{fileExtensions}", formatExtensions(_configuration.FileExtensions));
             document = document.Replace("{maximumFileSizeToCache}", _configuration.MaximumFileSizeToCache.ToString());
             document = document.Replace("{maximumCacheTime}", _configuration.MaximumCacheTime.ToString());
-            document = document.Replace("{totalCacheSize}", _configuration.TotalCacheSize.ToString());
             document = document.Replace("{requiredPermission}", _configuration.RequiredPermission);
 
             var defaultConfiguration = new StaticFilesConfiguration();
@@ -248,7 +251,6 @@ namespace OwinFramework.StaticFiles
             document = document.Replace("{fileExtensions.default}", formatExtensions(defaultConfiguration.FileExtensions));
             document = document.Replace("{maximumFileSizeToCache.default}", defaultConfiguration.MaximumFileSizeToCache.ToString());
             document = document.Replace("{maximumCacheTime.default}", defaultConfiguration.MaximumCacheTime.ToString());
-            document = document.Replace("{totalCacheSize.default}", defaultConfiguration.TotalCacheSize.ToString());
             document = document.Replace("{requiredPermission.default}", defaultConfiguration.RequiredPermission);
 
             context.Response.ContentType = "text/html";
