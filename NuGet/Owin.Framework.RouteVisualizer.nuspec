@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Owin.Framework.RouteVisualizer</id>
-    <version>2.2.1</version>
+    <version>2.2.2</version>
     <title>Owin.Framework.RouteVisualizer</title>
     <authors>Martin Halliday</authors>
     <owners>Martin Halliday</owners>
@@ -16,7 +16,7 @@
     <tags>OWIN framework svg pipeline visualization</tags>
     <dependencies>
       <dependency id="Owin.Framework" version="2.2.1" />
-      <dependency id="Svg" version="2.2.1" />
+      <dependency id="Svg" version="2.2.2" />
     </dependencies>
     <references>
     </references>

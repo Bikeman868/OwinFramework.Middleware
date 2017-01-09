@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Owin.Framework.AnalysisReporter</id>
-    <version>2.2.1</version>
+    <version>2.2.2</version>
     <title>Owin.Framework.AnalysisReporter</title>
     <authors>Martin Halliday</authors>
     <owners>Martin Halliday</owners>
@@ -15,7 +15,7 @@
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
     <tags>OWIN framework analytics report</tags>
     <dependencies>
-      <dependency id="Owin.Framework" version="2.2.1" />
+      <dependency id="Owin.Framework" version="2.2.2" />
       <dependency id="Newtonsoft.Json" version="7.0.1" />
     </dependencies>
     <references>

@@ -41,8 +41,9 @@ namespace OwinFramework.Middleware.TestServer
             // Get the Owin Framework builder registered with IoC
             var builder = ninject.Get<IBuilder>();
 
-            // The static files middleware will allow remote clients to retrieve files from within this project
-            // Configuration options limit the files that can be retrieved this way.
+            // The static files middleware will allow remote clients to retrieve files of certian types
+            // Configuration options limit the files that can be retrieved this way. The ConfigureWith
+            // fluid method below specifies the location of this configuration in the config.json file
             builder.Register(ninject.Get<StaticFiles.StaticFilesMiddleware>())
                 .As("Static files")
                 .ConfigureWith(config, "/middleware/staticFiles")
@@ -56,13 +57,13 @@ namespace OwinFramework.Middleware.TestServer
                 .RunAfter("Dart");
                 
             // The dart middleware will allow the example Dart UI to run in browsers that support Dart
-            // natively as well as those that do not.
+            // natively as well as supplying compiled JavaScript to browsers that dont support Dart natively.
             builder.Register(ninject.Get<Dart.DartMiddleware>())
                 .As("Dart")
                 .ConfigureWith(config, "/middleware/dart");
 
-            // The dart middleware will allow the example Dart UI to run in browsers that support Dart
-            // natively as well as those that do not.
+            // Output caching just makes the web site more efficient by capturing the output from
+            // downstream middleware and reusing it for the next request
             builder.Register(ninject.Get<OutputCache.OutputCacheMiddleware>())
                 .As("Output cache")
                 .ConfigureWith(config, "/middleware/outputCache");
@@ -72,24 +73,27 @@ namespace OwinFramework.Middleware.TestServer
                 .As("Route visualizer")
                 .ConfigureWith(config, "/middleware/visualizer");
 
-            // The default document middleware will rewrite a request for the root document to an actual page on the site
+            // The default document middleware will rewrite a request for the root document to a page on the site
             builder.Register(ninject.Get<DefaultDocument.DefaultDocumentMiddleware>())
                 .As("Default document")
                 .ConfigureWith(config, "/middleware/defaultDocument");
 
             // The not found middleware will always return a 404 response. Configure it to run after all
             // other middleware to catch requests that no other middleware handled
-            //builder.Register(ninject.Get<NotFound.NotFoundMiddleware>())
-            //    .As("Not found")
-            //    .ConfigureWith(config, "/middleware/notFound")
-            //    .RunLast();
+            builder.Register(ninject.Get<NotFound.NotFoundMiddleware>())
+                .As("Not found")
+                .ConfigureWith(config, "/middleware/notFound")
+                .RunLast();
 
-            // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
+            // The analysis reporter middleware will format analytics from middleware that supports
+            // this feature. The middleware can produce reports in various formats including
+            // HTML, plain text and JSON
             builder.Register(ninject.Get<AnalysisReporter.AnalysisReporterMiddleware>())
                 .As("Analysis reporter")
                 .ConfigureWith(config, "/middleware/analysis");
 
-            // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
+            // The documenter middleware will extract documentation from middleware that is 
+            // self documenting
             builder.Register(ninject.Get<Documenter.DocumenterMiddleware>())
                 .As("Documenter")
                 .ConfigureWith(config, "/middleware/documenter");
