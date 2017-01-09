@@ -71,12 +71,16 @@
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OwinFramework, Version=2.2.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.2.2.1\lib\net45\OwinFramework.dll</HintPath>
+    <Reference Include="OwinFramework, Version=2.2.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.2.2.2\lib\net45\OwinFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OwinFramework.Configuration.Urchin, Version=2.2.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.Urchin.2.2.0\lib\net45\OwinFramework.Configuration.Urchin.dll</HintPath>
+    <Reference Include="OwinFramework.Configuration.Urchin, Version=2.2.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.Urchin.2.2.2\lib\net45\OwinFramework.Configuration.Urchin.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="OwinFramework.Facilities.Cache.Local, Version=2.2.2.27647, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.Facilities.Cache.Local.2.2.2\lib\net45\OwinFramework.Facilities.Cache.Local.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />
@@ -92,7 +96,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Facilities\Cache.cs" />
     <Compile Include="HostingEnvironment.cs" />
     <Compile Include="Package.cs" />
     <Compile Include="Program.cs" />

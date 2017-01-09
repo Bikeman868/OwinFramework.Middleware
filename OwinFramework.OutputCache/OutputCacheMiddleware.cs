@@ -329,7 +329,7 @@ namespace OwinFramework.OutputCache
             private string GetCacheKey(IOwinContext context)
             {
                 var uri = context.Request.Uri;
-                return uri.PathAndQuery.ToLower();
+                return "OutputCache:" + uri.PathAndQuery.ToLower();
             }
         }
     }
