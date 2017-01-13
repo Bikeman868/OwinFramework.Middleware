@@ -1,14 +1,16 @@
 ﻿# OWIN Framework No Found Middleware
 
-This middleware will return a 404 response always. It will place itself after all other 
-middleware in the pipeline so that when no other middleware handled the request a 404
-response will be returned to the client.
+This middleware will improve the performance of your web site by capturing the output from
+downstream middleware and saving it in the Cache facility, then using the cached response
+when another identical request is received.
 
-If you want this behaviour only on certain routes through the OWIN pipeline then you can
-configure this middleware only on those routes. You can also add multiple instances
-of this middleware to the OWIN pipeline to have different 404 templates for different
-routes. For example if you have an API that returns JSON, you might want the API to also
-return JSON in the 404 case.
+The output is only cached when dwnstream middleware indicates that it is valid to cache
+the response. Other Middleware (like the static file middleware) will communicate with
+the output cache when installed to tell it when the response can be cached.
+
+Downstream middleware can set a category and a priority in the output cache for each request.
+The output cache can be configured with different cache behavours for all combinations
+of these two values.
 
 ## Configuration
 
@@ -20,32 +22,12 @@ With the OWIN Framework the application developer chooses where in the configura
 each middleware will read its configuration from (this is so that you can have more than one
 of the same middleware in your pipeline with different configurations).
 
-This middleware has very few configuration options. See the `NotFoundConfiguration.cs`
-for details.
+The default configuration of this middleware will work well for many web applications. If you want
+to change it, you need to define a list of rules. These rules are evaluated in order until one
+matches the request. If no rules match the request then the output is not cached, so configuring
+an empty set of rules effectively disables the output cache.
 
-This is an example of adding the not found middleware to the OWIN Framework pipeline builder.
-
-```
-builder.Register(ninject.Get<OwinFramework.NotFound.NotFoundMiddleware>())
-    .As("Not found")
-    .ConfigureWith(config, "/middleware/notFound");
-```
-
-If you uses the above code, and you use [Urchin](https://github.com/Bikeman868/Urchin) for 
-configuration management then your configuration file can be set up like this:
-
-```
-{
-    "middleware": {
-        "notFound": {
-            "template": "\\templates\\404.html"
-        }
-    }
-}
-
-```
-
-This configuration specifies that:
-
-* The page template for 404 responses is in a file called "404.html" in a "templates" folder within 
-the web site.
+Each rule can match a priority value, a category, both or neither. When a rule is matched it
+defines how long the cached data will be retained on the server or on the browser or both
+or neither. It also specifies the category name to pass to the cache facility. The cache
+facility can use this category to configure it's behavior.

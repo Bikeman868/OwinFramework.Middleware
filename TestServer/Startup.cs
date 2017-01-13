@@ -60,7 +60,8 @@ namespace OwinFramework.Middleware.TestServer
             // natively as well as supplying compiled JavaScript to browsers that dont support Dart natively.
             builder.Register(ninject.Get<Dart.DartMiddleware>())
                 .As("Dart")
-                .ConfigureWith(config, "/middleware/dart");
+                .ConfigureWith(config, "/middleware/dart")
+                .RunAfter("Output cache");
 
             // Output caching just makes the web site more efficient by capturing the output from
             // downstream middleware and reusing it for the next request
