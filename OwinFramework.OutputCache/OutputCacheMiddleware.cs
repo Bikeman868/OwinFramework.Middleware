@@ -14,7 +14,8 @@ namespace OwinFramework.OutputCache
     public class OutputCacheMiddleware:
         IMiddleware<InterfacesV1.Middleware.IOutputCache>,
         IUpstreamCommunicator<InterfacesV1.Upstream.IUpstreamOutputCache>,
-        InterfacesV1.Capability.IConfigurable
+        InterfacesV1.Capability.IConfigurable,
+        InterfacesV1.Capability.ISelfDocumenting
     {
         private readonly InterfacesV1.Facilities.ICache _cache;
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
@@ -33,12 +34,12 @@ namespace OwinFramework.OutputCache
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
-            var cacheTime = _configuration.MaximumCacheTime;
-            if (!cacheTime.HasValue)
+            if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
+                context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
             {
-                return next();
+                return DocumentConfiguration(context);
             }
-
+            
             var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>() as OutputCache;
             if (outputCache == null)
             {
@@ -56,15 +57,7 @@ namespace OwinFramework.OutputCache
 
             var result = next();
 
-
-            switch (outputCache.Priority)
-            {
-                case InterfacesV1.Middleware.CachePriority.Always:
-                case InterfacesV1.Middleware.CachePriority.High:
-                case InterfacesV1.Middleware.CachePriority.Medium:
-                    result.ContinueWith(t => outputCache.CacheFor(cacheTime.Value));
-                    break;
-            }
+            result.ContinueWith(t => outputCache.Cache());
 
             return result;
         }
@@ -99,14 +92,69 @@ namespace OwinFramework.OutputCache
 
         private Task DocumentConfiguration(IOwinContext context)
         {
+            Func<IEnumerable<OutputCacheRule>, string> formatRules = (rules) =>
+            {
+                var sb = new StringBuilder();
+                sb.Append("<pre>[<br/>");
+                var first = true;
+                foreach (var rule in rules)
+                {
+                    if (first)
+                    {
+                        sb.Append("&nbsp;&nbsp;{<br/>");
+                        first = false;
+                    }
+                    else
+                        sb.Append(",<br/>&nbsp;&nbsp;{<br/>");
+                    sb.Append("&nbsp;&nbsp;&nbsp;&nbsp;\"category\":\"" + rule.CategoryName + "\",<br/>");
+                    sb.Append("&nbsp;&nbsp;&nbsp;&nbsp;\"priority\":\"" + rule.Priority + "\",<br/>");
+                    sb.Append("&nbsp;&nbsp;&nbsp;&nbsp;\"cacheCategory\":\"" + rule.CacheCategory + "\",<br/>");
+                    sb.Append("&nbsp;&nbsp;&nbsp;&nbsp;\"serverCacheTime\":\"" + rule.ServerCacheTime + "\",<br/>");
+                    sb.Append("&nbsp;&nbsp;&nbsp;&nbsp;\"browserCacheTime\":\"" + rule.BrowserCacheTime + "\"<br/>");
+                    sb.Append("&nbsp;&nbsp;}");
+                }
+                sb.Append("<br/>]</pre>");
+                return sb.ToString();
+            };
+            
             var document = GetEmbeddedResource("configuration.html");
-            document = document.Replace("{maximumCacheTime}", _configuration.MaximumCacheTime.ToString());
+            document = document.Replace("{maximumCacheTime}", formatRules(_configuration.Rules));
 
             var defaultConfiguration = new OutputCacheConfiguration();
-            document = document.Replace("{maximumCacheTime.default}", defaultConfiguration.MaximumCacheTime.ToString());
+            document = document.Replace("{maximumCacheTime.default}", formatRules(defaultConfiguration.Rules));
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
+        }
+
+        public Uri GetDocumentation(InterfacesV1.Capability.DocumentationTypes documentationType)
+        {
+            switch (documentationType)
+            {
+                case InterfacesV1.Capability.DocumentationTypes.Configuration:
+                    return new Uri(_configuration.DocumentationRootUrl, UriKind.Relative);
+                case InterfacesV1.Capability.DocumentationTypes.Overview:
+                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
+            }
+            return null;
+        }
+
+        public string LongDescription
+        {
+            get { return "Captures output from downstream middleware and caches it only if the downstream middleware indicates that the response can be cached and reused."; }
+        }
+
+        public string ShortDescription
+        {
+            get { return "Caches output from downstream middleware"; }
+        }
+
+        public IList<InterfacesV1.Capability.IEndpointDocumentation> Endpoints 
+        { 
+            get
+            {
+                return new List<InterfacesV1.Capability.IEndpointDocumentation>();
+            } 
         }
 
         #endregion
@@ -135,6 +183,8 @@ namespace OwinFramework.OutputCache
 
         #endregion
 
+        #region Capturing the response
+
         [Serializable]
         private class CachedResponse
         {
@@ -151,17 +201,20 @@ namespace OwinFramework.OutputCache
                 return this;
             }
 
-            public void StartCaptureResponse()
+            public void StartCaptureResponse(Action<IOwinContext> onSendingHeaders)
             {
                 _capturingStream = new CapturingStream(_context.Response.Body);
                 _context.Response.Body = _capturingStream;
 
-                _context.Response.OnSendingHeaders(state =>
-                {
-                    var cachedResponse = (state as CachedResponse);
-                    if (cachedResponse != null)
-                        cachedResponse.CaptureHeaders();
-                },  this);
+                _context.Response.OnSendingHeaders(
+                    state =>
+                    {
+                        onSendingHeaders(_context);
+                        var cachedResponse = (state as CachedResponse);
+                        if (cachedResponse != null)
+                            cachedResponse.CaptureHeaders();
+                    },  
+                    this);
             }
 
             public void EndCaptureResponse()
@@ -180,6 +233,7 @@ namespace OwinFramework.OutputCache
             private void CaptureHeaders()
             {
                 ContentType = _context.Response.ContentType;
+                // TODO: Capture all headers
             }
 
             private class CapturingStream: Stream
@@ -255,6 +309,8 @@ namespace OwinFramework.OutputCache
          
         }
 
+        #endregion
+
         private class OutputCache : 
             InterfacesV1.Upstream.IUpstreamOutputCache,
             InterfacesV1.Middleware.IOutputCache
@@ -275,6 +331,7 @@ namespace OwinFramework.OutputCache
             private readonly InterfacesV1.Facilities.ICache _cache;
             private readonly IOwinContext _context;
             private readonly OutputCacheConfiguration _configuration;
+            private OutputCacheRule _rule;
 
             public OutputCache(
                 InterfacesV1.Facilities.ICache cache, 
@@ -286,7 +343,7 @@ namespace OwinFramework.OutputCache
                 _configuration = configuration;
 
                 CacheKey = GetCacheKey(context);
-                Response = cache.Get<CachedResponse>(CacheKey, null, null, _configuration.CacheCategory);
+                Response = cache.Get<CachedResponse>(CacheKey);
                 if (Response != null)
                 {
                     Response.Initialize(context);
@@ -294,30 +351,63 @@ namespace OwinFramework.OutputCache
                     UseCachedContent = true;
                 }
 
-                // TODO: Examine middleware configuration and compare with the request to decide the caching strategy
-                MaximumCacheTime = configuration.MaximumCacheTime.HasValue ? configuration.MaximumCacheTime.Value : TimeSpan.FromMinutes(10);
-                Category = "Unknown";
+                MaximumCacheTime = TimeSpan.FromHours(1);
+                Category = "None";
                 Priority = InterfacesV1.Middleware.CachePriority.Never;
             }
 
             public void CaptureResponse()
             {
                 if (Response == null)
+                {
                     Response = new CachedResponse
                     {
                         WhenCached = DateTime.UtcNow
                     }.Initialize(_context);
+                }
 
-                Response.StartCaptureResponse();
+                Response.StartCaptureResponse(c =>
+                { 
+                    _rule = GetMatchingRule();
+                    if (_rule.BrowserCacheTime.HasValue)
+                    {
+                        c.Response.Expires = DateTime.UtcNow + _rule.BrowserCacheTime;
+                        c.Response.Headers.Set(
+                            "Cache-Control",
+                            "public, max-age=" + (int)_rule.BrowserCacheTime.Value.TotalSeconds);
+                    }
+                    else
+                    {
+                        c.Response.Headers.Set("Cache-Control", "no-cache");
+                    }
+                });
             }
 
-            public void CacheFor(TimeSpan duration)
+            public void Cache()
             {
                 if (Response != null)
                 {
                     Response.EndCaptureResponse();
-                    _cache.Put(CacheKey, Response, duration, _configuration.CacheCategory);
+
+                    if (_rule != null && _rule.ServerCacheTime.HasValue && _rule.ServerCacheTime.Value > TimeSpan.Zero)
+                    {
+                        _cache.Put(CacheKey, Response, _rule.ServerCacheTime.Value, _rule.CacheCategory);
+                    }
                 }
+            }
+
+            private OutputCacheRule GetMatchingRule()
+            {
+                if (_configuration.Rules != null)
+                {
+                    foreach (var rule in _configuration.Rules)
+                    {
+                        if (rule.Priority.HasValue && rule.Priority.Value != Priority) continue;
+                        if (!string.IsNullOrEmpty(rule.CategoryName) && !string.Equals(rule.CategoryName, Category, StringComparison.OrdinalIgnoreCase)) continue;
+                        return rule;
+                    }
+                }
+                return new OutputCacheRule();
             }
 
             public void Clear(string urlRegex)

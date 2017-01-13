@@ -1,81 +1,96 @@
 ﻿using System;
-using System.Collections.Generic;
 using Newtonsoft.Json;
+using OwinFramework.InterfacesV1.Middleware;
 
 namespace OwinFramework.OutputCache
 {
     [Serializable]
     internal class OutputCacheConfiguration
     {
-        [JsonProperty("fileTypes")]
-        public FileTypes FileTypes { get; set; }
+        /// <summary>
+        /// Rules will be evaluated in the order thet appear here. The first matching
+        /// rule will be used to determine output cache behavior. If no rules match then
+        /// the output will not be cached
+        /// </summary>
+        [JsonProperty("rules")]
+        public OutputCacheRule[] Rules { get; set; }
 
-        [JsonProperty("maximumCacheTime")]
-        public TimeSpan? MaximumCacheTime { get; set; }
-
-        [JsonProperty("cacheCategory")]
-        public string CacheCategory { get; set; }
-
-        [JsonProperty("urls")]
-        public UrlPatternConfiguration[] Urls { get; set; }
+        [JsonProperty("documentationRootUrl")]
+        public string DocumentationRootUrl { get; set; }
 
         public OutputCacheConfiguration()
         {
-            MaximumCacheTime = TimeSpan.FromHours(1);
-            CacheCategory = "Output";
-            FileTypes = new FileTypes();
-            Urls = new[]{ new UrlPatternConfiguration()};
-        }
-    }
+            DocumentationRootUrl = "/outputCache";
 
-    [Serializable]
-    internal class UrlPatternConfiguration
-    {
-        [JsonProperty("path")]
-        public string Path { get; set; }
-
-        [JsonProperty("includeSubPaths")]
-        public bool IncludeSubPaths { get; set; }
-
-        [JsonProperty("maximumTotalMemory")]
-        public long? MaximumTotalMemory { get; set; }
-
-        [JsonProperty("fileTypes")]
-        public FileTypes FileTypes { get; set; }
-
-        [JsonProperty("maximumCacheTime")]
-        public TimeSpan? MaximumCacheTime { get; set; }
-
-        [JsonProperty("maximumFileSizeToCache")]
-        public long? MaximumFileSizeToCache { get; set; }
-
-        public UrlPatternConfiguration()
-        {
-            Path = "/";
-            IncludeSubPaths = true;
-            FileTypes = new FileTypes 
+            Rules = new[]
             {
-                FileExtensionsToInclude = new[]{".html", ".htm", ".ico", ".jpg", ".bmp", ".png", ".css", ".js"},
-                FileExtensionsToExclude = new[]{".aspx"}
+                new OutputCacheRule
+                {
+                    Priority = CachePriority.Always,
+                    ServerCacheTime = TimeSpan.FromHours(3),
+                    BrowserCacheTime = TimeSpan.FromHours(48)
+                },
+                new OutputCacheRule
+                {
+                    Priority = CachePriority.High,
+                    ServerCacheTime = TimeSpan.FromHours(1),
+                    BrowserCacheTime = TimeSpan.FromHours(6)
+                },
+                new OutputCacheRule
+                {
+                    Priority = CachePriority.Medium,
+                    ServerCacheTime = TimeSpan.FromMinutes(10),
+                    BrowserCacheTime = TimeSpan.FromHours(1)
+                }
             };
-            MaximumTotalMemory = null;
-            MaximumFileSizeToCache = 50 * 1024 * 1024;
-            MaximumCacheTime = null;
         }
     }
 
-    internal class FileTypes
+    internal class OutputCacheRule
     {
-        [JsonProperty("")]
-        public string[] FileExtensionsToInclude { get; set; }
+        /// <summary>
+        /// The output cache category to match. This is set for the
+        /// request by downstream middleware
+        /// </summary>
+        [JsonProperty("category")]
+        public string CategoryName { get; set; }
 
-        [JsonProperty("")]
-        public string[] FileExtensionsToExclude { get; set; }
+        /// <summary>
+        /// The output cache priority to match. This is set for the
+        /// request by downstream middleware
+        /// </summary>
+        [JsonProperty("priority")]
+        public CachePriority? Priority { get; set; }
 
-        public FileTypes()
+        /// <summary>
+        /// When this output is cached, this category name will be used.
+        /// The cache facility can be configured to handle these categories
+        /// differently
+        /// </summary>
+        [JsonProperty("cacheCategory")]
+        public string CacheCategory { get; set; }
+
+        /// <summary>
+        /// Specifies how long to cache this content on the server. If an
+        /// identical request is received within this time, the output
+        /// cache will return the cached response rather than chaining
+        /// to downtream middleware. Set to null to disable server caching
+        /// </summary>
+        [JsonProperty("serverCacheTime")]
+        public TimeSpan? ServerCacheTime { get; set; }
+
+        /// <summary>
+        /// Specifies how long to cache this content in the browser. Headers
+        /// will be sent to the browser in the response that tells the browser
+        /// to cache this content. Set to null to instruct the browser not to
+        /// cache this content.
+        /// </summary>
+        [JsonProperty("browserCacheTime")]
+        public TimeSpan? BrowserCacheTime { get; set; }
+
+        public OutputCacheRule()
         {
-            FileExtensionsToInclude = new string[0];
-            FileExtensionsToExclude = new string[0];
+            CacheCategory = "OutputCache";
         }
     }
 
