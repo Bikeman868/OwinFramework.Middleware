@@ -45,12 +45,16 @@ namespace OwinFramework.StaticFiles
             }
 
             var staticFileContext = context.Get<StaticFileContext>(_contextKey);
-            if (staticFileContext == null || staticFileContext.PhysicalFile == null)
+            if (staticFileContext == null)
                 return next();
 
             var configuration = staticFileContext.Configuration;
             var physicalFile = staticFileContext.PhysicalFile;
+            var extentionConfiguration = staticFileContext.ExtensionConfiguration;
 
+            if (configuration == null || physicalFile == null || extentionConfiguration == null)
+                return next();
+            
             var outputCache = context.GetFeature<InterfacesV1.Middleware.IOutputCache>();
             if (outputCache != null)
             {
@@ -62,33 +66,34 @@ namespace OwinFramework.StaticFiles
                     : InterfacesV1.Middleware.CachePriority.High;
             }
 
-            SetContentType(context, staticFileContext);
-
             return Task.Factory.StartNew(() =>
                 {
-                    var buffer = new byte[32 * 1024];
-                    using (var stream = physicalFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+                    context.Response.ContentType = extentionConfiguration.MimeType;
+                    if (extentionConfiguration.MimeType.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
                     {
-                        while (true)
+                        // Text files are handled differently because they can contain preamble bytes
+                        string text;
+                        using (var streamReader = physicalFile.OpenText())
                         {
-                            var length = stream.Read(buffer, 0, buffer.Length);
-                            if (length == 0) break;
-                            context.Response.Write(buffer, 0, length);
-                            if (length < buffer.Length) break;
+                            text = streamReader.ReadToEnd();
+                        }
+                        context.Response.Write(text);
+                    }
+                    else
+                    {
+                        var buffer = new byte[32*1024];
+                        using (var stream = physicalFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+                        {
+                            while (true)
+                            {
+                                var length = stream.Read(buffer, 0, buffer.Length);
+                                if (length == 0) break;
+                                context.Response.Write(buffer, 0, length);
+                                if (length < buffer.Length) break;
+                            }
                         }
                     }
                 });
-        }
-
-        private void SetContentType(IOwinContext owinContext, StaticFileContext staticFileContext)
-        {
-            var fileExtension = staticFileContext.PhysicalFile.Extension;
-            var extensionConfiguration = staticFileContext.Configuration.FileExtensions == null 
-                ? null
-                : staticFileContext.Configuration.FileExtensions
-                    .FirstOrDefault(e => string.Equals(e.Extension, fileExtension, StringComparison.OrdinalIgnoreCase));
-            if (extensionConfiguration != null)
-                owinContext.Response.ContentType = extensionConfiguration.MimeType;
         }
 
         #region IConfigurable
@@ -96,75 +101,8 @@ namespace OwinFramework.StaticFiles
         private IDisposable _configurationRegistration;
         private StaticFilesConfiguration _configuration = new StaticFilesConfiguration();
 
-        private bool ShouldServeThisFile(
-            IOwinContext context,
-            out StaticFileContext staticFileContext)
-        {
-            staticFileContext = new StaticFileContext
-            {
-                Configuration = _configuration,
-                RootFolder = _rootFolder,
-                RootUrl = _rootUrl
-            };
-
-            var configuration = staticFileContext.Configuration;
-            if (!configuration.Enabled || !context.Request.Path.HasValue)
-                return false;
-
-            var rootUrl = staticFileContext.RootUrl;
-            FileInfo physicalFile = null;
-
-            var requestPath = context.Request.Path.Value;
-            if (requestPath.StartsWith("/")) requestPath = requestPath.Substring(1);
-
-            if (rootUrl.Length == 0)
-            {
-                if (configuration.IncludeSubFolders ||
-                    requestPath.IndexOf("/", StringComparison.OrdinalIgnoreCase) < 0)
-                {
-                    physicalFile = GetPhysicalFile(staticFileContext, requestPath, 0);
-                }
-            }
-            else
-            {
-                if (requestPath.Length <= rootUrl.Length)
-                    return false;
-
-                if (requestPath.StartsWith(rootUrl, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (configuration.IncludeSubFolders)
-                    {
-                        physicalFile = GetPhysicalFile(staticFileContext, requestPath, rootUrl.Length);
-                    }
-                    else
-                    {
-                        if (requestPath.IndexOf("/", rootUrl.Length, StringComparison.OrdinalIgnoreCase) == -1)
-                            physicalFile = GetPhysicalFile(staticFileContext, requestPath, rootUrl.Length);
-                    }
-                }
-            }
-
-            if (physicalFile == null) return false;
-
-            if (configuration.FileExtensions != null && configuration.FileExtensions.Length > 0)
-            {
-                var extension = Path.GetExtension(physicalFile.Name);
-                if (!configuration.FileExtensions.Any(e => String.Equals(e.Extension, extension, StringComparison.OrdinalIgnoreCase)))
-                    return false;
-            }
-
-            staticFileContext.PhysicalFile = physicalFile;
-            return physicalFile.Exists;
-        }
-
-        private FileInfo GetPhysicalFile(StaticFileContext staticFileContext, string requestPath, int prefixLength)
-        {
-            var relativeFileName = requestPath.Substring(prefixLength).Replace("/", "\\");
-            return new FileInfo(Path.Combine(staticFileContext.RootFolder, relativeFileName));
-        }
-
-        private string _rootFolder; // Fully qualified path ending with \
-        private string _rootUrl; // Never starts with /. Ends in / unless it is the site root
+        private string _rootFolder;
+        private PathString _rootUrl;
 
         public void Configure(IConfiguration configuration, string path)
         {
@@ -174,30 +112,31 @@ namespace OwinFramework.StaticFiles
                     {
                         _configuration = cfg;
 
-                        var rootFolder = cfg.RootDirectory ?? "";
-                        rootFolder = rootFolder.Replace("/", "\\");
+                        Func<string, string> normalizeFolder = p =>
+                        {
+                            p = p.Replace("/", "\\");
 
-                        if (rootFolder.Length > 0 && !rootFolder.EndsWith("\\")) 
-                            rootFolder = rootFolder + "\\";
+                            if (p.Length > 0 && !p.EndsWith("\\"))
+                                p = p + "\\";
 
-                        if (rootFolder.StartsWith("~\\")) 
-                            rootFolder = rootFolder.Substring(2);
+                            return _hostingEnvironment.MapPath(p);
+                        };
 
-                        if (Path.IsPathRooted(rootFolder))
-                            _rootFolder = rootFolder;
-                        else
-                            _rootFolder = _hostingEnvironment.MapPath(rootFolder);
+                        Func<string, PathString> normalizeUrl = u =>
+                        {
+                            u = u.Replace("\\", "/");
 
-                        var rootUrl = cfg.StaticFilesRootUrl ?? "";
-                        rootUrl = rootUrl.Replace("\\", "/");
+                            if (u.Length > 0 && u.EndsWith("/"))
+                                u = u.Substring(0, u.Length - 1);
 
-                        if (rootUrl.StartsWith("/")) 
-                            rootUrl = rootUrl.Substring(1);
+                            if (!u.StartsWith("/"))
+                                u = "/" + u;
 
-                        if (rootUrl.Length > 0 && !rootUrl.EndsWith("/")) 
-                            rootUrl = rootUrl + "/";
+                            return new PathString(u);
+                        };
 
-                        _rootUrl = rootUrl;
+                        _rootFolder = normalizeFolder(cfg.RootDirectory ?? "");
+                        _rootUrl = normalizeUrl(cfg.StaticFilesRootUrl ?? "");
                     }, 
                     new StaticFilesConfiguration());
         }
@@ -279,8 +218,64 @@ namespace OwinFramework.StaticFiles
             get { return "Maps URLs onto physical files and returns those files to the requestor"; }
         }
 
-        public IList<InterfacesV1.Capability.IEndpointDocumentation> Endpoints { get { return null; } }
+        public IList<InterfacesV1.Capability.IEndpointDocumentation> Endpoints 
+        { 
+            get 
+            {
+                var documentation = new List<InterfacesV1.Capability.IEndpointDocumentation>
+                {
+                    new EndpointDocumentation
+                    {
+                        RelativePath = _configuration.DocumentationRootUrl,
+                        Description = "Documentation of the configuration options for the Dart middleware",
+                        Attributes = new List<InterfacesV1.Capability.IEndpointAttributeDocumentation>
+                        {
+                            new EndpointAttributeDocumentation
+                            {
+                                Type = "Method",
+                                Name = "GET",
+                                Description = "Returns configuration documentation for Dart middleware in HTML format"
+                            }
+                        }
+                    },
+                };
+                foreach (var extension in _configuration.FileExtensions)
+                {
+                    documentation.Add(
+                        new EndpointDocumentation
+                        {
+                            RelativePath = _configuration.StaticFilesRootUrl + (_configuration.IncludeSubFolders ? "**" : "*") + extension.Extension,
+                            Description = "Maps the URL path to a file path rooted at " + _configuration.RootDirectory + (_configuration.IncludeSubFolders ? "**" : "*") + extension.Extension,
+                            Attributes = new List<InterfacesV1.Capability.IEndpointAttributeDocumentation>
+                            {
+                                new EndpointAttributeDocumentation
+                                {
+                                    Type = "Method",
+                                    Name = "GET",
+                                    Description = "Returns the contents of a file with a content type of " + extension.MimeType
+                                }
+                            }
+                        });
+                }
+                return documentation;
+            } 
+        }
 
+        private class EndpointDocumentation : InterfacesV1.Capability.IEndpointDocumentation
+        {
+            public string RelativePath { get; set; }
+            public string Description { get; set; }
+            public string Examples { get; set; }
+            public IList<InterfacesV1.Capability.IEndpointAttributeDocumentation> Attributes { get; set; }
+        }
+
+        private class EndpointAttributeDocumentation : InterfacesV1.Capability.IEndpointAttributeDocumentation
+        {
+            public string Type { get; set; }
+            public string Name { get; set; }
+            public string Description { get; set; }
+        }
+        
         #endregion
 
         #region Embedded resources
@@ -311,30 +306,92 @@ namespace OwinFramework.StaticFiles
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
-            StaticFileContext staticFileContext;
-            if (!ShouldServeThisFile(context, out staticFileContext))
+            StaticFileContext fileContext;
+            if (!ShouldServeThisFile(context, out fileContext))
                 return next();
 
-            context.Set(_contextKey, staticFileContext);
+            context.Set(_contextKey, fileContext);
 
             var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
             if (outputCache != null && outputCache.CachedContentIsAvailable)
             {
-                if (outputCache.TimeInCache.HasValue && 
-                    outputCache.TimeInCache > staticFileContext.Configuration.MaximumCacheTime)
-                    outputCache.UseCachedContent = false;
+                if (outputCache.TimeInCache.HasValue)
+                {
+                    if (outputCache.TimeInCache > fileContext.Configuration.MaximumCacheTime)
+                        outputCache.UseCachedContent = false;
+                    else
+                    {
+                        var timeSinceLastUpdate = DateTime.UtcNow - fileContext.PhysicalFile.LastWriteTimeUtc;
+                        if (outputCache.TimeInCache > timeSinceLastUpdate)
+                            outputCache.UseCachedContent = false;
+                    }
+                }
             }
 
-            if (!string.IsNullOrEmpty(staticFileContext.Configuration.RequiredPermission))
+            if (!string.IsNullOrEmpty(fileContext.Configuration.RequiredPermission))
             {
                 var authorization = context.GetFeature<InterfacesV1.Upstream.IUpstreamAuthorization>();
                 if (authorization != null)
                 {
-                    authorization.AddRequiredPermission(staticFileContext.Configuration.RequiredPermission);
+                    authorization.AddRequiredPermission(fileContext.Configuration.RequiredPermission);
                 }
             }
 
-            return next();
+            return null;
+        }
+
+        private bool ShouldServeThisFile(
+            IOwinContext context,
+            out StaticFileContext fileContext)
+        {
+            // Capture the configuration because it can change at any time
+            fileContext = new StaticFileContext
+            {
+                Configuration = _configuration,
+                RootFolder = _rootFolder,
+                RootUrl = _rootUrl
+            };
+
+            var request = context.Request;
+
+            if (!_configuration.Enabled 
+                || !request.Path.HasValue
+                || !fileContext.RootUrl.HasValue) 
+                return false;
+
+            if (!(fileContext.RootUrl.Value == "/" || request.Path.StartsWithSegments(fileContext.RootUrl)))
+                return false;
+
+            // Extract the path relative to the root UI
+            var relativePath = request.Path.Value.Substring(fileContext.RootUrl.Value.Length);
+            var fileName = relativePath.Replace('/', '\\');
+
+            // No filename case can't be handled by this middleware
+            if (string.IsNullOrWhiteSpace(fileName) || fileName == "\\")
+                return false;
+
+            if (fileName.StartsWith("\\"))
+                fileName = fileName.Substring(1);
+
+            if (!fileContext.Configuration.IncludeSubFolders && fileName.Contains("\\"))
+                return false;
+
+            // Parse out pieces of the file name
+            var lastPeriodIndex = fileName.LastIndexOf('.');
+            var extension = lastPeriodIndex < 0 ? "" : fileName.Substring(lastPeriodIndex);
+
+            // Get the configuration appropriate to this file extension
+            fileContext.ExtensionConfiguration = fileContext.Configuration.FileExtensions
+                .FirstOrDefault(c => string.Equals(c.Extension, extension, StringComparison.OrdinalIgnoreCase));
+
+            // Only serve files that have their extensions confgured
+            if (fileContext.ExtensionConfiguration == null)
+                return false;
+
+            fileContext.PhysicalFile = new FileInfo(Path.Combine(fileContext.RootFolder, fileName));
+
+            // Only serve files that exist on disk
+            return fileContext.PhysicalFile.Exists;
         }
 
         #endregion
@@ -345,8 +402,9 @@ namespace OwinFramework.StaticFiles
         {
             public FileInfo PhysicalFile;
             public StaticFilesConfiguration Configuration;
+            public ExtensionConfiguration ExtensionConfiguration;
             public string RootFolder;
-            public string RootUrl;
+            public PathString RootUrl;
         }
 
         #endregion

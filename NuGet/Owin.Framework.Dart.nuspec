@@ -16,7 +16,9 @@
     <tags>OWIN framework Dart</tags>
     <dependencies>
       <dependency id="Owin.Framework" version="2.2.2" />
+      <dependency id="Ioc.Modules" version="1.1.4" />
       <dependency id="Newtonsoft.Json" version="7.0.1" />
+      <dependency id="DotlessClientOnly" version="1.5.2" />
     </dependencies>
     <references>
     </references>

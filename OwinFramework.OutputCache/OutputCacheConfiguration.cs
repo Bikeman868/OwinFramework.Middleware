@@ -13,13 +13,17 @@ namespace OwinFramework.OutputCache
         [JsonProperty("maximumCacheTime")]
         public TimeSpan? MaximumCacheTime { get; set; }
 
+        [JsonProperty("cacheCategory")]
+        public string CacheCategory { get; set; }
+
         [JsonProperty("urls")]
         public UrlPatternConfiguration[] Urls { get; set; }
 
         public OutputCacheConfiguration()
         {
-            FileTypes = new FileTypes();
             MaximumCacheTime = TimeSpan.FromHours(1);
+            CacheCategory = "Output";
+            FileTypes = new FileTypes();
             Urls = new[]{ new UrlPatternConfiguration()};
         }
     }

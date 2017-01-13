@@ -63,6 +63,7 @@ namespace OwinFramework.Dart
                 new ExtensionConfiguration{Extension = ".png", MimeType = "image/png", Expiry = oneWeek},
                 new ExtensionConfiguration{Extension = ".tif", MimeType = "image/tif", Expiry = oneWeek},
                 new ExtensionConfiguration{Extension = ".tiff", MimeType = "image/tif", Expiry = oneWeek},
+                new ExtensionConfiguration{Extension = ".gif", MimeType = "image/gif", Expiry = oneWeek},
 
                 new ExtensionConfiguration{Extension = ".avi", MimeType = "video/avi", Expiry = oneWeek},
                 new ExtensionConfiguration{Extension = ".mov", MimeType = "video/quicktime", Expiry = oneWeek},

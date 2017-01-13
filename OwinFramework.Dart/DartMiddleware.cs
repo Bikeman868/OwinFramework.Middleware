@@ -52,14 +52,7 @@ namespace OwinFramework.Dart
             if (fileContext == null)
                 return next();
 
-            var file = fileContext.CompiledFile;
-
-            var request = context.Request;
-            var userAgent = request.Headers["user-agent"];
-            if (userAgent != null && userAgent.IndexOf("(Dart)", StringComparison.OrdinalIgnoreCase) > -1)
-                file = fileContext.NativeFile;
-
-            if (file == null || !file.Exists)
+            if (fileContext.File == null || !fileContext.File.Exists)
                 return next();
 
             var outputCache = context.GetFeature<InterfacesV1.Middleware.IOutputCache>();
@@ -85,10 +78,10 @@ namespace OwinFramework.Dart
                 }
             }
 
-            return ServeFile(context, fileContext, file);
+            return ServeFile(context, fileContext);
         }
 
-        private Task ServeFile(IOwinContext context, DartFileContext fileContext, FileInfo fileInfo)
+        private Task ServeFile(IOwinContext context, DartFileContext fileContext)
         {
             return Task.Factory.StartNew(() =>
             {
@@ -98,7 +91,7 @@ namespace OwinFramework.Dart
                 if (fileContext.Configuration.Processing == FileProcessing.None)
                 {
                     byte[] content;
-                    using (var stream = fileInfo.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+                    using (var stream = fileContext.File.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
                         content = new byte[stream.Length];
                         stream.Read(content, 0, content.Length);
@@ -109,7 +102,7 @@ namespace OwinFramework.Dart
                 else
                 {
                     string text;
-                    using (var streamReader = fileInfo.OpenText())
+                    using (var streamReader = fileContext.File.OpenText())
                     {
                         text = streamReader.ReadToEnd();
                     }
@@ -135,63 +128,6 @@ namespace OwinFramework.Dart
 
         private IDisposable _configurationRegistration;
         private DartConfiguration _configuration = new DartConfiguration();
-
-        private bool ShouldServeThisFile(
-            IOwinContext context,
-            out DartFileContext fileContext)
-        {
-            fileContext = new DartFileContext();
-
-            var request = context.Request;
-
-            // If this is not for us get the hell out
-            if (   !_configuration.Enabled 
-                || !request.Path.HasValue 
-                || !request.Path.StartsWithSegments(_rootUrl))
-                return false;
-
-            // Extract the path relative to the Dart UI root
-            var relativePath = request.Path.Value.Substring(_rootUrl.Value.Length);
-            var fileName = relativePath.Replace('/', '\\');
-
-            // Serve the default document for requests to the root folder
-            if (string.IsNullOrWhiteSpace(fileName) || fileName == "\\")
-                fileName = _configuration.DefaultDocument;
-
-            if (fileName.StartsWith("\\"))
-                fileName = fileName.Substring(1);
-
-            // Parse out pieces of the file name
-            var lastDirectorySeparatorIndex = fileName.LastIndexOf('\\');
-            var firstPeriodIndex = lastDirectorySeparatorIndex < 0
-                ? fileName.IndexOf('.')
-                : fileName.IndexOf('.', lastDirectorySeparatorIndex);
-            var lastPeriodIndex = fileName.LastIndexOf('.');
-
-            var fullExtension = firstPeriodIndex < 0 ? "" : fileName.Substring(firstPeriodIndex);
-            var extension = lastPeriodIndex < 0 ? "" : fileName.Substring(lastPeriodIndex);
-            var baseFileName = firstPeriodIndex < 0 ? fileName : fileName.Substring(0, firstPeriodIndex);
-
-            // Check if the requested file includes a version number suffix
-            var versionSuffix = _versionPrefix + _configuration.Version;
-            fileContext.IsVersioned = baseFileName.EndsWith(versionSuffix);
-            if (fileContext.IsVersioned)
-            {
-                var fileNameWithoutVersion = baseFileName.Substring(0, baseFileName.Length - versionSuffix.Length);
-                fileName = fileNameWithoutVersion + fullExtension;
-            }
-
-            // Get the configuration appropriate to this file extension
-            fileContext.Configuration = _configuration.FileExtensions
-                .FirstOrDefault(c => string.Equals(c.Extension, extension, StringComparison.OrdinalIgnoreCase));
-            if (fileContext.Configuration == null)
-                return false;
-
-            fileContext.NativeFile = new FileInfo(Path.Combine(_rootDartFolder, fileName));
-            fileContext.CompiledFile = new FileInfo(Path.Combine(_rootBuildFolder, fileName));
-
-            return true;
-        }
 
         private string _rootDartFolder;
         private string _rootBuildFolder;
@@ -258,8 +194,8 @@ namespace OwinFramework.Dart
                         else
                             sb.Append(",<br/>&nbsp;&nbsp;{<br/>");
                         sb.Append("&nbsp;&nbsp;&nbsp;&nbsp;\"extension\":\"" + extension.Extension + "\",<br/>");
-                        sb.Append("&nbsp;&nbsp;&nbsp;&nbsp;\"mimeType\":\"" + extension.MimeType + "\"<br/>");
-                        sb.Append("&nbsp;&nbsp;&nbsp;&nbsp;\"processing\":\"" + extension.Processing + "\"<br/>");
+                        sb.Append("&nbsp;&nbsp;&nbsp;&nbsp;\"mimeType\":\"" + extension.MimeType + "\",<br/>");
+                        sb.Append("&nbsp;&nbsp;&nbsp;&nbsp;\"processing\":\"" + extension.Processing + "\",<br/>");
                         sb.Append("&nbsp;&nbsp;&nbsp;&nbsp;\"expiry\":\"" + extension.Expiry + "\"<br/>");
                         sb.Append("&nbsp;&nbsp;}");
                     }
@@ -412,11 +348,21 @@ namespace OwinFramework.Dart
             var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
             if (outputCache != null && outputCache.CachedContentIsAvailable)
             {
-                if (outputCache.TimeInCache.HasValue && 
-                    outputCache.TimeInCache > _configuration.MaximumCacheTime)
-                    outputCache.UseCachedContent = false;
+                if (outputCache.TimeInCache.HasValue)
+                {
+                    if (outputCache.TimeInCache > _configuration.MaximumCacheTime)
+                    {
+                        outputCache.UseCachedContent = false;
+                    }
+                    else
+                    {
+                        var timeSinceLastUpdate = DateTime.UtcNow - dartFileContext.File.LastWriteTimeUtc;
+                        if (outputCache.TimeInCache > timeSinceLastUpdate)
+                            outputCache.UseCachedContent = false;
+                    }
+                }
             }
-
+            
             if (!string.IsNullOrEmpty(_configuration.RequiredPermission))
             {
                 var authorization = context.GetFeature<InterfacesV1.Upstream.IUpstreamAuthorization>();
@@ -426,7 +372,81 @@ namespace OwinFramework.Dart
                 }
             }
 
-            return next();
+            return null;
+        }
+
+        private bool ShouldServeThisFile(
+            IOwinContext context,
+            out DartFileContext fileContext)
+        {
+            fileContext = new DartFileContext();
+
+            var request = context.Request;
+
+            // If this is turned off get the hell out
+            if (!_configuration.Enabled
+                || !request.Path.HasValue
+                || !_rootUrl.HasValue)
+                return false;
+
+            // If this is not for us get the hell out
+            if (!(_rootUrl.Value == "/" || request.Path.StartsWithSegments(_rootUrl)))
+                return false;
+
+            // Extract the path relative to the Dart UI root
+            var relativePath = request.Path.Value.Substring(_rootUrl.Value.Length);
+            var fileName = relativePath.Replace('/', '\\');
+
+            // Serve the default document for requests to the root folder
+            if (string.IsNullOrWhiteSpace(fileName) || fileName == "\\")
+                fileName = _configuration.DefaultDocument;
+
+            if (fileName.StartsWith("\\"))
+                fileName = fileName.Substring(1);
+
+            // Parse out pieces of the file name
+            var lastDirectorySeparatorIndex = fileName.LastIndexOf('\\');
+            var firstPeriodIndex = lastDirectorySeparatorIndex < 0
+                ? fileName.IndexOf('.')
+                : fileName.IndexOf('.', lastDirectorySeparatorIndex);
+            var lastPeriodIndex = fileName.LastIndexOf('.');
+
+            var fullExtension = firstPeriodIndex < 0 ? "" : fileName.Substring(firstPeriodIndex);
+            var extension = lastPeriodIndex < 0 ? "" : fileName.Substring(lastPeriodIndex);
+            var baseFileName = firstPeriodIndex < 0 ? fileName : fileName.Substring(0, firstPeriodIndex);
+
+            // Check if the requested file includes a version number suffix
+            var versionSuffix = _versionPrefix + _configuration.Version;
+            fileContext.IsVersioned = baseFileName.EndsWith(versionSuffix);
+            if (fileContext.IsVersioned)
+            {
+                var fileNameWithoutVersion = baseFileName.Substring(0, baseFileName.Length - versionSuffix.Length);
+                fileName = fileNameWithoutVersion + fullExtension;
+            }
+
+            // Get the configuration appropriate to this file extension
+            fileContext.Configuration = _configuration.FileExtensions
+                .FirstOrDefault(c => string.Equals(c.Extension, extension, StringComparison.OrdinalIgnoreCase));
+            if (fileContext.Configuration == null)
+                return false;
+
+            // Check if the browser supports Dart natively
+            var userAgent = request.Headers["user-agent"];
+            if (userAgent != null && userAgent.IndexOf("(Dart)", StringComparison.OrdinalIgnoreCase) > -1)
+                fileContext.File = new FileInfo(Path.Combine(_rootDartFolder, fileName));
+            else
+                fileContext.File = new FileInfo(Path.Combine(_rootBuildFolder, fileName));
+
+            if (fileContext.File.Exists)
+                return true;
+
+            if (fileContext.Configuration.Processing == FileProcessing.Less)
+            {
+                fileContext.File = new FileInfo(Path.ChangeExtension(fileContext.File.FullName, ".less"));
+                return fileContext.File.Exists;
+            }
+
+            return false;
         }
 
         #endregion
@@ -436,8 +456,7 @@ namespace OwinFramework.Dart
         private class DartFileContext
         {
             public bool IsVersioned;
-            public FileInfo NativeFile;
-            public FileInfo CompiledFile;
+            public FileInfo File;
             public ExtensionConfiguration Configuration;
         }
 

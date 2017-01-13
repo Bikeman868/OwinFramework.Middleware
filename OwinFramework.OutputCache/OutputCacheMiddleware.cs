@@ -271,8 +271,10 @@ namespace OwinFramework.OutputCache
 
             public string CacheKey { get; private set; }
             public CachedResponse Response { get; private set; }
+
             private readonly InterfacesV1.Facilities.ICache _cache;
             private readonly IOwinContext _context;
+            private readonly OutputCacheConfiguration _configuration;
 
             public OutputCache(
                 InterfacesV1.Facilities.ICache cache, 
@@ -281,9 +283,10 @@ namespace OwinFramework.OutputCache
             {
                 _cache = cache;
                 _context = context;
+                _configuration = configuration;
 
                 CacheKey = GetCacheKey(context);
-                Response = cache.Get<CachedResponse>(CacheKey);
+                Response = cache.Get<CachedResponse>(CacheKey, null, null, _configuration.CacheCategory);
                 if (Response != null)
                 {
                     Response.Initialize(context);
@@ -313,7 +316,7 @@ namespace OwinFramework.OutputCache
                 if (Response != null)
                 {
                     Response.EndCaptureResponse();
-                    _cache.Put(CacheKey, Response, duration);
+                    _cache.Put(CacheKey, Response, duration, _configuration.CacheCategory);
                 }
             }
 

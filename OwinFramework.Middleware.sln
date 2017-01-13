@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.40629.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.RouteVisualizer.Net40", "OwinFramework.RouteVisualizer\OwinFramework.RouteVisualizer.Net40.csproj", "{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}"
 EndProject
@@ -21,6 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		NuGet\Owin.Framework.OutputCache.nuspec = NuGet\Owin.Framework.OutputCache.nuspec
 		NuGet\Owin.Framework.RouteVisualizer.nuspec = NuGet\Owin.Framework.RouteVisualizer.nuspec
 		NuGet\Owin.Framework.StaticFiles.nuspec = NuGet\Owin.Framework.StaticFiles.nuspec
+		NuGet\Package.cmd = NuGet\Package.cmd
 		readme.md = readme.md
 	EndProjectSection
 EndProject
@@ -130,14 +131,14 @@ Global
 		{B13679D7-4381-4814-B183-21100B97E8B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B13679D7-4381-4814-B183-21100B97E8B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B13679D7-4381-4814-B183-21100B97E8B6}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{641C7705-C9F3-4BB5-BE55-9B2238F9821B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{641C7705-C9F3-4BB5-BE55-9B2238F9821B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{641C7705-C9F3-4BB5-BE55-9B2238F9821B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{641C7705-C9F3-4BB5-BE55-9B2238F9821B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D7C1CBD8-ADD7-463A-894F-00521EF173E3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DFEE722D-6370-40BC-AD4A-821B842B293B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DFEE722D-6370-40BC-AD4A-821B842B293B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DFEE722D-6370-40BC-AD4A-821B842B293B}.Release|Any CPU.ActiveCfg = Release|Any CPU

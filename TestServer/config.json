@@ -26,11 +26,12 @@
         "staticFiles": {
             "staticFilesRootUrl": "/",
             "documentationRootUrl": "/owin/staticFiles",
-            "rootDirectory": "",
+            "rootDirectory": "~\\",
             "enabled": true,
             "includeSubFolders": true,
             "fileExtensions": [
                 { "extension": ".html", "mimeType": "text/html" },
+                { "extension": ".ico", "mimeType": "image/ico" },
                 { "extension": ".css", "mimeType": "text/css" }
             ],
             "maximumFileSizeToCache": 10000,
@@ -57,7 +58,6 @@
             "enabled": true,
             "version": 1,
             "maximumFileSizeToCache": 50000,
-            "totalCacheSize": 1000000,
             "maximumCacheTime": "01:00:00",
             "requiredPermission": ""
         },
