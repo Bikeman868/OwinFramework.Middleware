@@ -21,6 +21,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		NuGet\Owin.Framework.OutputCache.nuspec = NuGet\Owin.Framework.OutputCache.nuspec
 		NuGet\Owin.Framework.RouteVisualizer.nuspec = NuGet\Owin.Framework.RouteVisualizer.nuspec
 		NuGet\Owin.Framework.StaticFiles.nuspec = NuGet\Owin.Framework.StaticFiles.nuspec
+		NuGet\Owin.Framework.Versioning.nuspec = NuGet\Owin.Framework.Versioning.nuspec
 		NuGet\Package.cmd = NuGet\Package.cmd
 		readme.md = readme.md
 	EndProjectSection
@@ -60,6 +61,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.OutputCache.Net40", "OwinFramework.OutputCache\OwinFramework.OutputCache.Net40.csproj", "{ED31698F-8A39-4051-8D2F-61B4E898AE87}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.OutputCache.Net45", "OwinFramework.OutputCache\OwinFramework.OutputCache.Net45.csproj", "{48816586-71BB-4BB8-80ED-16839A6B4715}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Versioning.Net40", "OwinFramework.Versioning\OwinFramework.Versioning.Net40.csproj", "{55B1BE3F-B3E3-47B8-89A1-DFFC00723670}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Versioning.Net45", "OwinFramework.Versioning\OwinFramework.Versioning.Net45.csproj", "{EA12D4BB-722E-489C-B5E5-30A7D17E8ACC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -151,6 +156,14 @@ Global
 		{48816586-71BB-4BB8-80ED-16839A6B4715}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{48816586-71BB-4BB8-80ED-16839A6B4715}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{48816586-71BB-4BB8-80ED-16839A6B4715}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55B1BE3F-B3E3-47B8-89A1-DFFC00723670}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55B1BE3F-B3E3-47B8-89A1-DFFC00723670}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55B1BE3F-B3E3-47B8-89A1-DFFC00723670}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55B1BE3F-B3E3-47B8-89A1-DFFC00723670}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EA12D4BB-722E-489C-B5E5-30A7D17E8ACC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA12D4BB-722E-489C-B5E5-30A7D17E8ACC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA12D4BB-722E-489C-B5E5-30A7D17E8ACC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA12D4BB-722E-489C-B5E5-30A7D17E8ACC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
