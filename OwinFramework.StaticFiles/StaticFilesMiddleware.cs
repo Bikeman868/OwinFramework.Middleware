@@ -24,16 +24,50 @@ namespace OwinFramework.StaticFiles
 
         string IMiddleware.Name { get; set; }
 
-        private readonly string _contextKey;
         private readonly IHostingEnvironment _hostingEnvironment;
 
         public StaticFilesMiddleware(IHostingEnvironment hostingEnvironment)
         {
             _hostingEnvironment = hostingEnvironment;
-            _contextKey = Guid.NewGuid().ToShortString(false);
 
             this.RunAfter<InterfacesV1.Middleware.IOutputCache>(null, false);
             this.RunAfter<InterfacesV1.Middleware.IAuthorization>(null, false);
+        }
+
+        Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
+        {
+            StaticFileContext fileContext;
+            if (!ShouldServeThisFile(context, out fileContext))
+                return next();
+
+            context.SetFeature(fileContext);
+
+            var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
+            if (outputCache != null && outputCache.CachedContentIsAvailable)
+            {
+                if (outputCache.TimeInCache.HasValue)
+                {
+                    if (outputCache.TimeInCache > fileContext.Configuration.MaximumCacheTime)
+                        outputCache.UseCachedContent = false;
+                    else
+                    {
+                        var timeSinceLastUpdate = DateTime.UtcNow - fileContext.PhysicalFile.LastWriteTimeUtc;
+                        if (outputCache.TimeInCache > timeSinceLastUpdate)
+                            outputCache.UseCachedContent = false;
+                    }
+                }
+            }
+
+            if (!string.IsNullOrEmpty(fileContext.Configuration.RequiredPermission))
+            {
+                var authorization = context.GetFeature<InterfacesV1.Upstream.IUpstreamAuthorization>();
+                if (authorization != null)
+                {
+                    authorization.AddRequiredPermission(fileContext.Configuration.RequiredPermission);
+                }
+            }
+
+            return null;
         }
 
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
@@ -44,7 +78,7 @@ namespace OwinFramework.StaticFiles
                 return DocumentConfiguration(context);
             }
 
-            var staticFileContext = context.Get<StaticFileContext>(_contextKey);
+            var staticFileContext = context.GetFeature<StaticFileContext>();
             if (staticFileContext == null)
                 return next();
 
@@ -67,33 +101,33 @@ namespace OwinFramework.StaticFiles
             }
 
             return Task.Factory.StartNew(() =>
+            {
+                context.Response.ContentType = extentionConfiguration.MimeType;
+                if (extentionConfiguration.MimeType.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
                 {
-                    context.Response.ContentType = extentionConfiguration.MimeType;
-                    if (extentionConfiguration.MimeType.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
+                    // Text files are handled differently because they can contain preamble bytes
+                    string text;
+                    using (var streamReader = physicalFile.OpenText())
                     {
-                        // Text files are handled differently because they can contain preamble bytes
-                        string text;
-                        using (var streamReader = physicalFile.OpenText())
-                        {
-                            text = streamReader.ReadToEnd();
-                        }
-                        context.Response.Write(text);
+                        text = streamReader.ReadToEnd();
                     }
-                    else
+                    context.Response.Write(text);
+                }
+                else
+                {
+                    var buffer = new byte[32*1024];
+                    using (var stream = physicalFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
-                        var buffer = new byte[32*1024];
-                        using (var stream = physicalFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+                        while (true)
                         {
-                            while (true)
-                            {
-                                var length = stream.Read(buffer, 0, buffer.Length);
-                                if (length == 0) break;
-                                context.Response.Write(buffer, 0, length);
-                                if (length < buffer.Length) break;
-                            }
+                            var length = stream.Read(buffer, 0, buffer.Length);
+                            if (length == 0) break;
+                            context.Response.Write(buffer, 0, length);
+                            if (length < buffer.Length) break;
                         }
                     }
-                });
+                }
+            });
         }
 
         #region IConfigurable
@@ -302,43 +336,7 @@ namespace OwinFramework.StaticFiles
 
         #endregion
 
-        #region IRoutingProcessor
-
-        Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
-        {
-            StaticFileContext fileContext;
-            if (!ShouldServeThisFile(context, out fileContext))
-                return next();
-
-            context.Set(_contextKey, fileContext);
-
-            var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
-            if (outputCache != null && outputCache.CachedContentIsAvailable)
-            {
-                if (outputCache.TimeInCache.HasValue)
-                {
-                    if (outputCache.TimeInCache > fileContext.Configuration.MaximumCacheTime)
-                        outputCache.UseCachedContent = false;
-                    else
-                    {
-                        var timeSinceLastUpdate = DateTime.UtcNow - fileContext.PhysicalFile.LastWriteTimeUtc;
-                        if (outputCache.TimeInCache > timeSinceLastUpdate)
-                            outputCache.UseCachedContent = false;
-                    }
-                }
-            }
-
-            if (!string.IsNullOrEmpty(fileContext.Configuration.RequiredPermission))
-            {
-                var authorization = context.GetFeature<InterfacesV1.Upstream.IUpstreamAuthorization>();
-                if (authorization != null)
-                {
-                    authorization.AddRequiredPermission(fileContext.Configuration.RequiredPermission);
-                }
-            }
-
-            return null;
-        }
+        #region Routing helper functions
 
         private bool ShouldServeThisFile(
             IOwinContext context,

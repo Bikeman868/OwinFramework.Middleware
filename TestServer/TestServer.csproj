@@ -167,7 +167,7 @@
     </Content>
     <Content Include="ui\web\favicon.ico" />
     <Content Include="ui\web\index.html" />
-    <Content Include="ui\web\styles.css" />
+    <None Include="ui\web\styles.less" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="home.html">

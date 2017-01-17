@@ -225,7 +225,7 @@ namespace OwinFramework.Versioning
                 var firstPeriodIndex = path.IndexOf('.', fileNameIndex);
                 var lastPeriodIndex = path.LastIndexOf('.');
 
-                var baseFileName = firstPeriodIndex < 0 ? path.Substring(fileNameIndex) : path.Substring(fileNameIndex, firstPeriodIndex - 1);
+                var baseFileName = firstPeriodIndex < 0 ? path.Substring(fileNameIndex) : path.Substring(fileNameIndex, firstPeriodIndex - fileNameIndex);
                 var versionIndex = baseFileName.LastIndexOf(_versionPrefix, StringComparison.OrdinalIgnoreCase);
 
                 if (versionIndex < 0)
@@ -234,16 +234,16 @@ namespace OwinFramework.Versioning
                 var extension = lastPeriodIndex < 0 
                     ? string.Empty 
                     : path.Substring(lastPeriodIndex);
-                var extentions = _configuration.FileExtensions != null && _configuration.FileExtensions.Length > 0;
+                var allExtensions = _configuration.FileExtensions == null || _configuration.FileExtensions.Length == 0;
                 if (extension.Length > 0)
                 {
-                    if (extentions &&
+                    if (!allExtensions &&
                         !_configuration.FileExtensions.Any(e => string.Equals(e, extension, StringComparison.OrdinalIgnoreCase)))
                         return;
                 }
                 else
                 {
-                    if (extentions) return;
+                    if (!allExtensions) return;
                 }
 
                 _isVersioned = true;
@@ -252,7 +252,7 @@ namespace OwinFramework.Versioning
                 {
                     var version = _versionPrefix + _configuration.Version.Value;
                     var requestedVersion = baseFileName.Substring(versionIndex);
-                    if (requestedVersion != version)
+                    if (!string.Equals(requestedVersion, version, StringComparison.OrdinalIgnoreCase))
                         throw new HttpException(404, "This is not the current version of this resource");
                 }
 

@@ -9,6 +9,7 @@ using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
+using OwinFramework.Interfaces.Utility;
 
 namespace OwinFramework.Less
 {
@@ -18,28 +19,46 @@ namespace OwinFramework.Less
         InterfacesV1.Capability.ISelfDocumenting,
         IRoutingProcessor
     {
+        private readonly IHostingEnvironment _hostingEnvironment;
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
 
-        private readonly string _contextKey;
-
-        public LessMiddleware()
+        public LessMiddleware(IHostingEnvironment hostingEnvironment)
         {
-            _contextKey = Guid.NewGuid().ToShortString(false);
+            _hostingEnvironment = hostingEnvironment;
             this.RunAfter<InterfacesV1.Middleware.IOutputCache>(null, false);
         }
 
+        Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
+        {
+            CssFileContext cssFileContext;
+            if (!ShouldServeThisFile(context, out cssFileContext))
+                return next();
+
+            context.SetFeature(cssFileContext);
+
+            var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
+            if (outputCache != null && outputCache.CachedContentIsAvailable)
+            {
+                if (outputCache.TimeInCache.HasValue)
+                {
+                    var timeSinceFileChanged = DateTime.UtcNow - cssFileContext.PhysicalFile.LastWriteTimeUtc;
+                    outputCache.UseCachedContent = outputCache.TimeInCache.Value < timeSinceFileChanged;
+                }
+            }
+
+            return null;
+        }
+        
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
-            {
                 return DocumentConfiguration(context);
-            }
 
-            var cssFileContext = context.Get<CssFileContext>(_contextKey);
+            var cssFileContext = context.GetFeature<CssFileContext>();
             if (cssFileContext == null || cssFileContext.PhysicalFile == null)
                 return next();
 
@@ -77,8 +96,8 @@ namespace OwinFramework.Less
         private IDisposable _configurationRegistration;
         private LessConfiguration _configuration = new LessConfiguration();
 
-        private string _rootFolder; // Fully qualified path ending with \
-        private string _rootUrl; // Starts and end with /
+        private string _rootFolder;
+        private PathString _rootUrl;
 
         public void Configure(IConfiguration configuration, string path)
         {
@@ -88,30 +107,31 @@ namespace OwinFramework.Less
                     {
                         _configuration = cfg;
 
-                        var rootFolder = cfg.RootDirectory ?? "";
-                        rootFolder = rootFolder.Replace("/", "\\");
+                        Func<string, string> normalizeFolder = p =>
+                        {
+                            p = p.Replace("/", "\\");
 
-                        if (rootFolder.Length > 0 && !rootFolder.EndsWith("\\")) 
-                            rootFolder = rootFolder + "\\";
+                            if (p.Length > 0 && !p.EndsWith("\\"))
+                                p = p + "\\";
 
-                        if (rootFolder.StartsWith("~\\")) 
-                            rootFolder = rootFolder.Substring(2);
+                            return _hostingEnvironment.MapPath(p);
+                        };
 
-                        if (Path.IsPathRooted(rootFolder))
-                            _rootFolder = rootFolder;
-                        else
-                            _rootFolder = Path.Combine(AppDomain.CurrentDomain.SetupInformation.ApplicationBase, rootFolder);
+                        Func<string, PathString> normalizeUrl = u =>
+                        {
+                            u = u.Replace("\\", "/");
 
-                        var rootUrl = cfg.RootUrl ?? "";
-                        rootUrl = rootUrl.Replace("\\", "/");
+                            if (u.Length > 0 && u.EndsWith("/"))
+                                u = u.Substring(0, u.Length - 1);
 
-                        if (!rootUrl.StartsWith("/")) 
-                            rootUrl = "/" + rootUrl;
+                            if (!u.StartsWith("/"))
+                                u = "/" + u;
 
-                        if (rootUrl.Length > 0 && !rootUrl.EndsWith("/")) 
-                            rootUrl = rootUrl + "/";
+                            return new PathString(u);
+                        };
 
-                        _rootUrl = rootUrl;
+                        _rootFolder = normalizeFolder(cfg.RootDirectory ?? "");
+                        _rootUrl = normalizeUrl(cfg.RootUrl ?? "");
                     }, 
                     new LessConfiguration());
         }
@@ -189,28 +209,7 @@ namespace OwinFramework.Less
 
         #endregion
 
-        #region IRoutingProcessor
-
-        Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
-        {
-            CssFileContext cssFileContext;
-            if (!ShouldServeThisFile(context, out cssFileContext))
-                return next();
-
-            context.Set(_contextKey, cssFileContext);
-
-            var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
-            if (outputCache != null && outputCache.CachedContentIsAvailable)
-            {
-                if (outputCache.TimeInCache.HasValue)
-                {
-                    var timeSinceFileChanged = DateTime.UtcNow - cssFileContext.PhysicalFile.LastWriteTimeUtc;
-                    outputCache.UseCachedContent = outputCache.TimeInCache.Value < timeSinceFileChanged;
-                }
-            }
-
-            return null;
-        }
+        #region Routing
 
         private bool ShouldServeThisFile(
             IOwinContext context,
@@ -218,17 +217,17 @@ namespace OwinFramework.Less
         {
             cssFileContext = new CssFileContext();
 
-            if (!_configuration.Enabled || !context.Request.Path.HasValue)
+            var path = context.Request.Path;
+
+            if (!_configuration.Enabled || 
+                !path.HasValue || 
+                !_rootUrl.HasValue ||
+                !path.StartsWithSegments(_rootUrl) ||
+                !path.Value.EndsWith(".css", StringComparison.OrdinalIgnoreCase))
                 return false;
 
-            var path = context.Request.Path.Value;
-            if (!path.StartsWith(_rootUrl, StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            if (!path.EndsWith(".css", StringComparison.OrdinalIgnoreCase))
-                return false;
-
-            var cssFileName = Path.Combine(_rootFolder, path.Substring(_rootUrl.Length).Replace('/', '\\'));
+            var relativePath = path.Value.Substring(_rootUrl.Value.Length).Replace('/', '\\');
+            var cssFileName = Path.Combine(_rootFolder, relativePath);
             var lessFileName = cssFileName.Substring(0, cssFileName.Length - 4) + ".less";
 
             cssFileContext.PhysicalFile = new FileInfo(cssFileName);
