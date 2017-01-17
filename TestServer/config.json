@@ -48,7 +48,7 @@
             "enabled": true
         },
         "defaultDocument": {
-            "defaultPage": "/home.html",
+            "defaultPage": "/index.html",
             "documentationRootUrl": "/owin/defaultDocument"
         },
         "dart": {

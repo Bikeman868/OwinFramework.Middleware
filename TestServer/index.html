@@ -1,11 +1,115 @@
 ﻿<!DOCTYPE html>
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="utf-8"/>
-    <link rel="stylesheet" href="main{_v_}.css">
-    <title>Index Page</title>
-</head>
-<body>
-    Welcome to the index page
-</body>
+    <head>
+        <meta charset="utf-8"/>
+        <link rel="stylesheet" href="main{_v_}.css">
+        <title>Index Page</title>
+    </head>
+    <body>
+        <h1>Welcome to the index page</h1>
+        <p>This page refrences the style sheet with versioning</p>
+        <p>Here are some links you can try, what to expect and why</p>
+        <table>
+            <tr class="head">
+                <td>URL</td>
+                <td>What</td>
+                <td>Why</td>
+            </tr>
+            <tr>
+                <td><a href="/">/</a></td>
+                <td>The index.html page</td>
+                <td>
+                    The DefaultDocument middleware is configured <a href="/owin/defaultDocument">here</a> to
+                    display index.html when the request URL contains no path. This page references the style
+                    sheet with a version number, so the browser will only request this file once and any
+                    changes you make to this file will not be reflected in the browser.
+                </td>
+            </tr>
+            <tr>
+                <td><a href="/home.html">/home.html</a></td>
+                <td>The home.html page</td>
+                <td>
+                    The home.html page has a reference to the style sheet that is not versioned. Note that
+                    the LESS compiler tells the Output Cache middleware to cache and reuse the CSS output so
+                    that the compilation does not occur every time. This causes the output cache to add
+                    a header telling the browser to cache the file for a few hours. If the output cache gets
+                    a request for the CSS file and the underlying LESS file has been modified then it will
+                    not use the cached data, but pass the request on to the rest of the OWIN pipeline and
+                    the Less Middleware will re-compile the changed file.
+                </td>
+            </tr>
+            <tr>
+                <td><a href="/owin/pipeline">/owin/pipeline</a></td>
+                <td>Visual representation of the OWIN pipeline</td>
+                <td>The RouteVisualizer middleware is configured <a href="/owin/pipeline/docs/configuration">here</a> to display this visualization at this URL.</td>
+            </tr>
+            <tr>
+                <td><a href="/owin/endpoints">/owin/endpoints</a></td>
+                <td>A list of the URLs that work on this site</td>
+                <td>
+                    The Documenter middleware is configured <a href="/owin/endpoints/docs/configuration">here</a>
+                    to display this information at this URL. The Documenter middleware can generate documentation
+                    for any middleware that implements the <span class="code">ISelfDocumenting</span> interface.
+                </td>
+            </tr>
+            <tr>
+                <td><a href="/ui">/ui</a></td>
+                <td>A User Interface written in Dart</td>
+                <td>
+                    The Dart middleware will detect the browser capabilities and rewrite requests
+                    to either the original Dart code or the compiled version. After passing through
+                    the Dart middleware, the request is handled by the Static Files middleware which
+                    serves the file. The Dart middleware configuration is
+                    <a href="/owin/dart">here</a>, and the static files middleware
+                    configuration is <a href="/owin/staticFiles">here</a>.
+                </td>
+            </tr>
+            <tr>
+                <td><a href="/ui/favicon.ico">/ui/favicon.ico</a></td>
+                <td>The browser icon used for the Dart UI</td>
+                <td>
+                    The Dart middleware will detect the browser capabilities and rewrite requests
+                    to either /ui/web/favicon.ico or /ui/build/web/favicon.ico
+                </td>
+            </tr>
+            <tr>
+                <td><a href="/ui/favicon_v1.ico">/ui/favicon_v1.ico</a></td>
+                <td>The browser icon used for the Dart UI</td>
+                <td>
+                    The Versioning middleware will strip the version number out of the request before
+                    the Dart middleware sees it, so this will work identically to /ui/favicon.ico.
+                </td>
+            </tr>
+            <tr>
+                <td><a href="/owin/analytics">/owin/analytics</a></td>
+                <td>Analytic information from configured middleware</td>
+                <td>
+                    The AnalysisReporter middleware is configured
+                    <a href="/owin/analytics/docs/configuration">here</a> to return analysis reports at this URL.
+                    The reporter gathers analtyics from any middleware that implements the 
+                    <span class="code">IAnalysable</span> interface.
+                </td>
+            </tr>
+            <tr>
+                <td><a href="/main.css">/main.css</a></td>
+                <td>The contents of main.less compiled into css</td>
+                <td>
+                    The Less middleware is configured
+                    <a href="/owin/less">here</a> to compile LESS into CSS on the fly.
+                    The resulting CSS will be stored in the Output Cache middleware so that it is not
+                    compiled again on each request.
+                </td>
+            </tr>
+            <tr>
+                <td><a href="/main_v1.css">/main_v1.css</a></td>
+                <td>The contents of main.less compiled into css</td>
+                <td>
+                    The Versioning middleware is configured <a href="/owin/versioning">here</a> to
+                    strip version numbers off incomming requests. It is also configured to insert
+                    version numbers into URLs that refer to static assets, and add headers to the
+                    response telling the browser that it can cache these for a very long time.
+                </td>
+            </tr>
+        </table>
+    </body>
 </html>

@@ -1,1 +1,51 @@
-﻿div { width: 300 + 100 }
+﻿@tableBorder: solid thin black;
+@fontFamily: verdana,arial,sans-serif;
+@fontSize: 15px;
+
+.h() {
+    font-family: arial,sans-serif,verdana;
+}
+
+body {
+    font-family: @fontFamily;
+    font-size: @fontSize;
+}
+
+h1 {
+    .h();
+    font-size: @fontSize * 2;
+}
+
+h2 {
+    .h();
+    font-size: @fontSize * 1.5;
+}
+
+h3 {
+    .h();
+    font-size: @fontSize * 1.2;
+}
+
+table {
+    border-collapse:collapse;
+    border: @tableBorder;
+}
+
+td {
+    border: @tableBorder;
+    vertical-align: top;
+    padding: @fontSize / 3;
+}
+
+tr.head {
+    background-color: cornflowerblue;
+    color: white;
+    height: @fontSize * 2;
+
+    td {
+        vertical-align: middle;
+        font-weight: bold;
+        padding-left: @fontSize;
+    }
+}
+

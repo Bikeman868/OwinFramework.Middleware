@@ -222,8 +222,10 @@ namespace OwinFramework.Less
             if (!_configuration.Enabled || 
                 !path.HasValue || 
                 !_rootUrl.HasValue ||
-                !path.StartsWithSegments(_rootUrl) ||
                 !path.Value.EndsWith(".css", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            if (_rootUrl.Value != "/" && !path.StartsWithSegments(_rootUrl))
                 return false;
 
             var relativePath = path.Value.Substring(_rootUrl.Value.Length).Replace('/', '\\');
