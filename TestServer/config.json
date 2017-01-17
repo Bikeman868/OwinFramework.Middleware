@@ -63,6 +63,23 @@
         },
         "outputCache": { 
             "maximumCacheTime": "01:00:00"
+        },
+        "versioning": { 
+            "version": 1,
+            "documentationRootUrl": "/owin/versioning",
+            "mimeTypes": [
+                "text/html", 
+                "text/css", 
+                "application/javascript",
+                "application/dart"
+            ],
+            "fileExtensions": [
+                ".css", 
+                ".html", 
+                ".ico"
+            ],
+            "browserCacheTime": "90",
+            "exactVersion": "true"
         }
     }
 }

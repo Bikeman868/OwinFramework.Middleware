@@ -1,11 +1,10 @@
 ﻿using System;
 using Newtonsoft.Json;
-using OwinFramework.InterfacesV1.Middleware;
 
-namespace OwinFramework.OutputCache
+namespace OwinFramework.Versioning
 {
     [Serializable]
-    internal class OutputCacheConfiguration
+    internal class VersioningConfiguration
     {
         /// <summary>
         /// The relative path within your site where you can get documentation on
@@ -38,6 +37,13 @@ namespace OwinFramework.OutputCache
         public string[] FileExtensions { get; set; }
 
         /// <summary>
+        /// Specifies how long versioned assets should be cached on the browser.
+        /// Set to null to disable browser caching.
+        /// </summary>
+        [JsonProperty("browserCacheTime")]
+        public TimeSpan? BrowserCacheTime { get; set; }
+
+        /// <summary>
         /// When this is true, requests for assets that are not the current version
         /// with result in a 404 response. When this is false the most recent version
         /// of the asset will be served nomatter which version is requested.
@@ -45,7 +51,7 @@ namespace OwinFramework.OutputCache
         [JsonProperty("exactVersion")]
         public bool ExactVersion { get; set; }
 
-        public OutputCacheConfiguration()
+        public VersioningConfiguration()
         {
             Version = 1;
             MimeTypes = new [] 
@@ -56,6 +62,8 @@ namespace OwinFramework.OutputCache
             };
             FileExtensions = new string[0];
             ExactVersion = false;
+            BrowserCacheTime = TimeSpan.FromDays(365);
+            DocumentationRootUrl = "/versioning";
         }
     }
 

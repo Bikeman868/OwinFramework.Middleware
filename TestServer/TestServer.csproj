@@ -156,6 +156,10 @@
       <Project>{5868e1ee-3827-4c66-a267-9b8f69a7d471}</Project>
       <Name>OwinFramework.StaticFiles.Net45</Name>
     </ProjectReference>
+    <ProjectReference Include="..\OwinFramework.Versioning\OwinFramework.Versioning.Net45.csproj">
+      <Project>{ea12d4bb-722e-489c-b5e5-30a7d17e8acc}</Project>
+      <Name>OwinFramework.Versioning.Net45</Name>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Content Include="exception.html">

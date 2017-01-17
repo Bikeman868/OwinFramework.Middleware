@@ -26,7 +26,6 @@ namespace OwinFramework.Dart
 
         string IMiddleware.Name { get; set; }
 
-        private readonly string _contextKey;
         private const string _versionPrefix = "_v";
         private const string _versionMarker = "{_v_}";
 
@@ -35,7 +34,6 @@ namespace OwinFramework.Dart
         {
             _hostingEnvironment = hostingEnvironment;
 
-            _contextKey = Guid.NewGuid().ToShortString(false);
             this.RunAfter<InterfacesV1.Middleware.IOutputCache>(null, false);
             this.RunAfter<InterfacesV1.Middleware.IAuthorization>(null, false);
         }
@@ -48,7 +46,7 @@ namespace OwinFramework.Dart
                 return DocumentConfiguration(context);
             }
 
-            var fileContext = context.Get<DartFileContext>(_contextKey);
+            var fileContext = context.GetFeature<DartFileContext>();
             if (fileContext == null)
                 return next();
 
@@ -343,7 +341,7 @@ namespace OwinFramework.Dart
             if (!ShouldServeThisFile(context, out dartFileContext))
                 return next();
 
-            context.Set(_contextKey, dartFileContext);
+            context.SetFeature(dartFileContext);
 
             var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
             if (outputCache != null && outputCache.CachedContentIsAvailable)

@@ -52,20 +52,113 @@
                 <th>Description</th>
             </tr>
             <tr>
-                <td class="property">Template</td>
-                <td>{template.default}</td>
-                <td>{template}</td>
+                <td class="property">documentationRootUrl</td>
+                <td>{documentationRootUrl.default}</td>
+                <td>{documentationRootUrl}</td>
                 <td>
                     <p>
+                        The relative path within your site to the documentation
+                        for this versioning middleware.
                     </p>
                 </td>
             </tr>
             <tr>
-                <td class="property">DocumentationRootUrl</td>
-                <td>{documentationUrl.default}</td>
-                <td>{documentationUrl}</td>
+                <td class="property">version</td>
+                <td>{version.default}</td>
+                <td>{version}</td>
                 <td>
                     <p>
+                        This is the version number that will be added to asset URLs so that
+                        the browser can cache them indefinately. When you release a new version
+                        of your website you should increment this version number so that all the
+                        assets are dowmloaded again by the browser.
+                    </p>
+                    <p>
+                        Set this property to <span class="code">null</span> to disable versioning.
+                        This is useful for development environments where you don't want to have to
+                        update the version number every time you modify a website file.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">mimeTypes</td>
+                <td>{mimeTypes.default}</td>
+                <td>{mimeTypes}</td>
+                <td>
+                    <p>
+                        This is an array of mime types that should have version references replaced
+                        with the current version number. Whenever downstream middleware sets the
+                        <span class="code">Content-Type</span> header to one of these mime types
+                        the response body will be treated as text, ans will have all occurrences
+                        of <span class="code">{_v_}</span> replaced with the current version.
+                    </p>
+                    <p>
+                        The <span class="code">{_v_}</span> markers should be placed immediately
+                        before the file extension in the URLs of static assets. Static assets are
+                        usually files that are deployed with your web site that do not change between
+                        deployments. They can also be handlers that generate the content dynamically,
+                        but this content should not change for a specific version of your website.
+                    </p>
+                    <p>
+                        For example <span class="code">&lt;img src="/images/logo{_v_}.png" /></span>
+                        will be replaced with <span class="code">&lt;img src="/images/logo_v3.png" /></span>
+                        if the version property is 3.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">fileExtensions</td>
+                <td>{fileExtensions.default}</td>
+                <td>{fileExtensions}</td>
+                <td>
+                    <p>
+                        This is an array of file extensions for the types of files that can contain
+                        a version number. This middleware will strip out the version number from
+                        these URLs in the request before passing the request down to the next middleware
+                        in the chain, so that downstream middleware is oblivious to the versioning that
+                        is taking place.
+                    </p>
+                    <p>
+                        Setting this property to <span class="code">null</span> or an empty list will cause
+                        the middleware to apply versioning to all requests that look like file names with
+                        version numbers, i.e they have the form <span class="code">/path/path/filename_vxx.ext</span>
+                        where <span class="code">xx</span> is a version number.
+                    </p>
+                    <p>
+                        For example if your website receives a GET request for <span class="code">/images/logo_v3.png</span>
+                        the URL in the request will be modified to <span class="code">/images/logo.png</span> before
+                        chaining the downstream middleware.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">browserCacheTime</td>
+                <td>{browserCacheTime.default}</td>
+                <td>{browserCacheTime}</td>
+                <td>
+                    <p>
+                        This specifies how long the browser should cache versioned assets. Unversioned assets
+                        will not have any cache related headers added to the response.
+                    </p>
+                    <p>
+                        Setting this property to <span class="code">null</span> will send a header
+                        to the browser instructing it to not cache the asset. This is useful in development
+                        environments.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">exactVersion</td>
+                <td>{exactVersion.default}</td>
+                <td>{exactVersion}</td>
+                <td>
+                    <p>
+                        When this property is <span class="code">true</span> requests for assets with an old version
+                        number will result in a 404 (not found) response.
+                    </p>
+                    <p>
+                        When this property is <span class="code">false</span> the version number is not checked so 
+                        requests for older versions will result in the current version of the asset being served.
                     </p>
                 </td>
             </tr>

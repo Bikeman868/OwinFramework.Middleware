@@ -5,10 +5,10 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
-using OwinFramework.OutputCache;
 
 namespace OwinFramework.Versioning
 {
@@ -18,19 +18,28 @@ namespace OwinFramework.Versioning
         InterfacesV1.Capability.IConfigurable,
         InterfacesV1.Capability.ISelfDocumenting
     {
-        private readonly InterfacesV1.Facilities.ICache _cache;
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
 
         private IDisposable _configurationRegistration;
-        private OutputCacheConfiguration _configuration;
+        private VersioningConfiguration _configuration;
 
-        public VersioningMiddleware(InterfacesV1.Facilities.ICache cache)
+        public VersioningMiddleware()
         {
-            _cache = cache;
-            ConfigurationChanged(new OutputCacheConfiguration());
+            ConfigurationChanged(new VersioningConfiguration());
+            this.RunAfter<InterfacesV1.Middleware.IOutputCache>(null, false);
+        }
+
+        public Task RouteRequest(IOwinContext context, Func<Task> next)
+        {
+            var versionContext = new VersionContext(_configuration);
+            context.SetFeature(versionContext);
+
+            versionContext.RemoveVersionNumber(context);
+
+            return next();
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
@@ -41,39 +50,14 @@ namespace OwinFramework.Versioning
                 return DocumentConfiguration(context);
             }
             
-            var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>() as OutputCache;
-            if (outputCache == null)
-            {
+            var versionContext = context.GetFeature<VersionContext>();
+            if (versionContext == null)
                 return next();
-            }
 
-            if (outputCache.CachedContentIsAvailable
-                && outputCache.UseCachedContent)
-            {
-                return outputCache.Response.Send();
-            }
+            versionContext.CaptureResponse(context);
 
-            outputCache.CaptureResponse();
-            context.SetFeature<InterfacesV1.Middleware.IOutputCache>(outputCache);
-
-            var result = next();
-
-            result.ContinueWith(t => outputCache.Cache());
-
-            return result;
+            return next().ContinueWith(t => versionContext.Send(context).Wait());
         }
-
-        #region Request routing
-
-        public Task RouteRequest(IOwinContext context, Func<Task> next)
-        {
-            var upstreamOutputCache = new OutputCache(_cache, context, _configuration);
-            context.SetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>(upstreamOutputCache);
-
-            return next();
-        }
-
-        #endregion
 
         #region IConfigurable
 
@@ -82,7 +66,7 @@ namespace OwinFramework.Versioning
             _configurationRegistration = configuration.Register(path, ConfigurationChanged, _configuration);
         }
 
-        private void ConfigurationChanged(OutputCacheConfiguration configuration)
+        private void ConfigurationChanged(VersioningConfiguration configuration)
         {
             _configuration = configuration;
         }
@@ -93,11 +77,27 @@ namespace OwinFramework.Versioning
 
         private Task DocumentConfiguration(IOwinContext context)
         {
-            var document = GetEmbeddedResource("configuration.html");
-            //document = document.Replace("{maximumCacheTime}", formatRules(_configuration.Rules));
+            Func<string[], string> f = a =>
+                {
+                    if (a == null) return "null";
+                    return "[<br>\"" + string.Join("\",<br>\"", a) + "\"<br>]";
+                };
 
-            //var defaultConfiguration = new OutputCacheConfiguration();
-            //document = document.Replace("{maximumCacheTime.default}", formatRules(defaultConfiguration.Rules));
+            var document = GetEmbeddedResource("configuration.html");
+            document = document.Replace("{documentationRootUrl}", _configuration.DocumentationRootUrl);
+            document = document.Replace("{version}", _configuration.Version.ToString());
+            document = document.Replace("{mimeTypes}", f(_configuration.MimeTypes));
+            document = document.Replace("{fileExtensions}", f(_configuration.FileExtensions));
+            document = document.Replace("{browserCacheTime}", _configuration.BrowserCacheTime.ToString());
+            document = document.Replace("{exactVersion}", _configuration.ExactVersion.ToString());
+
+            var defaultConfiguration = new VersioningConfiguration();
+            document = document.Replace("{documentationRootUrl.default}", defaultConfiguration.DocumentationRootUrl);
+            document = document.Replace("{version.default}", defaultConfiguration.Version.ToString());
+            document = document.Replace("{mimeTypes.default}", f(defaultConfiguration.MimeTypes));
+            document = document.Replace("{fileExtensions.default}", f(defaultConfiguration.FileExtensions));
+            document = document.Replace("{browserCacheTime.default}", defaultConfiguration.BrowserCacheTime.ToString());
+            document = document.Replace("{exactVersion.default}", defaultConfiguration.ExactVersion.ToString());
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
@@ -117,12 +117,12 @@ namespace OwinFramework.Versioning
 
         public string LongDescription
         {
-            get { return "Captures output from downstream middleware and caches it only if the downstream middleware indicates that the response can be cached and reused."; }
+            get { return "Adds version numbers to static assets so that the browser can safely cache them for a long time. This makes your website more responsive and reduces the number of requests to your wibsite."; }
         }
 
         public string ShortDescription
         {
-            get { return "Caches output from downstream middleware"; }
+            get { return "Adds version numbers to static assets"; }
         }
 
         public IList<InterfacesV1.Capability.IEndpointDocumentation> Endpoints 
@@ -161,230 +161,184 @@ namespace OwinFramework.Versioning
 
         #region Capturing the response
 
-        [Serializable]
-        private class CachedResponse
+        private class CapturedResponse
         {
-            public DateTime WhenCached { get; set; }
-            public byte[] Content { get; set; }
-            public string ContentType { get; set; }
+            private MemoryStream _capturingStream;
+            private Stream _responseStream;
 
-            private IOwinContext _context;
-            private CapturingStream _capturingStream;
-
-            public CachedResponse Initialize(IOwinContext context)
+            public void StartCapture(IOwinContext context, Action<IOwinContext, CapturedResponse> onSendingHeaders)
             {
-                _context = context;
-                return this;
-            }
+                _responseStream = context.Response.Body;
+                _capturingStream = new MemoryStream();
+                context.Response.Body = _capturingStream;
 
-            public void StartCaptureResponse(Action<IOwinContext> onSendingHeaders)
-            {
-                _capturingStream = new CapturingStream(_context.Response.Body);
-                _context.Response.Body = _capturingStream;
-
-                _context.Response.OnSendingHeaders(
+                context.Response.OnSendingHeaders(
                     state =>
                     {
-                        onSendingHeaders(_context);
-                        var cachedResponse = (state as CachedResponse);
-                        if (cachedResponse != null)
-                            cachedResponse.CaptureHeaders();
+                        onSendingHeaders(context, state as CapturedResponse);
                     },  
                     this);
             }
 
-            public void EndCaptureResponse()
+            public byte[] EndCapture()
             {
-                if (_capturingStream != null)
-                    Content = _capturingStream.GetCapturedData();
+                return _capturingStream.ToArray();
             }
 
-            public Task Send()
+            public Task Send(byte[] content)
             {
-                _context.Response.ContentType = ContentType;
-                _context.Response.ContentLength = Content.LongLength;
-                return _context.Response.WriteAsync(Content);
+                return Task.Factory.FromAsync(
+                    _responseStream.BeginWrite(content, 0, content.Length, null, null), 
+                    ar => 
+                    {
+                        // Nothing to do when the write completes
+                    });
             }
-
-            private void CaptureHeaders()
-            {
-                ContentType = _context.Response.ContentType;
-                // TODO: Capture all headers
-            }
-
-            private class CapturingStream: Stream
-            {
-                private readonly Stream _originalStream;
-                private readonly MemoryStream _memoryStream;
-
-                public CapturingStream(Stream originalStream)
-                {
-                    _originalStream = originalStream;
-                    _memoryStream = new MemoryStream();
-                }
-
-                public byte[] GetCapturedData()
-                {
-                    return _memoryStream.ToArray();
-                }
-
-                public override bool CanRead
-                {
-                    get { return _originalStream.CanRead; }
-                }
-
-                public override bool CanSeek
-                {
-                    get { return _originalStream.CanSeek; }
-                }
-
-                public override bool CanWrite
-                {
-                    get { return _originalStream.CanWrite; }
-                }
-
-                public override void Flush()
-                {
-                    _originalStream.Flush();
-                }
-
-                public override long Length
-                {
-                    get { return _originalStream.Length; }
-                }
-
-                public override long Position
-                {
-                    get { return _originalStream.Position; }
-                    set { _memoryStream.Position = _originalStream.Position = value; }
-                }
-
-                public override int Read(byte[] buffer, int offset, int count)
-                {
-                    return _originalStream.Read(buffer, offset, count);
-                }
-
-                public override long Seek(long offset, SeekOrigin origin)
-                {
-                    _memoryStream.Seek(offset, origin);
-                    return _originalStream.Seek(offset, origin);
-                }
-
-                public override void SetLength(long value)
-                {
-                    _memoryStream.SetLength(value);
-                    _originalStream.SetLength(value);
-                }
-
-                public override void Write(byte[] buffer, int offset, int count)
-                {
-                    _memoryStream.Write(buffer, offset, count);
-                    _originalStream.Write(buffer, offset, count);
-                }
-            }
-         
         }
 
         #endregion
 
-        private class OutputCache : 
-            InterfacesV1.Upstream.IUpstreamOutputCache,
-            InterfacesV1.Middleware.IOutputCache
+        #region Request specific context
+
+        private class VersionContext
         {
-            // IUpstreamOutputCache
-            public bool CachedContentIsAvailable { get { return Response != null; } }
-            public TimeSpan? TimeInCache { get; private set; }
-            public bool UseCachedContent { get; set; }
+            private bool _isVersioned;
 
-            // IOutputCache
-            public string Category { get; set; }
-            public TimeSpan MaximumCacheTime { get; set; }
-            public InterfacesV1.Middleware.CachePriority Priority { get; set; }
+            private readonly VersioningConfiguration _configuration;
+            private readonly CapturedResponse _response;
 
-            public string CacheKey { get; private set; }
-            public CachedResponse Response { get; private set; }
+            private const string _versionPrefix = "_v";
+            private const string _versionMarker = "{_v_}";
 
-            private readonly InterfacesV1.Facilities.ICache _cache;
-            private readonly IOwinContext _context;
-            private readonly OutputCacheConfiguration _configuration;
-
-            public OutputCache(
-                InterfacesV1.Facilities.ICache cache, 
-                IOwinContext context,
-                OutputCacheConfiguration configuration)
+            public VersionContext(
+                VersioningConfiguration configuration)
             {
-                _cache = cache;
-                _context = context;
                 _configuration = configuration;
+                _response = new CapturedResponse();
+            }
 
-                CacheKey = GetCacheKey(context);
-                Response = cache.Get<CachedResponse>(CacheKey);
-                if (Response != null)
+            public void RemoveVersionNumber(IOwinContext context)
+            {
+                var path = context.Request.Path.Value;
+
+                var fileNameIndex = path.LastIndexOf('/') + 1;
+                var firstPeriodIndex = path.IndexOf('.', fileNameIndex);
+                var lastPeriodIndex = path.LastIndexOf('.');
+
+                var baseFileName = firstPeriodIndex < 0 ? path.Substring(fileNameIndex) : path.Substring(fileNameIndex, firstPeriodIndex - 1);
+                var versionIndex = baseFileName.LastIndexOf(_versionPrefix, StringComparison.OrdinalIgnoreCase);
+
+                if (versionIndex < 0)
+                    return;
+
+                var extension = lastPeriodIndex < 0 
+                    ? string.Empty 
+                    : path.Substring(lastPeriodIndex);
+                var extentions = _configuration.FileExtensions != null && _configuration.FileExtensions.Length > 0;
+                if (extension.Length > 0)
                 {
-                    Response.Initialize(context);
-                    TimeInCache = DateTime.UtcNow - Response.WhenCached;
-                    UseCachedContent = true;
+                    if (extentions &&
+                        !_configuration.FileExtensions.Any(e => string.Equals(e, extension, StringComparison.OrdinalIgnoreCase)))
+                        return;
+                }
+                else
+                {
+                    if (extentions) return;
                 }
 
-                MaximumCacheTime = TimeSpan.FromHours(1);
-                Category = "None";
-                Priority = InterfacesV1.Middleware.CachePriority.Never;
+                _isVersioned = true;
+
+                if (_configuration.ExactVersion && _configuration.Version.HasValue)
+                {
+                    var version = _versionPrefix + _configuration.Version.Value;
+                    var requestedVersion = baseFileName.Substring(versionIndex);
+                    if (requestedVersion != version)
+                        throw new HttpException(404, "This is not the current version of this resource");
+                }
+
+                context.Request.Path = new PathString(
+                    path.Substring(0, fileNameIndex + versionIndex) +
+                    path.Substring(firstPeriodIndex));
             }
 
-            public void CaptureResponse()
+            public void CaptureResponse(IOwinContext context)
             {
-                //if (Response == null)
-                //{
-                //    Response = new CachedResponse
-                //    {
-                //        WhenCached = DateTime.UtcNow
-                //    }.Initialize(_context);
-                //}
-
-                //Response.StartCaptureResponse(c =>
-                //{ 
-                //    _rule = GetMatchingRule();
-                //    if (_rule.BrowserCacheTime.HasValue)
-                //    {
-                //        c.Response.Expires = DateTime.UtcNow + _rule.BrowserCacheTime;
-                //        c.Response.Headers.Set(
-                //            "Cache-Control",
-                //            "public, max-age=" + (int)_rule.BrowserCacheTime.Value.TotalSeconds);
-                //    }
-                //    else
-                //    {
-                //        c.Response.Headers.Set("Cache-Control", "no-cache");
-                //    }
-                //});
+                _response.StartCapture(context, (c, r) =>
+                {
+                    if (_isVersioned)
+                    {
+                        if (_configuration.BrowserCacheTime.HasValue)
+                        {
+                            c.Response.Expires = DateTime.UtcNow + _configuration.BrowserCacheTime.Value;
+                            c.Response.Headers.Set(
+                                "Cache-Control",
+                                "public, max-age=" + (int)_configuration.BrowserCacheTime.Value.TotalSeconds);
+                        }
+                        else
+                        {
+                            c.Response.Headers.Set("Cache-Control", "no-cache");
+                        }
+                    }
+                });
             }
 
-            public void Cache()
+            public Task Send(IOwinContext context)
             {
-                //if (Response != null)
-                //{
-                //    Response.EndCaptureResponse();
+                var contentType = context.Response.ContentType;
 
-                //    if (_rule != null && _rule.ServerCacheTime.HasValue && _rule.ServerCacheTime.Value > TimeSpan.Zero)
-                //    {
-                //        _cache.Put(CacheKey, Response, _rule.ServerCacheTime.Value, _rule.CacheCategory);
-                //    }
-                //}
-            }
+                var mimeType = contentType;
+                var encoding = Encoding.UTF8;
 
-            public void Clear(string urlRegex)
-            {
-            }
+                if (!string.IsNullOrEmpty(contentType))
+                {
+                    foreach (var contentTypeHeader in contentType.Split(';').Select(h => h.Trim()).Where(h => h.Length > 0))
+                    {
+                        if (contentTypeHeader.Contains('='))
+                        {
+                            if (contentTypeHeader.StartsWith("charset="))
+                                encoding = Encoding.GetEncoding(contentTypeHeader.Substring(8));
+                        }
+                        else
+                        {
+                            mimeType = contentTypeHeader;
+                        }
+                    }
+                }
 
-            public void Clear()
-            {
-                _cache.Delete(CacheKey);
-            }
+                if (_isVersioned)
+                {
+                    if (_configuration.BrowserCacheTime.HasValue)
+                    {
+                        context.Response.Expires = DateTime.UtcNow + _configuration.BrowserCacheTime.Value;
+                        context.Response.Headers.Set(
+                            "Cache-Control",
+                            "public, max-age=" + (int)_configuration.BrowserCacheTime.Value.TotalSeconds);
+                    }
+                    else
+                    {
+                        context.Response.Headers.Set("Cache-Control", "no-cache");
+                    }
+                }
 
-            private string GetCacheKey(IOwinContext context)
-            {
-                var uri = context.Request.Uri;
-                return "OutputCache:" + uri.PathAndQuery.ToLower();
+                var content = _response.EndCapture();
+
+                if (_configuration.MimeTypes != null && 
+                    _configuration.MimeTypes.Length > 0 &&
+                    _configuration.MimeTypes.Any(m => string.Equals(m, mimeType, StringComparison.OrdinalIgnoreCase)))
+                {
+                    var text = encoding.GetString(content);
+                    if (_configuration.Version.HasValue)
+                        text = text.Replace(_versionMarker, _versionPrefix + _configuration.Version.Value);
+                    else
+                        text = text.Replace(_versionMarker, string.Empty);
+                    content = encoding.GetBytes(text);
+                }
+
+                return _response.Send(content);
             }
         }
+
+        #endregion
+
     }
 }

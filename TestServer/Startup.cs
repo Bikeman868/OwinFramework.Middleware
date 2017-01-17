@@ -41,6 +41,31 @@ namespace OwinFramework.Middleware.TestServer
             // Get the Owin Framework builder registered with IoC
             var builder = ninject.Get<IBuilder>();
 
+            // Output caching just makes the web site more efficient by capturing the output from
+            // downstream middleware and reusing it for the next request
+            builder.Register(ninject.Get<OutputCache.OutputCacheMiddleware>())
+                .As("Output cache")
+                .ConfigureWith(config, "/middleware/outputCache");
+
+            // The Versioning middleware will add version numbers to static assets and cache them
+            // in the browser
+            builder.Register(ninject.Get<Versioning.VersioningMiddleware>())
+                .As("Versioning")
+                .ConfigureWith(config, "/middleware/versioning");
+
+            // The dart middleware will allow the example Dart UI to run in browsers that support Dart
+            // natively as well as supplying compiled JavaScript to browsers that dont support Dart natively.
+            builder.Register(ninject.Get<Dart.DartMiddleware>())
+                .As("Dart")
+                .ConfigureWith(config, "/middleware/dart")
+                .RunAfter("Versioning");
+
+            // The Less middleware will compile LESS into CSS on the fly
+            builder.Register(ninject.Get<Less.LessMiddleware>())
+                .As("LESS compiler")
+                .ConfigureWith(config, "/middleware/less")
+                .RunAfter("Dart");
+                
             // The static files middleware will allow remote clients to retrieve files of certian types
             // Configuration options limit the files that can be retrieved this way. The ConfigureWith
             // fluid method below specifies the location of this configuration in the config.json file
@@ -49,25 +74,6 @@ namespace OwinFramework.Middleware.TestServer
                 .ConfigureWith(config, "/middleware/staticFiles")
                 .RunAfter("LESS compiler")
                 .RunAfter("Dart");
-
-            // The Less middleware will compile LESS into CSS on the fly
-            builder.Register(ninject.Get<Less.LessMiddleware>())
-                .As("LESS compiler")
-                .ConfigureWith(config, "/middleware/less")
-                .RunAfter("Dart");
-                
-            // The dart middleware will allow the example Dart UI to run in browsers that support Dart
-            // natively as well as supplying compiled JavaScript to browsers that dont support Dart natively.
-            builder.Register(ninject.Get<Dart.DartMiddleware>())
-                .As("Dart")
-                .ConfigureWith(config, "/middleware/dart")
-                .RunAfter("Output cache");
-
-            // Output caching just makes the web site more efficient by capturing the output from
-            // downstream middleware and reusing it for the next request
-            builder.Register(ninject.Get<OutputCache.OutputCacheMiddleware>())
-                .As("Output cache")
-                .ConfigureWith(config, "/middleware/outputCache");
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<RouteVisualizer.RouteVisualizerMiddleware>())
