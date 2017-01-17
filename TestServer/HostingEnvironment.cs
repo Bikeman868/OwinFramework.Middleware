@@ -5,6 +5,12 @@ using OwinFramework.Interfaces.Utility;
 
 namespace OwinFramework.Middleware.TestServer
 {
+    /// <summary>
+    /// The standard hosting environment implementation in the Owin Framework
+    /// will map physical files relative to the bin/debug folder for console
+    /// apps. This might be what you want for some console apps, but this
+    /// scheme doesn't work well for this test application.
+    /// </summary>
     internal class HostingEnvironment : IHostingEnvironment
     {
         private readonly string _webSitePath;

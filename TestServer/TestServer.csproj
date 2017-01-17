@@ -104,12 +104,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
-    <None Include="config.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="main.less">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
+    <None Include="config.json" />
+    <None Include="main.less" />
     <None Include="packages.config" />
     <None Include="readme.md" />
     <None Include="ui\pubspec.yaml" />
@@ -162,20 +158,14 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="exception.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Content Include="exception.html" />
     <Content Include="ui\web\favicon.ico" />
     <Content Include="ui\web\index.html" />
     <None Include="ui\web\styles.less" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="home.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="index.html">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Content Include="home.html" />
+    <Content Include="index.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

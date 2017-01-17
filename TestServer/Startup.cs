@@ -23,9 +23,14 @@ namespace OwinFramework.Middleware.TestServer
 
         public void Configuration(IAppBuilder app)
         {
+            // By explicitly adding this assembly to the package locator, any IoC mappings
+            // in this assembly will take priority over assemblies found through probing.
             var packageLocator = new PackageLocator()
                 .ProbeBinFolderAssemblies()
                 .Add(Assembly.GetExecutingAssembly());
+
+            // Construct the Ninject IoC container and configure it using information from 
+            // the package locator
             var ninject = new StandardKernel(new Ioc.Modules.Ninject.Module(packageLocator));
             
             // Tell urchin to get its configuration from the config.json file in this project. Note that if

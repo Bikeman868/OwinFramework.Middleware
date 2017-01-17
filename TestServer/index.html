@@ -110,6 +110,15 @@
                     response telling the browser that it can cache these for a very long time.
                 </td>
             </tr>
+            <tr>
+                <td><a href="/nonsense.html">/nonsense.html</a></td>
+                <td>A message indicating that the URL is invalid</td>
+                <td>
+                    The NotFound middleware is configured <a href="/owin/versioning">here</a> to
+                    return a 404 response for all requests that were not handled earlier in the
+                    pipeline.
+                </td>
+            </tr>
         </table>
     </body>
 </html>

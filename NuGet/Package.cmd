@@ -8,3 +8,4 @@ nuget.exe pack Owin.Framework.NotFound.nuspec
 nuget.exe pack Owin.Framework.OutputCache.nuspec
 nuget.exe pack Owin.Framework.RouteVisualizer.nuspec
 nuget.exe pack Owin.Framework.StaticFiles.nuspec
+nuget.exe pack Owin.Framework.Versioning.nuspec
