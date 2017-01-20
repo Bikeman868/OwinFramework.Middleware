@@ -13,8 +13,7 @@ using OwinFramework.Interfaces.Builder;
 namespace OwinFramework.Versioning
 {
     public class VersioningMiddleware:
-        IMiddleware<InterfacesV1.Middleware.IOutputCache>,
-        IUpstreamCommunicator<InterfacesV1.Upstream.IUpstreamOutputCache>,
+        IMiddleware<object>,
         InterfacesV1.Capability.IConfigurable,
         InterfacesV1.Capability.ISelfDocumenting
     {

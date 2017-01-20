@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Owin.Framework.Versioning</id>
-    <version>2.2.3</version>
+    <version>2.2.4</version>
     <title>Owin.Framework.Versioning</title>
     <authors>Martin Halliday</authors>
     <owners>Martin Halliday</owners>
