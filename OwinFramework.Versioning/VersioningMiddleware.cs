@@ -9,11 +9,13 @@ using System.Web;
 using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
+using OwinFramework.Interfaces.Routing;
 
 namespace OwinFramework.Versioning
 {
     public class VersioningMiddleware:
         IMiddleware<object>,
+        IRoutingProcessor,
         InterfacesV1.Capability.IConfigurable,
         InterfacesV1.Capability.ISelfDocumenting
     {
