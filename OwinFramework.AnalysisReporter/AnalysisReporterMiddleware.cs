@@ -17,7 +17,7 @@ using OwinFramework.InterfacesV1.Middleware;
 namespace OwinFramework.AnalysisReporter
 {
     public class AnalysisReporterMiddleware:
-        IMiddleware<object>, 
+        IMiddleware<IResponseProducer>, 
         IConfigurable, 
         ISelfDocumenting
     {
@@ -31,19 +31,32 @@ namespace OwinFramework.AnalysisReporter
         public AnalysisReporterMiddleware()
         {
             this.RunAfter<IAuthorization>(null, false);
+            this.RunAfter<IRequestRewriter>(null, false);
+            this.RunAfter<IResponseRewriter>(null, false);
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() method");
+
             string path;
             if (!IsForThisMiddleware(context, out path))
                 return next();
 
+            if (trace != null) trace.WriteLine(GetType().Name + " handling this request");
+
             if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning analysis report");
                 return ReportAnalysis(context);
+            }
 
             if (context.Request.Path.Value.Equals(path + ConfigDocsPath, StringComparison.OrdinalIgnoreCase))
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning configurartion documentation");
                 return DocumentConfiguration(context);
+            }
 
             throw new Exception("This request looked like it was for the analysis reporter middleware, but the middleware did not know how to handle it.");
         }

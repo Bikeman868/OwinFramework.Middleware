@@ -10,13 +10,15 @@ using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
 using OwinFramework.Interfaces.Utility;
+using OwinFramework.InterfacesV1.Capability;
+using OwinFramework.InterfacesV1.Middleware;
 
 namespace OwinFramework.StaticFiles
 {
     public class StaticFilesMiddleware:
-        IMiddleware<object>, 
-        InterfacesV1.Capability.IConfigurable,
-        InterfacesV1.Capability.ISelfDocumenting,
+        IMiddleware<IResponseProducer>, 
+        IConfigurable,
+        ISelfDocumenting,
         IRoutingProcessor
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
@@ -30,15 +32,23 @@ namespace OwinFramework.StaticFiles
         {
             _hostingEnvironment = hostingEnvironment;
 
-            this.RunAfter<InterfacesV1.Middleware.IOutputCache>(null, false);
-            this.RunAfter<InterfacesV1.Middleware.IAuthorization>(null, false);
+            this.RunAfter<IOutputCache>(null, false);
+            this.RunAfter<IRequestRewriter>(null, false);
+            this.RunAfter<IResponseRewriter>(null, false);
+            this.RunAfter<IAuthorization>(null, false);
         }
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
+
             StaticFileContext fileContext;
             if (!ShouldServeThisFile(context, out fileContext))
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " request is not for a static file");
                 return next();
+            }
 
             context.SetFeature(fileContext);
 
@@ -48,12 +58,18 @@ namespace OwinFramework.StaticFiles
                 if (outputCache.TimeInCache.HasValue)
                 {
                     if (outputCache.TimeInCache > fileContext.Configuration.MaximumCacheTime)
+                    {
+                        if (trace != null) trace.WriteLine(GetType().Name + " cached output is too old and will not be used");
                         outputCache.UseCachedContent = false;
+                    }
                     else
                     {
                         var timeSinceLastUpdate = DateTime.UtcNow - fileContext.PhysicalFile.LastWriteTimeUtc;
                         if (outputCache.TimeInCache > timeSinceLastUpdate)
+                        {
+                            if (trace != null) trace.WriteLine(GetType().Name + " file was modified since it was added to the output cache");
                             outputCache.UseCachedContent = false;
+                        }
                     }
                 }
             }
@@ -63,48 +79,60 @@ namespace OwinFramework.StaticFiles
                 var authorization = context.GetFeature<InterfacesV1.Upstream.IUpstreamAuthorization>();
                 if (authorization != null)
                 {
+                    if (trace != null) trace.WriteLine(GetType().Name + " file access requires " + fileContext.Configuration.RequiredPermission + " permission");
                     authorization.AddRequiredPermission(fileContext.Configuration.RequiredPermission);
                 }
             }
 
+            if (trace != null) trace.WriteLine(GetType().Name + " finished routing and short-circuiting any further routing");
             return null;
         }
 
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting");
+
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
             {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 
             var staticFileContext = context.GetFeature<StaticFileContext>();
             if (staticFileContext == null)
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " no static file context, probably not a static file request");
                 return next();
+            }
 
             var configuration = staticFileContext.Configuration;
             var physicalFile = staticFileContext.PhysicalFile;
             var extentionConfiguration = staticFileContext.ExtensionConfiguration;
 
             if (configuration == null || physicalFile == null || extentionConfiguration == null)
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " required data is missing, file can not be served");
                 return next();
-            
-            var outputCache = context.GetFeature<InterfacesV1.Middleware.IOutputCache>();
+            }
+
+            var outputCache = context.GetFeature<IOutputCache>();
             if (outputCache != null)
             {
                 var largeFile = physicalFile.Length > configuration.MaximumFileSizeToCache;
                 outputCache.Category = largeFile ? "LargeStaticFile" : "SmallStaticFile";
                 outputCache.MaximumCacheTime = configuration.MaximumCacheTime;
-                outputCache.Priority = largeFile 
-                    ? InterfacesV1.Middleware.CachePriority.Never 
-                    : InterfacesV1.Middleware.CachePriority.High;
+                outputCache.Priority = largeFile ? CachePriority.Never : CachePriority.High;
+                if (trace != null) trace.WriteLine(GetType().Name + " configured output cache " + outputCache.Category + " " + outputCache.Priority + " " + outputCache.MaximumCacheTime);
             }
 
-            return Task.Factory.StartNew(() =>
+            var result = Task.Factory.StartNew(() =>
             {
                 context.Response.ContentType = extentionConfiguration.MimeType;
                 if (extentionConfiguration.MimeType.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
                 {
+                    if (trace != null) trace.WriteLine(GetType().Name + " responding with a text file");
                     // Text files are handled differently because they can contain preamble bytes
                     string text;
                     using (var streamReader = physicalFile.OpenText())
@@ -115,7 +143,8 @@ namespace OwinFramework.StaticFiles
                 }
                 else
                 {
-                    var buffer = new byte[32*1024];
+                    if (trace != null) trace.WriteLine(GetType().Name + " responding with a binary file");
+                    var buffer = new byte[32 * 1024];
                     using (var stream = physicalFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
                         while (true)
@@ -128,6 +157,9 @@ namespace OwinFramework.StaticFiles
                     }
                 }
             });
+
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
+            return result;
         }
 
         #region IConfigurable

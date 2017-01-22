@@ -9,13 +9,13 @@ using System.Web;
 using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
+using OwinFramework.InterfacesV1.Capability;
+using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.MiddlewareHelpers;
 
 namespace OwinFramework.Versioning
 {
-    public class VersioningMiddleware:
-        IMiddleware<object>,
-        InterfacesV1.Capability.IConfigurable,
-        InterfacesV1.Capability.ISelfDocumenting
+    public class VersioningMiddleware:IMiddleware<IRequestRewriter>, IConfigurable, ISelfDocumenting
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
@@ -28,34 +28,51 @@ namespace OwinFramework.Versioning
         public VersioningMiddleware()
         {
             ConfigurationChanged(new VersioningConfiguration());
-            this.RunAfter<InterfacesV1.Middleware.IOutputCache>(null, false);
+            this.RunAfter<IOutputCache>(null, false);
         }
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
-            var versionContext = new VersionContext(_configuration);
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
+
+            var versionContext = new VersioningContext(_configuration);
             context.SetFeature(versionContext);
 
             versionContext.RemoveVersionNumber(context);
 
-            return next();
+            var result = next();
+
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished");
+            return result;
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
+
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
             {
                 return DocumentConfiguration(context);
             }
             
-            var versionContext = context.GetFeature<VersionContext>();
-            if (versionContext == null)
+            var versioningContext = context.GetFeature<VersioningContext>();
+            if (versioningContext == null)
                 return next();
 
-            versionContext.CaptureResponse(context);
+            versioningContext.CaptureResponse(context);
 
-            return next().ContinueWith(t => versionContext.Send(context).Wait());
+            var result = next()
+                .ContinueWith(t =>
+                {
+                    if (trace != null) trace.WriteLine(GetType().Name + " sending captured output");
+                    versioningContext.Send(context);
+                });
+
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
+            return result;
         }
 
         #region IConfigurable
@@ -158,66 +175,27 @@ namespace OwinFramework.Versioning
 
         #endregion
 
-        #region Capturing the response
-
-        private class CapturedResponse
-        {
-            private MemoryStream _capturingStream;
-            private Stream _responseStream;
-
-            public void StartCapture(IOwinContext context, Action<IOwinContext, CapturedResponse> onSendingHeaders)
-            {
-                _responseStream = context.Response.Body;
-                _capturingStream = new MemoryStream();
-                context.Response.Body = _capturingStream;
-
-                context.Response.OnSendingHeaders(
-                    state =>
-                    {
-                        onSendingHeaders(context, state as CapturedResponse);
-                    },  
-                    this);
-            }
-
-            public byte[] EndCapture()
-            {
-                return _capturingStream.ToArray();
-            }
-
-            public Task Send(byte[] content)
-            {
-                return Task.Factory.FromAsync(
-                    _responseStream.BeginWrite(content, 0, content.Length, null, null), 
-                    ar => 
-                    {
-                        // Nothing to do when the write completes
-                    });
-            }
-        }
-
-        #endregion
-
         #region Request specific context
 
-        private class VersionContext
+        private class VersioningContext
         {
-            private bool _isVersioned;
-
             private readonly VersioningConfiguration _configuration;
-            private readonly CapturedResponse _response;
+
+            private bool _isVersioned;
+            private ResponseCapture _response;
 
             private const string _versionPrefix = "_v";
             private const string _versionMarker = "{_v_}";
 
-            public VersionContext(
+            public VersioningContext(
                 VersioningConfiguration configuration)
             {
                 _configuration = configuration;
-                _response = new CapturedResponse();
             }
 
             public void RemoveVersionNumber(IOwinContext context)
             {
+                var trace = (TextWriter)context.Environment["host.TraceOutput"];
                 var path = context.Request.Path.Value;
 
                 var fileNameIndex = path.LastIndexOf('/') + 1;
@@ -233,17 +211,29 @@ namespace OwinFramework.Versioning
                 var extension = lastPeriodIndex < 0 
                     ? string.Empty 
                     : path.Substring(lastPeriodIndex);
+
+                if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " base file name: " + baseFileName + ". Ext: " + extension);
+
                 var allExtensions = _configuration.FileExtensions == null || _configuration.FileExtensions.Length == 0;
                 if (extension.Length > 0)
                 {
                     if (!allExtensions &&
                         !_configuration.FileExtensions.Any(e => string.Equals(e, extension, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " the " + extension + " extension is not configured for versioning");
                         return;
+                    }
                 }
                 else
                 {
-                    if (!allExtensions) return;
+                    if (!allExtensions)
+                    {
+                        if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " not configured to version extensionless paths");
+                        return;
+                    }
                 }
+
+                if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " stripping version number from " + baseFileName);
 
                 _isVersioned = true;
 
@@ -262,27 +252,14 @@ namespace OwinFramework.Versioning
 
             public void CaptureResponse(IOwinContext context)
             {
-                _response.StartCapture(context, (c, r) =>
-                {
-                    if (_isVersioned)
-                    {
-                        if (_configuration.BrowserCacheTime.HasValue)
-                        {
-                            c.Response.Expires = DateTime.UtcNow + _configuration.BrowserCacheTime.Value;
-                            c.Response.Headers.Set(
-                                "Cache-Control",
-                                "public, max-age=" + (int)_configuration.BrowserCacheTime.Value.TotalSeconds);
-                        }
-                        else
-                        {
-                            c.Response.Headers.Set("Cache-Control", "no-cache");
-                        }
-                    }
-                });
+                _response = new ResponseCapture(context);                
             }
 
-            public Task Send(IOwinContext context)
+            public void Send(IOwinContext context)
             {
+                if (_response == null)
+                    return;
+
                 var contentType = context.Response.ContentType;
 
                 var mimeType = contentType;
@@ -319,21 +296,21 @@ namespace OwinFramework.Versioning
                     }
                 }
 
-                var content = _response.EndCapture();
-
                 if (_configuration.MimeTypes != null && 
                     _configuration.MimeTypes.Length > 0 &&
                     _configuration.MimeTypes.Any(m => string.Equals(m, mimeType, StringComparison.OrdinalIgnoreCase)))
                 {
-                    var text = encoding.GetString(content);
+                    var text = encoding.GetString(_response.OutputBuffer);
+
                     if (_configuration.Version.HasValue)
                         text = text.Replace(_versionMarker, _versionPrefix + _configuration.Version.Value);
                     else
                         text = text.Replace(_versionMarker, string.Empty);
-                    content = encoding.GetBytes(text);
+
+                    _response.OutputBuffer = encoding.GetBytes(text);
                 }
 
-                return _response.Send(content);
+                _response.Send();
             }
         }
 

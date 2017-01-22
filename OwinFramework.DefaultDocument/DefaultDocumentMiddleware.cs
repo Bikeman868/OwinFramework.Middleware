@@ -9,11 +9,12 @@ using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
+using OwinFramework.InterfacesV1.Middleware;
 
 namespace OwinFramework.DefaultDocument
 {
     public class DefaultDocumentMiddleware:
-        IMiddleware<object>,
+        IMiddleware<IRequestRewriter>,
         IRoutingProcessor,
         InterfacesV1.Capability.IConfigurable
     {
@@ -28,22 +29,39 @@ namespace OwinFramework.DefaultDocument
             this.RunFirst();
         }
 
-        public Task Invoke(IOwinContext context, Func<Task> next)
-        {
-            if (context.Request.Path == _configPage)
-                return DocumentConfiguration(context);
-
-            return next();
-        }
-
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
+
             if (!context.Request.Path.HasValue || context.Request.Path.Value == "/" || context.Request.Path.Value == "")
             {
+                if (trace != null) trace.WriteLine(GetType().Name + " modifying request path to " + _defaultPage);
                 context.Request.Path = _defaultPage;
+                context.SetFeature<IRequestRewriter>(new DefaultDocumentContext());
             }
 
-            return next();
+            var result = next();
+
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished");
+            return result;
+        }
+
+        public Task Invoke(IOwinContext context, Func<Task> next)
+        {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
+
+            if (context.Request.Path == _configPage)
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
+                return DocumentConfiguration(context);
+            }
+
+            var result = next();
+
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
+            return result;
         }
 
         #region IConfigurable
@@ -123,5 +141,9 @@ namespace OwinFramework.DefaultDocument
         }
 
         #endregion
+    
+        private class DefaultDocumentContext: IRequestRewriter
+        {
+        }
     }
 }

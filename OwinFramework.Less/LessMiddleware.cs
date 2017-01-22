@@ -10,11 +10,12 @@ using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
 using OwinFramework.Interfaces.Utility;
+using OwinFramework.InterfacesV1.Middleware;
 
 namespace OwinFramework.Less
 {
     public class LessMiddleware:
-        IMiddleware<object>, 
+        IMiddleware<IResponseProducer>, 
         InterfacesV1.Capability.IConfigurable,
         InterfacesV1.Capability.ISelfDocumenting,
         IRoutingProcessor
@@ -28,16 +29,22 @@ namespace OwinFramework.Less
         public LessMiddleware(IHostingEnvironment hostingEnvironment)
         {
             _hostingEnvironment = hostingEnvironment;
-            this.RunAfter<InterfacesV1.Middleware.IOutputCache>(null, false);
+            this.RunAfter<IOutputCache>(null, false);
+            this.RunAfter<IRequestRewriter>(null, false);
+            this.RunAfter<IResponseRewriter>(null, false);
         }
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
+
             CssFileContext cssFileContext;
             if (!ShouldServeThisFile(context, out cssFileContext))
                 return next();
 
             context.SetFeature(cssFileContext);
+            context.SetFeature<IResponseProducer>(cssFileContext);
 
             var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
             if (outputCache != null && outputCache.CachedContentIsAvailable)
@@ -49,29 +56,40 @@ namespace OwinFramework.Less
                 }
             }
 
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished. Short-circuiting any further routing");
             return null;
         }
         
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
+
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
-                context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
+                context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
+            }
 
             var cssFileContext = context.GetFeature<CssFileContext>();
             if (cssFileContext == null || cssFileContext.PhysicalFile == null)
-                return next();
-
-            var outputCache = context.GetFeature<InterfacesV1.Middleware.IOutputCache>();
-            if (outputCache != null)
             {
-                outputCache.Priority = cssFileContext.NeedsCompiling
-                    ? InterfacesV1.Middleware.CachePriority.High 
-                    : InterfacesV1.Middleware.CachePriority.Medium;
+                if (trace != null) trace.WriteLine(GetType().Name + " no less context, probably not a less file request");
+                return next();
             }
 
-            return Task.Factory.StartNew(() =>
+            var outputCache = context.GetFeature<IOutputCache>();
+            if (outputCache != null)
+            {
+                outputCache.Priority = cssFileContext.NeedsCompiling ? CachePriority.High : CachePriority.Medium;
+                if (trace != null) trace.WriteLine(GetType().Name + " setting output cache priority " + outputCache.Priority);
+            }
+
+            var result = Task.Factory.StartNew(() =>
                 {
+
                     string fileContent;
                     using (var streamReader = cssFileContext.PhysicalFile.OpenText())
                     {
@@ -81,14 +99,19 @@ namespace OwinFramework.Less
                     context.Response.ContentType = "text/css";
                     if (cssFileContext.NeedsCompiling)
                     {
+                        if (trace != null) trace.WriteLine(GetType().Name + " compiling Less file to CSS");
                         var css = dotless.Core.Less.Parse(fileContent);
                         context.Response.Write(css);
                     }
                     else
                     {
+                        if (trace != null) trace.WriteLine(GetType().Name + " returning CSS from file system");
                         context.Response.Write(fileContent);
                     }
                 });
+
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished ");
+            return result;
         }
 
         #region IConfigurable
@@ -246,7 +269,7 @@ namespace OwinFramework.Less
 
         #region CssFileContext
 
-        private class CssFileContext
+        private class CssFileContext : IResponseProducer
         {
             public FileInfo PhysicalFile;
             public bool NeedsCompiling;

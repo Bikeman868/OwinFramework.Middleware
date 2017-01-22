@@ -6,13 +6,17 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Owin;
+using Newtonsoft.Json;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
+using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.InterfacesV1.Upstream;
+using OwinFramework.MiddlewareHelpers;
 
 namespace OwinFramework.OutputCache
 {
     public class OutputCacheMiddleware:
-        IMiddleware<InterfacesV1.Middleware.IOutputCache>,
+        IMiddleware<IOutputCache>,
         IUpstreamCommunicator<InterfacesV1.Upstream.IUpstreamOutputCache>,
         InterfacesV1.Capability.IConfigurable,
         InterfacesV1.Capability.ISelfDocumenting
@@ -32,47 +36,61 @@ namespace OwinFramework.OutputCache
             ConfigurationChanged(new OutputCacheConfiguration());
         }
 
+        public Task RouteRequest(IOwinContext context, Func<Task> next)
+        {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
+
+            var upstreamOutputCache = new OutputCacheContext(_cache, context, _configuration);
+            context.SetFeature<IUpstreamOutputCache>(upstreamOutputCache);
+
+            var result = next();
+
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished");
+            return result;
+        }
+
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting  " + context.Request.Uri);
+            
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
             {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
             
-            var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>() as OutputCache;
+            var outputCache = context.GetFeature<IUpstreamOutputCache>() as OutputCacheContext;
             if (outputCache == null)
             {
+                if (trace != null) trace.WriteLine(GetType().Name + " has no context, chaining next middleware");
                 return next();
             }
 
             if (outputCache.CachedContentIsAvailable
                 && outputCache.UseCachedContent)
             {
-                return outputCache.Response.Send();
+                if (trace != null) trace.WriteLine(GetType().Name + " returning cached response");
+                return outputCache.SendCachedResponse();
             }
 
             outputCache.CaptureResponse();
-            context.SetFeature<InterfacesV1.Middleware.IOutputCache>(outputCache);
+            context.SetFeature<IOutputCache>(outputCache);
 
-            var result = next();
+            var result = next().ContinueWith(t =>
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " flushing captured response to actual response stream");
+                outputCache.SendCapturedOutput();
 
-            result.ContinueWith(t => outputCache.Cache());
+                if (trace != null) trace.WriteLine(GetType().Name + " saving response to cache");
+                outputCache.SaveToCache();
+            });
 
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
             return result;
         }
-
-        #region Request routing
-
-        public Task RouteRequest(IOwinContext context, Func<Task> next)
-        {
-            var upstreamOutputCache = new OutputCache(_cache, context, _configuration);
-            context.SetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>(upstreamOutputCache);
-
-            return next();
-        }
-
-        #endregion
 
         #region IConfigurable
 
@@ -188,152 +206,60 @@ namespace OwinFramework.OutputCache
         [Serializable]
         private class CachedResponse
         {
+            [JsonProperty("when")]
             public DateTime WhenCached { get; set; }
-            public byte[] Content { get; set; }
-            public string ContentType { get; set; }
+            
+            [JsonProperty("content")]
+            public byte[] CachedContent { get; set; }
 
-            private IOwinContext _context;
-            private CapturingStream _capturingStream;
+            [JsonProperty("headers")]
+            public CachedHeader[] Headers { get; set; }
+        }
 
-            public CachedResponse Initialize(IOwinContext context)
-            {
-                _context = context;
-                return this;
-            }
+        [Serializable]
+        private class CachedHeader
+        {
+            [JsonProperty("n")]
+            public string HeaderName { get; set; }
 
-            public void StartCaptureResponse(Action<IOwinContext> onSendingHeaders)
-            {
-                _capturingStream = new CapturingStream(_context.Response.Body);
-                _context.Response.Body = _capturingStream;
-
-                _context.Response.OnSendingHeaders(
-                    state =>
-                    {
-                        onSendingHeaders(_context);
-                        var cachedResponse = (state as CachedResponse);
-                        if (cachedResponse != null)
-                            cachedResponse.CaptureHeaders();
-                    },  
-                    this);
-            }
-
-            public void EndCaptureResponse()
-            {
-                if (_capturingStream != null)
-                    Content = _capturingStream.GetCapturedData();
-            }
-
-            public Task Send()
-            {
-                _context.Response.ContentType = ContentType;
-                _context.Response.ContentLength = Content.LongLength;
-                return _context.Response.WriteAsync(Content);
-            }
-
-            private void CaptureHeaders()
-            {
-                ContentType = _context.Response.ContentType;
-                // TODO: Capture all headers
-            }
-
-            private class CapturingStream: Stream
-            {
-                private readonly Stream _originalStream;
-                private readonly MemoryStream _memoryStream;
-
-                public CapturingStream(Stream originalStream)
-                {
-                    _originalStream = originalStream;
-                    _memoryStream = new MemoryStream();
-                }
-
-                public byte[] GetCapturedData()
-                {
-                    return _memoryStream.ToArray();
-                }
-
-                public override bool CanRead
-                {
-                    get { return _originalStream.CanRead; }
-                }
-
-                public override bool CanSeek
-                {
-                    get { return _originalStream.CanSeek; }
-                }
-
-                public override bool CanWrite
-                {
-                    get { return _originalStream.CanWrite; }
-                }
-
-                public override void Flush()
-                {
-                    _originalStream.Flush();
-                }
-
-                public override long Length
-                {
-                    get { return _originalStream.Length; }
-                }
-
-                public override long Position
-                {
-                    get { return _originalStream.Position; }
-                    set { _memoryStream.Position = _originalStream.Position = value; }
-                }
-
-                public override int Read(byte[] buffer, int offset, int count)
-                {
-                    return _originalStream.Read(buffer, offset, count);
-                }
-
-                public override long Seek(long offset, SeekOrigin origin)
-                {
-                    _memoryStream.Seek(offset, origin);
-                    return _originalStream.Seek(offset, origin);
-                }
-
-                public override void SetLength(long value)
-                {
-                    _memoryStream.SetLength(value);
-                    _originalStream.SetLength(value);
-                }
-
-                public override void Write(byte[] buffer, int offset, int count)
-                {
-                    _memoryStream.Write(buffer, offset, count);
-                    _originalStream.Write(buffer, offset, count);
-                }
-            }
-         
+            [JsonProperty("v")]
+            public string HeaderValue { get; set; }
         }
 
         #endregion
 
-        private class OutputCache : 
-            InterfacesV1.Upstream.IUpstreamOutputCache,
-            InterfacesV1.Middleware.IOutputCache
+        /// <summary>
+        /// An instance of this class is stored in the OWIN context for rach request
+        /// that involves the output cache.
+        /// </summary>
+        private class OutputCacheContext : IUpstreamOutputCache, IOutputCache
         {
             // IUpstreamOutputCache
-            public bool CachedContentIsAvailable { get { return Response != null; } }
+            public bool CachedContentIsAvailable { get { return _cachedResponse != null; } }
             public TimeSpan? TimeInCache { get; private set; }
             public bool UseCachedContent { get; set; }
 
             // IOutputCache
             public string Category { get; set; }
             public TimeSpan MaximumCacheTime { get; set; }
-            public InterfacesV1.Middleware.CachePriority Priority { get; set; }
+            public CachePriority Priority { get; set; }
+            public byte[] OutputBuffer 
+            {
+                get { return _responseCapture == null ? null : _responseCapture.OutputBuffer; }
+                set { _responseCapture.OutputBuffer = value; }
+            }
 
-            public string CacheKey { get; private set; }
-            public CachedResponse Response { get; private set; }
-
+            private readonly string _cacheKey;
             private readonly InterfacesV1.Facilities.ICache _cache;
             private readonly IOwinContext _context;
             private readonly OutputCacheConfiguration _configuration;
-            private OutputCacheRule _rule;
 
-            public OutputCache(
+            private OutputCacheRule _rule;
+            private ResponseCapture _responseCapture;
+            private CachedResponse _cachedResponse;
+
+
+            public OutputCacheContext(
                 InterfacesV1.Facilities.ICache cache, 
                 IOwinContext context,
                 OutputCacheConfiguration configuration)
@@ -342,56 +268,82 @@ namespace OwinFramework.OutputCache
                 _context = context;
                 _configuration = configuration;
 
-                CacheKey = GetCacheKey(context);
-                Response = cache.Get<CachedResponse>(CacheKey);
-                if (Response != null)
+                _cacheKey = GetCacheKey(context);
+                _cachedResponse = cache.Get<CachedResponse>(_cacheKey);
+                if (_cachedResponse != null)
                 {
-                    Response.Initialize(context);
-                    TimeInCache = DateTime.UtcNow - Response.WhenCached;
+                    TimeInCache = DateTime.UtcNow - _cachedResponse.WhenCached;
                     UseCachedContent = true;
                 }
 
                 MaximumCacheTime = TimeSpan.FromHours(1);
                 Category = "None";
-                Priority = InterfacesV1.Middleware.CachePriority.Never;
+                Priority = CachePriority.Never;
+            }
+
+            public Task SendCachedResponse()
+            {
+                if (_cachedResponse == null)
+                    throw new Exception("Output cache middleware attempt to send cached response when there was none");
+
+                if (_cachedResponse.Headers != null)
+                {
+                    foreach (var header in _cachedResponse.Headers)
+                        _context.Response.Headers[header.HeaderName] = header.HeaderValue;
+                }
+                _context.Response.Headers["x-output-cache"] = TimeInCache.ToString();
+
+                return _context.Response.WriteAsync(_cachedResponse.CachedContent);
             }
 
             public void CaptureResponse()
             {
-                if (Response == null)
-                {
-                    Response = new CachedResponse
-                    {
-                        WhenCached = DateTime.UtcNow
-                    }.Initialize(_context);
-                }
+                _responseCapture = new ResponseCapture(_context);
 
-                Response.StartCaptureResponse(c =>
-                { 
+                _context.Response.OnSendingHeaders(c => 
+                {
                     _rule = GetMatchingRule();
                     if (_rule.BrowserCacheTime.HasValue)
                     {
-                        c.Response.Expires = DateTime.UtcNow + _rule.BrowserCacheTime;
-                        c.Response.Headers.Set(
+                        _context.Response.Expires = DateTime.UtcNow + _rule.BrowserCacheTime;
+                        _context.Response.Headers.Set(
                             "Cache-Control",
                             "public, max-age=" + (int)_rule.BrowserCacheTime.Value.TotalSeconds);
                     }
                     else
                     {
-                        c.Response.Headers.Set("Cache-Control", "no-cache");
+                        _context.Response.Headers.Set("Cache-Control", "no-cache");
                     }
-                });
+
+                }, _context);
             }
 
-            public void Cache()
+            public void SendCapturedOutput()
             {
-                if (Response != null)
-                {
-                    Response.EndCaptureResponse();
+                if (_responseCapture != null)
+                    _responseCapture.Send();
+            }
 
+            public void SaveToCache()
+            {
+                if (_responseCapture != null)
+                {
                     if (_rule != null && _rule.ServerCacheTime.HasValue && _rule.ServerCacheTime.Value > TimeSpan.Zero)
                     {
-                        _cache.Put(CacheKey, Response, _rule.ServerCacheTime.Value, _rule.CacheCategory);
+                        if (_cachedResponse == null) _cachedResponse = new CachedResponse();
+
+                        var buffer = _responseCapture.OutputBuffer;
+                        if (buffer != null)
+                        {
+                            _cachedResponse.CachedContent = new byte[buffer.Length];
+                            buffer.CopyTo(_cachedResponse.CachedContent, 0);
+
+                            _cachedResponse.Headers = _context.Response.Headers.Keys
+                                .Select(n => new CachedHeader { HeaderName = n, HeaderValue = _context.Response.Headers[n] })
+                                .ToArray();
+
+                            _cache.Put(_cacheKey, _cachedResponse, _rule.ServerCacheTime.Value, _rule.CacheCategory);
+                        }
                     }
                 }
             }
@@ -416,7 +368,7 @@ namespace OwinFramework.OutputCache
 
             public void Clear()
             {
-                _cache.Delete(CacheKey);
+                _cache.Delete(_cacheKey);
             }
 
             private string GetCacheKey(IOwinContext context)

@@ -9,11 +9,12 @@ using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Utility;
+using OwinFramework.InterfacesV1.Middleware;
 
 namespace OwinFramework.NotFound
 {
     public class NotFoundMiddleware:
-        IMiddleware<object>,
+        IMiddleware<IResponseProducer>,
         InterfacesV1.Capability.IConfigurable
     {
         private readonly IHostingEnvironment _hostingEnvironment;
@@ -36,26 +37,44 @@ namespace OwinFramework.NotFound
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
+
             if (context.Request.Path == _configPage)
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
+            }
 
             string template;
             if (_pageTemplateFile != null && _pageTemplateFile.Exists)
             {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning template file");
                 using (var stream = _pageTemplateFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     var reader = new StreamReader(stream, true);
                     template = reader.ReadToEnd();
                 }
+
+                var outputCache = context.GetFeature<IOutputCache>();
+                if (outputCache != null)
+                {
+                    outputCache.Priority = CachePriority.Low;
+                    if (trace != null) trace.WriteLine(GetType().Name + " setting output cache priority " + outputCache.Priority);
+                }
             }
             else
             {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning embedded template response");
                 template = GetEmbeddedResource("template.html");
             }
 
             context.Response.StatusCode = 404;
             context.Response.ReasonPhrase = "Not Found";
-            return context.Response.WriteAsync(template);
+            var result = context.Response.WriteAsync(template);
+
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
+            return result;
         }
 
         #region IConfigurable

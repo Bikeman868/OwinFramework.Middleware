@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Owin;
+using Newtonsoft.Json;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
@@ -20,7 +21,7 @@ using Svg.Transforms;
 namespace OwinFramework.RouteVisualizer
 {
     public class RouteVisualizerMiddleware: 
-        IMiddleware<object>, 
+        IMiddleware<IResponseProducer>, 
         IConfigurable, 
         ISelfDocumenting, 
         IAnalysable, 
@@ -49,10 +50,16 @@ namespace OwinFramework.RouteVisualizer
         public RouteVisualizerMiddleware()
         {
             this.RunAfter<IAuthorization>(null, false);
+            this.RunAfter<IRequestRewriter>(null, false);
+            this.RunAfter<IResponseRewriter>(null, false);
+            this.RunAfter<IOutputCache>(null, false);
         }
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
+
             // This code asks the authorization middleware to enforce the required
             // permission to run this middleware. This only applies when the
             // required permission is configured and authorization middleware is
@@ -65,14 +72,24 @@ namespace OwinFramework.RouteVisualizer
                 {
                     var authorization = context.GetFeature<IUpstreamAuthorization>();
                     if (authorization != null)
+                    {
+                        if (trace != null) trace.WriteLine(GetType().Name + " requires " + requiredPermission + " permission");
                         authorization.AddRequiredPermission(requiredPermission);
+                    }
                 }
             }
-            return next.Invoke();
+
+            var result = next.Invoke();
+
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished");
+            return result;
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
+
             string path;
             if (!IsForThisMiddleware(context, out path))
                 return next();
@@ -80,10 +97,16 @@ namespace OwinFramework.RouteVisualizer
             _requestCount++;
 
             if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning route visualization");
                 return VisualizeRouting(context);
+            }
 
             if (context.Request.Path.Value.Equals(path + ConfigDocsPath, StringComparison.OrdinalIgnoreCase))
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
+            }
 
             throw new Exception("This request looked like it was for the visualization middleware, but the middleware did not know how to handle it.");
         }

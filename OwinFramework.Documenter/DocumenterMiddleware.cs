@@ -15,7 +15,7 @@ using OwinFramework.InterfacesV1.Middleware;
 namespace OwinFramework.Documenter
 {
     public class DocumenterMiddleware:
-        IMiddleware<object>, 
+        IMiddleware<IResponseProducer>, 
         IConfigurable, 
         ISelfDocumenting
     {
@@ -29,19 +29,34 @@ namespace OwinFramework.Documenter
         public DocumenterMiddleware()
         {
             this.RunAfter<IAuthorization>(null, false);
+            this.RunAfter<IRequestRewriter>(null, false);
+            this.RunAfter<IResponseRewriter>(null, false);
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
+
             string path;
             if (!IsForThisMiddleware(context, out path))
-                return next();
+            {
+                var result = next();
+                if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
+                return result;
+            }
 
             if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning middleware documentation");
                 return GenerateDocumentation(context);
+            }
 
             if (context.Request.Path.Value.Equals(path + ConfigDocsPath, StringComparison.OrdinalIgnoreCase))
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
+            }
 
             throw new Exception("This request looked like it was for the documenter middleware, but the middleware did not know how to handle it.");
         }

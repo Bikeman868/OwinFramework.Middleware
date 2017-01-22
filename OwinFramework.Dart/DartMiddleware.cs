@@ -9,11 +9,12 @@ using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
+using OwinFramework.InterfacesV1.Middleware;
 
 namespace OwinFramework.Dart
 {
     public class DartMiddleware:
-        IMiddleware<object>, 
+        IMiddleware<IRequestRewriter>, 
         InterfacesV1.Capability.IConfigurable,
         InterfacesV1.Capability.ISelfDocumenting,
         IRoutingProcessor
@@ -25,38 +26,73 @@ namespace OwinFramework.Dart
 
         public DartMiddleware()
         {
-            this.RunAfter<InterfacesV1.Middleware.IOutputCache>(null, false);
+            this.RunAfter<IOutputCache>(null, false);
         }
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
+
             PathString relativePath;
             if (_rootUrl.HasValue && context.Request.Path.StartsWithSegments(_rootUrl, out relativePath))
             {
                 if (!relativePath.HasValue || relativePath.Value == "/")
+                {
+                    if (trace != null) trace.WriteLine(GetType().Name + " selecting the default document " + _defaultDocument);
                     relativePath = _defaultDocument;
+                }
+
+                var dartContext = new DartContext();
+                context.SetFeature<IRequestRewriter>(dartContext);
+                context.SetFeature<IDart>(dartContext);
 
                 var userAgent = context.Request.Headers["user-agent"];
-                if (userAgent != null && userAgent.IndexOf("(Dart)", StringComparison.OrdinalIgnoreCase) > -1)
+                dartContext.IsDartSupported = userAgent != null &&
+                                              userAgent.IndexOf("(Dart)", StringComparison.OrdinalIgnoreCase) > -1;
+
+                if (dartContext.IsDartSupported)
+                {
+                    if (trace != null) trace.WriteLine(GetType().Name + " the browser supports Dart");
                     context.Request.Path = _rootDartFolder + relativePath;
+                }
                 else
+                {
+                    if (trace != null) trace.WriteLine(GetType().Name + " the browser does not support Dart");
                     context.Request.Path = _rootBuildFolder + relativePath;
+                }
 
                 var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
                 if (outputCache != null)
+                {
+                    if (trace != null) trace.WriteLine(GetType().Name + " disabling output caching");
                     outputCache.UseCachedContent = false;
+                }
             }
 
-            return next();
+            var result = next();
+
+            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished");
+            return result;
         }
         
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
-            if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
-                context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
-                return DocumentConfiguration(context);
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
 
-            return next();
+            if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
+                context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
+                return DocumentConfiguration(context);
+            }
+
+            var result = next();
+
+            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
+            return result;
         }
 
         #region IConfigurable
@@ -227,5 +263,9 @@ namespace OwinFramework.Dart
 
         #endregion
 
+        private class DartContext : IDart
+        {
+            public bool IsDartSupported { get; set; }
+        }
     }
 }
