@@ -9,13 +9,14 @@ using System.Web;
 using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
+using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.MiddlewareHelpers;
 
 namespace OwinFramework.Versioning
 {
-    public class VersioningMiddleware:IMiddleware<IRequestRewriter>, IConfigurable, ISelfDocumenting
+    public class VersioningMiddleware:IMiddleware<IRequestRewriter>, IConfigurable, ISelfDocumenting, IRoutingProcessor
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }

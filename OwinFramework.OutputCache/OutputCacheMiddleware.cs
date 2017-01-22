@@ -249,6 +249,8 @@ namespace OwinFramework.OutputCache
                 set { _responseCapture.OutputBuffer = value; }
             }
 
+            private static readonly IList<string> _noCacheHeaders = new List<string>{ "content-length" };
+
             private readonly string _cacheKey;
             private readonly InterfacesV1.Facilities.ICache _cache;
             private readonly IOwinContext _context;
@@ -339,8 +341,11 @@ namespace OwinFramework.OutputCache
                             buffer.CopyTo(_cachedResponse.CachedContent, 0);
 
                             _cachedResponse.Headers = _context.Response.Headers.Keys
+                                .Where(n => !_noCacheHeaders.Contains(n.ToLower()))
                                 .Select(n => new CachedHeader { HeaderName = n, HeaderValue = _context.Response.Headers[n] })
                                 .ToArray();
+
+                            _cachedResponse.WhenCached = DateTime.UtcNow;
 
                             _cache.Put(_cacheKey, _cachedResponse, _rule.ServerCacheTime.Value, _rule.CacheCategory);
                         }

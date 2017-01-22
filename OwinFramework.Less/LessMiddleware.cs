@@ -41,7 +41,10 @@ namespace OwinFramework.Less
 
             CssFileContext cssFileContext;
             if (!ShouldServeThisFile(context, out cssFileContext))
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " this is not a request for a Less or CSS file");
                 return next();
+            }
 
             context.SetFeature(cssFileContext);
             context.SetFeature<IResponseProducer>(cssFileContext);
@@ -52,7 +55,16 @@ namespace OwinFramework.Less
                 if (outputCache.TimeInCache.HasValue)
                 {
                     var timeSinceFileChanged = DateTime.UtcNow - cssFileContext.PhysicalFile.LastWriteTimeUtc;
-                    outputCache.UseCachedContent = outputCache.TimeInCache.Value < timeSinceFileChanged;
+                    if (outputCache.TimeInCache.Value > timeSinceFileChanged)
+                    {
+                        if (trace != null) trace.WriteLine(GetType().Name + " file has changed since output was cached. Output cache will not be used");
+                        outputCache.UseCachedContent = false;
+                    }
+                    else
+                    {
+                        if (trace != null) trace.WriteLine(GetType().Name + " instructing output cache to use cached output");
+                        outputCache.UseCachedContent = true;
+                    }
                 }
             }
 
