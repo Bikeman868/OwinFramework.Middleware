@@ -32,7 +32,6 @@
             "fileExtensions": [
                 { "extension": ".html", "mimeType": "text/html" },
                 { "extension": ".ico", "mimeType": "image/ico" },
-                { "extension": ".css", "mimeType": "text/css" },
                 { "extension": ".js", "mimeType": "application/javascript" },
                 { "extension": ".dart", "mimeType": "application/dart" }
             ],

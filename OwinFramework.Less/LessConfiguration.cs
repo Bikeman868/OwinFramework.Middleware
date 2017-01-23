@@ -9,6 +9,7 @@ namespace OwinFramework.Less
         public string DocumentationRootUrl { get; set; }
         public string RootDirectory { get; set; }
         public bool Enabled { get; set; }
+        public bool AnalyticsEnabled { get; set; }
 
         public LessConfiguration()
         {
@@ -16,6 +17,7 @@ namespace OwinFramework.Less
             DocumentationRootUrl = "/owin/less/config";
             RootDirectory = "~\\styles";
             Enabled = true;
+            AnalyticsEnabled = true;
         }
     }
 }

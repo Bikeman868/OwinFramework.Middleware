@@ -43,7 +43,6 @@ namespace OwinFramework.Dart
             {
 #if DEBUG
                 var trace = (TextWriter)context.Environment["host.TraceOutput"];
-                if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
 #endif
                 if (!relativePath.HasValue || relativePath.Value == "/")
                 {

@@ -31,37 +31,31 @@ namespace OwinFramework.DefaultDocument
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
-
             if (!context.Request.Path.HasValue || context.Request.Path.Value == "/" || context.Request.Path.Value == "")
             {
+#if DEBUG
+                var trace = (TextWriter)context.Environment["host.TraceOutput"];
                 if (trace != null) trace.WriteLine(GetType().Name + " modifying request path to " + _defaultPage);
+#endif
                 context.Request.Path = _defaultPage;
                 context.SetFeature<IRequestRewriter>(new DefaultDocumentContext());
             }
 
-            var result = next();
-
-            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished");
-            return result;
+            return next();
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
-
             if (context.Request.Path == _configPage)
             {
+#if DEBUG
+                var trace = (TextWriter)context.Environment["host.TraceOutput"];
                 if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
+#endif
                 return DocumentConfiguration(context);
             }
 
-            var result = next();
-
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
-            return result;
+            return next();
         }
 
         #region IConfigurable

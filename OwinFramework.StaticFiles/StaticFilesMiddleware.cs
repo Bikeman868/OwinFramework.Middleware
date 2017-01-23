@@ -284,7 +284,7 @@ namespace OwinFramework.StaticFiles
             get { return "Maps URLs onto physical files and returns those files to the requestor"; }
         }
 
-        public IList<InterfacesV1.Capability.IEndpointDocumentation> Endpoints 
+        public IList<IEndpointDocumentation> Endpoints 
         { 
             get 
             {
@@ -310,9 +310,9 @@ namespace OwinFramework.StaticFiles
                     documentation.Add(
                         new EndpointDocumentation
                         {
-                            RelativePath = _configuration.StaticFilesRootUrl + (_configuration.IncludeSubFolders ? "**" : "*") + extension.Extension,
-                            Description = "Maps the URL path to a file path rooted at " + _configuration.RootDirectory + (_configuration.IncludeSubFolders ? "**" : "*") + extension.Extension,
-                            Attributes = new List<InterfacesV1.Capability.IEndpointAttributeDocumentation>
+                            RelativePath = _configuration.StaticFilesRootUrl + (_configuration.IncludeSubFolders ? "*/*" : "*") + extension.Extension,
+                            Description = "Maps the URL path to a file path rooted at " + _configuration.RootDirectory,
+                            Attributes = new List<IEndpointAttributeDocumentation>
                             {
                                 new EndpointAttributeDocumentation
                                 {

@@ -10,6 +10,7 @@ using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
 using OwinFramework.Interfaces.Utility;
+using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 
 namespace OwinFramework.Less
@@ -36,13 +37,13 @@ namespace OwinFramework.Less
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
+#if DEBUG
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
+#endif
 
             CssFileContext cssFileContext;
             if (!ShouldServeThisFile(context, out cssFileContext))
             {
-                if (trace != null) trace.WriteLine(GetType().Name + " this is not a request for a Less or CSS file");
                 return next();
             }
 
@@ -57,38 +58,46 @@ namespace OwinFramework.Less
                     var timeSinceFileChanged = DateTime.UtcNow - cssFileContext.PhysicalFile.LastWriteTimeUtc;
                     if (outputCache.TimeInCache.Value > timeSinceFileChanged)
                     {
+#if DEBUG
                         if (trace != null) trace.WriteLine(GetType().Name + " file has changed since output was cached. Output cache will not be used");
+#endif
                         outputCache.UseCachedContent = false;
                     }
                     else
                     {
+#if DEBUG
                         if (trace != null) trace.WriteLine(GetType().Name + " instructing output cache to use cached output");
+#endif
                         outputCache.UseCachedContent = true;
                     }
                 }
             }
 
-            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished. Short-circuiting any further routing");
+#if DEBUG
+            if (trace != null) trace.WriteLine(GetType().Name + " short-circuiting any further routing");
+#endif
             return null;
         }
         
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
+#if DEBUG
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
+#endif
 
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl,
                     StringComparison.OrdinalIgnoreCase))
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
+#endif
                 return DocumentConfiguration(context);
             }
 
             var cssFileContext = context.GetFeature<CssFileContext>();
             if (cssFileContext == null || cssFileContext.PhysicalFile == null)
             {
-                if (trace != null) trace.WriteLine(GetType().Name + " no less context, probably not a less file request");
                 return next();
             }
 
@@ -96,10 +105,12 @@ namespace OwinFramework.Less
             if (outputCache != null)
             {
                 outputCache.Priority = cssFileContext.NeedsCompiling ? CachePriority.High : CachePriority.Medium;
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " setting output cache priority " + outputCache.Priority);
+#endif
             }
 
-            var result = Task.Factory.StartNew(() =>
+            return Task.Factory.StartNew(() =>
                 {
 
                     string fileContent;
@@ -111,19 +122,20 @@ namespace OwinFramework.Less
                     context.Response.ContentType = "text/css";
                     if (cssFileContext.NeedsCompiling)
                     {
+#if DEBUG
                         if (trace != null) trace.WriteLine(GetType().Name + " compiling Less file to CSS");
+#endif
                         var css = dotless.Core.Less.Parse(fileContent);
                         context.Response.Write(css);
                     }
                     else
                     {
+#if DEBUG
                         if (trace != null) trace.WriteLine(GetType().Name + " returning CSS from file system");
+#endif
                         context.Response.Write(fileContent);
                     }
                 });
-
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished ");
-            return result;
         }
 
         #region IConfigurable
@@ -202,6 +214,8 @@ namespace OwinFramework.Less
                     return new Uri(_configuration.DocumentationRootUrl, UriKind.Relative);
                 case InterfacesV1.Capability.DocumentationTypes.Overview:
                     return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
+                case InterfacesV1.Capability.DocumentationTypes.SourceCode:
+                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Less", UriKind.Absolute);
             }
             return null;
         }
@@ -216,7 +230,71 @@ namespace OwinFramework.Less
             get { return "Serves CSS files by compiling LESS files into CSS."; }
         }
 
-        public IList<InterfacesV1.Capability.IEndpointDocumentation> Endpoints { get { return null; } }
+        public IList<IEndpointDocumentation> Endpoints 
+        { 
+            get 
+            {
+                var documentation = new List<IEndpointDocumentation>();
+                if (_configuration.Enabled)
+                {
+                    if (!string.IsNullOrEmpty(_configuration.RootUrl))
+                    {
+                        documentation.Add(
+                            new EndpointDocumentation
+                            {
+                                RelativePath = _configuration.RootUrl + "*/*.css",
+                                Description = "Cascading style sheet files rooted at " + _configuration.RootDirectory,
+                                Attributes = new List<IEndpointAttributeDocumentation>
+                                {
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Method",
+                                        Name = "GET",
+                                        Description = 
+                                            "Returns the contents of the CSS file. If the CSS file does not "+
+                                            "exist but there is a LESS file then it will be compiled to CSS "+
+                                            "and returned on the fly."
+                                    }
+                                }
+                            });
+                    }
+                    if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl))
+                    {
+                        documentation.Add(
+                            new EndpointDocumentation
+                            {
+                                RelativePath = _configuration.DocumentationRootUrl,
+                                Description = "Documentation for the configuratrion of this middleware",
+                                Attributes = new List<IEndpointAttributeDocumentation>
+                                {
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Method",
+                                        Name = "GET",
+                                        Description = "Returns documentation on the configuration of the Less middleware."
+                                    }
+                                }
+                            });
+                    }
+                }
+                return documentation; 
+            } 
+        }
+
+        private class EndpointDocumentation : IEndpointDocumentation
+        {
+            public string RelativePath { get; set; }
+            public string Description { get; set; }
+            public string Examples { get; set; }
+            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
+        }
+
+        private class EndpointAttributeDocumentation : IEndpointAttributeDocumentation
+        {
+            public string Type { get; set; }
+            public string Name { get; set; }
+            public string Description { get; set; }
+        }
 
         #endregion
 

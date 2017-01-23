@@ -35,17 +35,15 @@ namespace OwinFramework.Documenter
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
-
             string path;
             if (!IsForThisMiddleware(context, out path))
             {
-                var result = next();
-                if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
-                return result;
+                return next();
             }
 
+#if DEBUG
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+#endif
             if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
             {
                 if (trace != null) trace.WriteLine(GetType().Name + " returning middleware documentation");
@@ -212,7 +210,7 @@ namespace OwinFramework.Documenter
                 case DocumentationTypes.Overview:
                     return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
                 case DocumentationTypes.SourceCode:
-                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
+                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Documenter", UriKind.Absolute);
             }
             return null;
         }
@@ -231,37 +229,41 @@ namespace OwinFramework.Documenter
         {
             get
             {
-                var documentation = new List<IEndpointDocumentation>
+                var documentation = new List<IEndpointDocumentation>();
+                if (_configuration.Enabled)
                 {
-                    new EndpointDocumentation
-                    {
-                        RelativePath = _configuration.Path,
-                        Description = "Website endpoint documentation.",
-                        Attributes = new List<IEndpointAttributeDocumentation>
+                    documentation.Add(
+                        new EndpointDocumentation
                         {
-                            new EndpointAttributeDocumentation
+                            RelativePath = _configuration.Path,
+                            Description = "Website endpoint documentation.",
+                            Attributes = new List<IEndpointAttributeDocumentation>
                             {
-                                Type = "Method",
-                                Name = "GET",
-                                Description = "Returns documentation for the endpoints in the application"
+                                new EndpointAttributeDocumentation
+                                {
+                                    Type = "Method",
+                                    Name = "GET",
+                                    Description = "Returns documentation for the endpoints in the application"
+                                }
                             }
-                        }
-                    },
-                    new EndpointDocumentation
-                    {
-                        RelativePath = _configuration.Path + ConfigDocsPath,
-                        Description = "Documentation of the configuration options for the documenter middleware",
-                        Attributes = new List<IEndpointAttributeDocumentation>
+                        });
+                    documentation.Add(
+
+                        new EndpointDocumentation
                         {
-                            new EndpointAttributeDocumentation
+                            RelativePath = _configuration.Path + ConfigDocsPath,
+                            Description = "Documentation of the configuration options for the documenter middleware",
+                            Attributes = new List<IEndpointAttributeDocumentation>
                             {
-                                Type = "Method",
-                                Name = "GET",
-                                Description = "Returns documenter configuration documentation in HTML format"
+                                new EndpointAttributeDocumentation
+                                {
+                                    Type = "Method",
+                                    Name = "GET",
+                                    Description = "Returns documenter configuration documentation in HTML format"
+                                }
                             }
-                        }
-                    },
-                };
+                        });
+                }
                 return documentation;
             }
         }
