@@ -14,7 +14,7 @@
 
 ## Medium term
 
-* Forums identification middleware
+* Forms identification middleware
 
 * Certificate based identification middleware
 
