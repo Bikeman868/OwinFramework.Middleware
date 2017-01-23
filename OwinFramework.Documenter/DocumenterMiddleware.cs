@@ -46,13 +46,17 @@ namespace OwinFramework.Documenter
 #endif
             if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " returning middleware documentation");
+#endif
                 return GenerateDocumentation(context);
             }
 
             if (context.Request.Path.Value.Equals(path + ConfigDocsPath, StringComparison.OrdinalIgnoreCase))
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
+#endif
                 return DocumentConfiguration(context);
             }
 
