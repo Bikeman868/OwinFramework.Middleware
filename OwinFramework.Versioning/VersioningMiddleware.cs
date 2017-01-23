@@ -13,6 +13,7 @@ using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.MiddlewareHelpers;
+using OwinFramework.MiddlewareHelpers.ResponseRewriter;
 
 namespace OwinFramework.Versioning
 {
@@ -213,7 +214,7 @@ namespace OwinFramework.Versioning
                     ? string.Empty 
                     : path.Substring(lastPeriodIndex);
 
-                if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " base file name: " + baseFileName + ". Ext: " + extension);
+                if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " base file name: " + baseFileName + " Ext: " + extension);
 
                 var allExtensions = _configuration.FileExtensions == null || _configuration.FileExtensions.Length == 0;
                 if (extension.Length > 0)
@@ -258,8 +259,13 @@ namespace OwinFramework.Versioning
 
             public void Send(IOwinContext context)
             {
+                var trace = (TextWriter)context.Environment["host.TraceOutput"];
+
                 if (_response == null)
+                {
+                    if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " response was not captured");
                     return;
+                }
 
                 var contentType = context.Response.ContentType;
 
@@ -282,10 +288,14 @@ namespace OwinFramework.Versioning
                     }
                 }
 
+                if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " mime type " + mimeType + " with " + encoding.EncodingName + " encoding");
+
                 if (_isVersioned)
                 {
                     if (_configuration.BrowserCacheTime.HasValue)
                     {
+                        if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " adding headers to cache versioned asset for " + _configuration.BrowserCacheTime.Value);
+
                         context.Response.Expires = DateTime.UtcNow + _configuration.BrowserCacheTime.Value;
                         context.Response.Headers.Set(
                             "Cache-Control",
@@ -293,6 +303,7 @@ namespace OwinFramework.Versioning
                     }
                     else
                     {
+                        if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " adding headers to disable browser caching");
                         context.Response.Headers.Set("Cache-Control", "no-cache");
                     }
                 }
@@ -304,13 +315,20 @@ namespace OwinFramework.Versioning
                     var text = encoding.GetString(_response.OutputBuffer);
 
                     if (_configuration.Version.HasValue)
+                    {
+                        if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " replacing version markers with " + _versionPrefix + _configuration.Version.Value);
                         text = text.Replace(_versionMarker, _versionPrefix + _configuration.Version.Value);
+                    }
                     else
+                    {
+                        if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " removing version markers");
                         text = text.Replace(_versionMarker, string.Empty);
+                    }
 
                     _response.OutputBuffer = encoding.GetBytes(text);
                 }
 
+                if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " sending buffered response to actual response stream");
                 _response.Send();
             }
         }

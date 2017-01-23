@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -8,13 +7,13 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Owin;
-using Newtonsoft.Json;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.InterfacesV1.Upstream;
+using OwinFramework.MiddlewareHelpers.Analysable;
 using Svg;
 using Svg.Transforms;
 
@@ -609,69 +608,34 @@ namespace OwinFramework.RouteVisualizer
         {
             get
             {
-                return new List<IStatisticInformation>
+                if (_configuration.AnalyticsEnabled)
                 {
-                    new StatisticInformation
+                    return new List<IStatisticInformation>
                     {
-                        Id = "RequestCount",
-                        Name = "Total requests",
-                        Description = "The total number of requests processed by the visualazer midldeware since the application was restarted",
-                    }
-                };
+                        new StatisticInformation
+                        {
+                            Id = "RequestCount",
+                            Name = "Total requests",
+                            Description =
+                                "The total number of requests processed by the visualazer midldeware since the application was restarted",
+                        }
+                    };
+                }
+                return new List<IStatisticInformation>();
             }
         }
 
         IStatistic IAnalysable.GetStatistic(string id)
         {
-            switch (id)
+            if (_configuration.AnalyticsEnabled)
             {
-                case "RequestCount":
-                    return new RequestCountStatistic(this).Refresh();
+                switch (id)
+                {
+                    case "RequestCount":
+                        return new IntStatistic(() => _requestCount).Refresh();
+                }
             }
             return null;
-        }
-
-        private class StatisticInformation: IStatisticInformation
-        {
-            public string Id { get; set; }
-            public string Name { get; set; }
-            public string Description { get; set; }
-            public string Explanation { get; set; }
-            public string Units { get; set; }
-        }
-
-        private abstract class Statistic: IStatistic
-        {
-            public float Value { get; protected set; }
-            public float Denominator { get; protected set; }
-            public string Formatted { get; protected set; }
-
-            public abstract IStatistic Refresh();
-        }
-
-        private class RequestCountStatistic: Statistic
-        {
-            private readonly RouteVisualizerMiddleware _routeVisualizerMiddleware;
-
-            public RequestCountStatistic(RouteVisualizerMiddleware routeVisualizerMiddleware)
-            {
-                _routeVisualizerMiddleware = routeVisualizerMiddleware;
-            }
-
-            public override IStatistic Refresh()
-            {
-                Value = _routeVisualizerMiddleware._requestCount;
-                Denominator = 1;
-
-                if (Value < 2000)
-                    Formatted = Value.ToString(CultureInfo.InvariantCulture);
-                else if (Value < 2000000)
-                    Formatted = (Value / 1000f).ToString("f1", CultureInfo.InvariantCulture) + "K";
-                else
-                    Formatted = (Value / 1000000f).ToString("f1", CultureInfo.InvariantCulture) + "M";
-
-                return this;
-            }
         }
 
         #endregion

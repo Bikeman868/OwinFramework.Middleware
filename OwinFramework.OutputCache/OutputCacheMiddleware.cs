@@ -12,6 +12,7 @@ using OwinFramework.Interfaces.Builder;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.InterfacesV1.Upstream;
 using OwinFramework.MiddlewareHelpers;
+using OwinFramework.MiddlewareHelpers.ResponseRewriter;
 
 namespace OwinFramework.OutputCache
 {

@@ -1,0 +1,99 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.40629.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.RouteVisualizer.Net40", "OwinFramework.RouteVisualizer\OwinFramework.RouteVisualizer.Net40.csproj", "{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7E4DEB16-BBB8-46A5-84BC-FCAED244E99D}"
+	ProjectSection(SolutionItems) = preProject
+		NuGet\Owin.Framework.AnalysisReporter.nuspec = NuGet\Owin.Framework.AnalysisReporter.nuspec
+		NuGet\Owin.Framework.Dart.nuspec = NuGet\Owin.Framework.Dart.nuspec
+		NuGet\Owin.Framework.DefaultDocument.nuspec = NuGet\Owin.Framework.DefaultDocument.nuspec
+		NuGet\Owin.Framework.Documenter.nuspec = NuGet\Owin.Framework.Documenter.nuspec
+		NuGet\Owin.Framework.ExceptionReporter.nuspec = NuGet\Owin.Framework.ExceptionReporter.nuspec
+		NuGet\Owin.Framework.Less.nuspec = NuGet\Owin.Framework.Less.nuspec
+		NuGet\Owin.Framework.NotFound.nuspec = NuGet\Owin.Framework.NotFound.nuspec
+		NuGet\Owin.Framework.OutputCache.nuspec = NuGet\Owin.Framework.OutputCache.nuspec
+		NuGet\Owin.Framework.RouteVisualizer.nuspec = NuGet\Owin.Framework.RouteVisualizer.nuspec
+		NuGet\Owin.Framework.StaticFiles.nuspec = NuGet\Owin.Framework.StaticFiles.nuspec
+		NuGet\Owin.Framework.Versioning.nuspec = NuGet\Owin.Framework.Versioning.nuspec
+		NuGet\Package.cmd = NuGet\Package.cmd
+		readme.md = readme.md
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.AnalysisReporter.Net40", "OwinFramework.AnalysisReporter\OwinFramework.AnalysisReporter.Net40.csproj", "{A5787AA0-8C7C-4570-AD4D-E8F093E77434}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Documenter.Net40", "OwinFramework.Documenter\OwinFramework.Documenter.Net40.csproj", "{E62FAA03-58E9-4AE7-9634-9D880FD17C3D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.ExceptionReporter.Net40", "OwinFramework.ExceptionReporter\OwinFramework.ExceptionReporter.Net40.csproj", "{4048AC96-81ED-438B-A42B-A56246B96262}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.StaticFiles.Net40", "OwinFramework.StaticFiles\OwinFramework.StaticFiles.Net40.csproj", "{DD5CE544-F99C-4C29-B14D-87BE4003AA62}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.DefaultDocument.Net40", "OwinFramework.DefaultDocument\OwinFramework.DefaultDocument.Net40.csproj", "{68BF3350-4D07-4245-985C-96725EB37670}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.NotFound.Net40", "OwinFramework.NotFound\OwinFramework.NotFound.Net40.csproj", "{9FF93BEA-60B5-4ADA-8C37-2A0947F070CC}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Less.Net40", "OwinFramework.Less\OwinFramework.Less.Net40.csproj", "{B13679D7-4381-4814-B183-21100B97E8B6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Dart.Net40", "OwinFramework.Dart\OwinFramework.Dart.Net40.csproj", "{641C7705-C9F3-4BB5-BE55-9B2238F9821B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.OutputCache.Net40", "OwinFramework.OutputCache\OwinFramework.OutputCache.Net40.csproj", "{ED31698F-8A39-4051-8D2F-61B4E898AE87}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Versioning.Net40", "OwinFramework.Versioning\OwinFramework.Versioning.Net40.csproj", "{55B1BE3F-B3E3-47B8-89A1-DFFC00723670}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A5787AA0-8C7C-4570-AD4D-E8F093E77434}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A5787AA0-8C7C-4570-AD4D-E8F093E77434}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A5787AA0-8C7C-4570-AD4D-E8F093E77434}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A5787AA0-8C7C-4570-AD4D-E8F093E77434}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E62FAA03-58E9-4AE7-9634-9D880FD17C3D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E62FAA03-58E9-4AE7-9634-9D880FD17C3D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E62FAA03-58E9-4AE7-9634-9D880FD17C3D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E62FAA03-58E9-4AE7-9634-9D880FD17C3D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4048AC96-81ED-438B-A42B-A56246B96262}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4048AC96-81ED-438B-A42B-A56246B96262}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4048AC96-81ED-438B-A42B-A56246B96262}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4048AC96-81ED-438B-A42B-A56246B96262}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DD5CE544-F99C-4C29-B14D-87BE4003AA62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DD5CE544-F99C-4C29-B14D-87BE4003AA62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DD5CE544-F99C-4C29-B14D-87BE4003AA62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DD5CE544-F99C-4C29-B14D-87BE4003AA62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{68BF3350-4D07-4245-985C-96725EB37670}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{68BF3350-4D07-4245-985C-96725EB37670}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{68BF3350-4D07-4245-985C-96725EB37670}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{68BF3350-4D07-4245-985C-96725EB37670}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9FF93BEA-60B5-4ADA-8C37-2A0947F070CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FF93BEA-60B5-4ADA-8C37-2A0947F070CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FF93BEA-60B5-4ADA-8C37-2A0947F070CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FF93BEA-60B5-4ADA-8C37-2A0947F070CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B13679D7-4381-4814-B183-21100B97E8B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B13679D7-4381-4814-B183-21100B97E8B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B13679D7-4381-4814-B183-21100B97E8B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B13679D7-4381-4814-B183-21100B97E8B6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{641C7705-C9F3-4BB5-BE55-9B2238F9821B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{641C7705-C9F3-4BB5-BE55-9B2238F9821B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{641C7705-C9F3-4BB5-BE55-9B2238F9821B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{641C7705-C9F3-4BB5-BE55-9B2238F9821B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED31698F-8A39-4051-8D2F-61B4E898AE87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED31698F-8A39-4051-8D2F-61B4E898AE87}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED31698F-8A39-4051-8D2F-61B4E898AE87}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED31698F-8A39-4051-8D2F-61B4E898AE87}.Release|Any CPU.Build.0 = Release|Any CPU
+		{55B1BE3F-B3E3-47B8-89A1-DFFC00723670}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{55B1BE3F-B3E3-47B8-89A1-DFFC00723670}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{55B1BE3F-B3E3-47B8-89A1-DFFC00723670}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{55B1BE3F-B3E3-47B8-89A1-DFFC00723670}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
