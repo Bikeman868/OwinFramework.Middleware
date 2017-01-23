@@ -36,8 +36,6 @@ namespace OwinFramework.RouteVisualizer
         private const float ChildVericalSpacing = 10;
         private const float SiblingHorizontalSpacing = 15;
 
-        private const string ConfigDocsPath = "/docs/configuration";
-
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         public IList<IDependency> Dependencies { get { return _dependencies; } }
 
@@ -45,6 +43,9 @@ namespace OwinFramework.RouteVisualizer
 
         private IDisposable _configurationRegistration;
         private RouteVisualizerConfiguration _configuration = new RouteVisualizerConfiguration();
+
+        private PathString _visualizationPath;
+        private PathString _documentationPath;
 
         public RouteVisualizerMiddleware()
         {
@@ -57,17 +58,11 @@ namespace OwinFramework.RouteVisualizer
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
 
-            // This code asks the authorization middleware to enforce the required
-            // permission to run this middleware. This only applies when the
-            // required permission is configured and authorization middleware is
-            // included in the Owin pipeline.
             var requiredPermission = _configuration.RequiredPermission;
-            if (!string.IsNullOrEmpty(requiredPermission))
+            if (_configuration.Enabled && !string.IsNullOrEmpty(requiredPermission))
             {
-                string path;
-                if (IsForThisMiddleware(context, out path))
+                if (context.Request.Path.Equals(_visualizationPath) || context.Request.Path.Equals(_documentationPath))
                 {
                     var authorization = context.GetFeature<IUpstreamAuthorization>();
                     if (authorization != null)
@@ -78,53 +73,52 @@ namespace OwinFramework.RouteVisualizer
                 }
             }
 
-            var result = next.Invoke();
-
-            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished");
-            return result;
+            return next();
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
 
-            string path;
-            if (!IsForThisMiddleware(context, out path))
+            if (!_configuration.Enabled)
                 return next();
 
-            _requestCount++;
-
-            if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
+            if (context.Request.Path.Equals(_visualizationPath))
             {
                 if (trace != null) trace.WriteLine(GetType().Name + " returning route visualization");
+                _requestCount++;
                 return VisualizeRouting(context);
             }
 
-            if (context.Request.Path.Value.Equals(path + ConfigDocsPath, StringComparison.OrdinalIgnoreCase))
+            if (context.Request.Path.Equals(_documentationPath))
             {
-                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
+                if (trace != null) trace.WriteLine(GetType().Name + " returning documentation");
+                _requestCount++;
                 return DocumentConfiguration(context);
             }
-
-            throw new Exception("This request looked like it was for the visualization middleware, but the middleware did not know how to handle it.");
-        }
-
-        private bool IsForThisMiddleware(IOwinContext context, out string path)
-        {
-            // Note that the configuration can be changed at any time by another thread
-            path = _configuration.Path;
-
-            return _configuration.Enabled
-                   && !string.IsNullOrEmpty(path)
-                   && context.Request.Path.HasValue
-                   && context.Request.Path.Value.StartsWith(path, StringComparison.OrdinalIgnoreCase);
+        
+            return next();
         }
 
         void IConfigurable.Configure(IConfiguration configuration, string path)
         {
             _configurationRegistration = configuration.Register(
-                path, cfg => _configuration = cfg, new RouteVisualizerConfiguration());
+                path,
+                cfg =>
+                {
+                    _configuration = cfg;
+
+                    if (cfg.Enabled && !string.IsNullOrEmpty(cfg.Path))
+                        _visualizationPath = new PathString(cfg.Path);
+                    else
+                        _visualizationPath = new PathString();
+
+                    if (cfg.Enabled && !string.IsNullOrEmpty(cfg.DocumentationRootUrl))
+                        _documentationPath = new PathString(cfg.DocumentationRootUrl);
+                    else
+                        _documentationPath = new PathString();
+                }, 
+                new RouteVisualizerConfiguration());
         }
 
         private Task VisualizeRouting(IOwinContext context)
@@ -147,11 +141,15 @@ namespace OwinFramework.RouteVisualizer
             document = document.Replace("{path}", _configuration.Path);
             document = document.Replace("{enabled}", _configuration.Enabled.ToString());
             document = document.Replace("{requiredPermission}", _configuration.RequiredPermission ?? "<none>");
+            document = document.Replace("{analyticsEnabled}", _configuration.AnalyticsEnabled.ToString());
+            document = document.Replace("{documentationRootUrl}", _configuration.DocumentationRootUrl);
 
             var defaultConfiguration = new RouteVisualizerConfiguration();
             document = document.Replace("{path.default}", defaultConfiguration.Path);
             document = document.Replace("{enabled.default}", defaultConfiguration.Enabled.ToString());
             document = document.Replace("{requiredPermission.default}", defaultConfiguration.RequiredPermission ?? "<none>");
+            document = document.Replace("{analyticsEnabled.default}", defaultConfiguration.AnalyticsEnabled.ToString());
+            document = document.Replace("{documentationRootUrl.default}", defaultConfiguration.DocumentationRootUrl);
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
@@ -527,9 +525,12 @@ namespace OwinFramework.RouteVisualizer
             switch (documentationType)
             {
                 case DocumentationTypes.Configuration:
-                    return new Uri(_configuration.Path + ConfigDocsPath, UriKind.Relative);
+                    return new Uri(_documentationPath.Value, UriKind.Relative);
                 case DocumentationTypes.Overview:
                     return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
+                case DocumentationTypes.TechnicalDetails:
+                case DocumentationTypes.SourceCode:
+                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.RouteVisualizer", UriKind.Absolute);
             }
             return null;
         }
@@ -548,37 +549,45 @@ namespace OwinFramework.RouteVisualizer
         {
             get
             {
-                var documentation = new List<IEndpointDocumentation>
+                var documentation = new List<IEndpointDocumentation>();
+
+                if (_visualizationPath.HasValue)
                 {
-                    new EndpointDocumentation
-                    {
-                        RelativePath = _configuration.Path,
-                        Description = "An SVG drawing of the OWIN pipeline. Useful for diagnosing issues with your web application.",
-                        Attributes = new List<IEndpointAttributeDocumentation>
+                    documentation.Add(
+                        new EndpointDocumentation
                         {
-                            new EndpointAttributeDocumentation
+                            RelativePath = _visualizationPath.Value,
+                            Description = "An SVG drawing of the OWIN pipeline. Useful for diagnosing issues with your web application.",
+                            Attributes = new List<IEndpointAttributeDocumentation>
                             {
-                                Type = "Method",
-                                Name = "GET",
-                                Description = "Returns a drawing of the OWIN pipeline in SVG format"
+                                new EndpointAttributeDocumentation
+                                {
+                                    Type = "Method",
+                                    Name = "GET",
+                                    Description = "Returns a drawing of the OWIN pipeline in SVG format"
+                                }
                             }
-                        }
-                    },
-                    new EndpointDocumentation
-                    {
-                        RelativePath = _configuration.Path + ConfigDocsPath,
-                        Description = "Documentation of the configuration options for the route visualizer middleware",
-                        Attributes = new List<IEndpointAttributeDocumentation>
+                        });
+                }
+
+                if (_documentationPath.HasValue)
+                {
+                    documentation.Add(
+                        new EndpointDocumentation
                         {
-                            new EndpointAttributeDocumentation
+                            RelativePath = _documentationPath.Value,
+                            Description = "Documentation of the configuration options for the route visualizer middleware",
+                            Attributes = new List<IEndpointAttributeDocumentation>
                             {
-                                Type = "Method",
-                                Name = "GET",
-                                Description = "Returns route visualizer configuration documentation in HTML format"
+                                new EndpointAttributeDocumentation
+                                {
+                                    Type = "Method",
+                                    Name = "GET",
+                                    Description = "Returns route visualizer configuration documentation in HTML format"
+                                }
                             }
-                        }
-                    },
-                };
+                        });
+                }
                 return documentation;
             }
         }

@@ -37,13 +37,11 @@ namespace OwinFramework.AnalysisReporter
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() method");
-
             string path;
             if (!IsForThisMiddleware(context, out path))
                 return next();
 
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
             if (trace != null) trace.WriteLine(GetType().Name + " handling this request");
 
             if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
@@ -342,8 +340,6 @@ namespace OwinFramework.AnalysisReporter
                 if (string.IsNullOrEmpty(analysableInfo.Name))
                     analysableInfo.Name = middleware.GetType().Name;
 
-                stats.Add(analysableInfo);
-
                 var selfDocumenting = middleware as ISelfDocumenting;
                 if (selfDocumenting != null)
                 {
@@ -375,6 +371,9 @@ namespace OwinFramework.AnalysisReporter
                     };
                     analysableInfo.Statistics.Add(statisticInfo);
                 }
+
+                if (analysableInfo.Statistics.Count > 0)
+                    stats.Add(analysableInfo);
             }
 
             var router = middleware as IRouter;

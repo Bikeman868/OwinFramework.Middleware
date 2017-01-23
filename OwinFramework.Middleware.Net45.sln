@@ -22,6 +22,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		NuGet\Owin.Framework.Versioning.nuspec = NuGet\Owin.Framework.Versioning.nuspec
 		NuGet\Package.cmd = NuGet\Package.cmd
 		readme.md = readme.md
+		todo.md = todo.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.AnalysisReporter.Net45", "OwinFramework.AnalysisReporter\OwinFramework.AnalysisReporter.Net45.csproj", "{BB10F37C-A3B3-4901-852F-64915BC12A61}"

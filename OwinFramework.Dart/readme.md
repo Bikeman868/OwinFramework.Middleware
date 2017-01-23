@@ -17,9 +17,14 @@ of the same middleware in your pipeline with different configurations).
 For supported configuration options see the `DartConfiguration.cs` file in this folder. This
 middleware is also self documenting, and can produce configuration documentation from within.
 
-The default configuration will serve a Dart application from a `ui` folder in your web site via urls
-starting with `/ui`. For example if you place an image called `logo.png` in the `ui\images`
-folder of your site, then you can retrieve this file from `http://mydomain/ui/images/logo.png`.
+The default configuration will rewrite request URLs that start with a `/ui` to either `/ui/web`
+or `/ui/build/web` depending on whether the browser supports Dart or not. This assumes that you
+have other middleware behind this one that can handle the re-written request. For example if you 
+place an image called `logo.png` in the `ui\web\images` folder of your site, then you can 
+retrieve this file from `http://mydomain/ui/images/logo.png`.
+
+Note that when you compile your Dart application with the `pub` tool it will copy the compiled
+version of your Dart code to `\ui\build\web` so everything will work right out of the box.
 
 This is an example configurations that assumes you use [Urchin](https://github.com/Bikeman868/Urchin) 
 for as your configuration mechanism.
@@ -36,17 +41,12 @@ This is an example Urchin configuration that will work with the code above:
 {
     "middleware": {
         "dart": {
-            "dartUiRootUrl": "/ui",
+            "uiRootUrl": "/ui",
 			"defaultDocument": "index.html",
             "documentationRootUrl": "/config/dart",
-            "rootDartDirectory": "~\\ui\\web",
-            "rootBuildDirectory": "~\\ui\\build\\web",
-            "enabled": "true",
-            "maximumFileSizeToCache": 10000,
-            "totalCacheSize": 1000000,
-            "maximumCacheTime": "00:30:00",
-            "requiredPermission": "",
-			"version": 1
+            "dartUiRootUrl": "/ui/web",
+            "compiledUiRootUrl": "/ui/build/web",
+            "analyticsEnabled": "true"
         }
     }
 }
@@ -54,16 +54,11 @@ This is an example Urchin configuration that will work with the code above:
 
 This configuration specifies that:
 
-* The url `http://mysite/ui` is mapped to the files in the `\ui\web` sub-folder beneath the root folder of 
+* The url `http://mysite.com/ui` is mapped to the files in the `\ui\web` sub-folder beneath the root folder of 
   the web site for browsers that natively support Dart, and the `\ui\build\web` sub-folder for browsers
   that do not support Dart natively. This is the folder structure that the Dart compiler uses by default.
 
-* The configuration of this middleware can examined by retreieving the url `http://mysite/config/dart`.
-
-* All static files are cached in memory for 30 minutes if they are less than 10,000 bytes in size up to a 
-maximum total memory consumption of 1,000,000 bytes for all files. This featre relies on
-output caching middleware. If there is no output caching middleware configured in your OWIN pipeline
-then these files will not be cached.
+* The configuration of this middleware can examined by retreieving the url `http://mysite.com/config/dart`.
 
 ## Getting Started with Dart
 
@@ -94,51 +89,17 @@ If you want to add a Dart UI to your web site, follow these steps.
 10. Open the `/ui` path of your web site in Dartium and other browsers. Use the developer tools built into the browser
     to see which ones run native Dart code and which ones run the compiled JavaScript.
 
-## Versioning
+## Use with other middleware
 
-To make your web site more efficient, this middleware will add headers to all responses telling
-the browser to cache the response. This will result in a more responsive site and lower load on
-your servers, but what happens when I changed some files and I want the browser to get a fresh
-copy rather than using the cached one?
+This middleware needs something behind it to serve the contents of the files. You can 
+add the `StaticFiles` middleware for this, or any other middleware that will respond 
+with html, css etc.
 
-This middleware can modify all the HTML that it serves to replace {_v_} with a version number. You
-can use this to add a version number to any asset that should be cached by the browser. The version
-number must be placed immediately before the file extension.
+You can optionally add the `Less` middleware to the ppeline. This will allow you to write
+your styles in Less instead of CSS.
 
-For example instead of writing this in the head of your html
+You can optionally add the `Versioning` middleware to make your website more efficient.
 
-```
-    <link rel="stylesheet" href="/ui/styles.css" />
-
-```
-
-You can write this
-
-```
-    <link rel="stylesheet" href="/ui/styles{_v_}.css" />
-
-```
-
-Which will get translated into this on its way to the browser
-
-```
-    <link rel="stylesheet" href="/ui/styles_v1.css" />
-
-```
-
-When this middleware receives requests for static files, it will accept requests with and without the version 
-number, and it will still serve the same file, so `http://mysite/ui/styles.css` and `http://mysite/ui/styles_v1.css`
-will return the same file.
-
-If you make a request for the wrong version number, then this middleware will not handle the request, and pass it
-down the pipeline. In most configurations you would want this to be handled by middleware that returns a 404 response.
-
-Although  `http://mysite/ui/styles.css` and `http://mysite/ui/styles_v1.css` return the contents of the same file, the
-cache headers that are returned are different. The browser will be instructed to cache the versioned asset but not
-cache the unversioned one.
-
-The current version number is configured in the Urchin configuration. If you deploy a new version of your application
-you should increment the version number so that all the browsers will fetch the updated assets. You can also set the
-version number to `null` or delete it from your configuration to disable the versioning of assets. In this case
-assets will not be versioned, and will therefore not be cached. This can be useful during debugging, but is rarely
-the best configuration for a production deployment.
+Note that if you add the `OutputCache` middleware it will not cache the output because
+the exact same URL produces different results for different browsers, and caching the
+output would mess this up.

@@ -20,6 +20,9 @@ namespace OwinFramework.Dart
         [JsonProperty("defaultDocument")]
         public string DefaultDocument { get; set; }
 
+        [JsonProperty("analyticsEnabled")]
+        public bool AnalyticsEnabled { get; set; }
+
         public DartConfiguration()
         {
             DocumentationRootUrl = "/owin/dart/config";
@@ -27,6 +30,7 @@ namespace OwinFramework.Dart
             DartUiRootUrl = "/ui/web";
             CompiledUiRootUrl = "/ui/build/web";
             DefaultDocument = "index.html";
+            AnalyticsEnabled = true;
         }
     }
 }

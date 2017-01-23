@@ -9,20 +9,26 @@ using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
+using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.MiddlewareHelpers.Analysable;
 
 namespace OwinFramework.Dart
 {
     public class DartMiddleware:
         IMiddleware<IRequestRewriter>, 
-        InterfacesV1.Capability.IConfigurable,
-        InterfacesV1.Capability.ISelfDocumenting,
+        IConfigurable,
+        ISelfDocumenting,
+        IAnalysable,
         IRoutingProcessor
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
+
+        private int _supportedBrowserRequestCount;
+        private int _unsupportedBrowserRequestCount;
 
         public DartMiddleware()
         {
@@ -31,15 +37,19 @@ namespace OwinFramework.Dart
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
 
             PathString relativePath;
             if (_rootUrl.HasValue && context.Request.Path.StartsWithSegments(_rootUrl, out relativePath))
             {
+#if DEBUG
+                var trace = (TextWriter)context.Environment["host.TraceOutput"];
+                if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
+#endif
                 if (!relativePath.HasValue || relativePath.Value == "/")
                 {
+#if DEBUG
                     if (trace != null) trace.WriteLine(GetType().Name + " selecting the default document " + _defaultDocument);
+#endif
                     relativePath = _defaultDocument;
                 }
 
@@ -53,46 +63,48 @@ namespace OwinFramework.Dart
 
                 if (dartContext.IsDartSupported)
                 {
+#if DEBUG
                     if (trace != null) trace.WriteLine(GetType().Name + " the browser supports Dart");
+#endif
                     context.Request.Path = _rootDartFolder + relativePath;
+                    _supportedBrowserRequestCount++;
                 }
                 else
                 {
+#if DEBUG
                     if (trace != null) trace.WriteLine(GetType().Name + " the browser does not support Dart");
+#endif
                     context.Request.Path = _rootBuildFolder + relativePath;
+                    _unsupportedBrowserRequestCount++;
                 }
 
                 var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
                 if (outputCache != null)
                 {
+#if DEBUG
                     if (trace != null) trace.WriteLine(GetType().Name + " disabling output caching");
+#endif
                     outputCache.UseCachedContent = false;
                 }
             }
 
-            var result = next();
-
-            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished");
-            return result;
+            return next();
         }
         
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
-
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl,
                     StringComparison.OrdinalIgnoreCase))
             {
+#if DEBUG
+                var trace = (TextWriter)context.Environment["host.TraceOutput"];
                 if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
+#endif
                 return DocumentConfiguration(context);
             }
 
-            var result = next();
-
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
-            return result;
+            return next();
         }
 
         #region IConfigurable
@@ -149,6 +161,7 @@ namespace OwinFramework.Dart
             document = document.Replace("{documentationRootUrl}", _configuration.DocumentationRootUrl);
             document = document.Replace("{uiRootUrl}", _configuration.UiRootUrl);
             document = document.Replace("{compiledUiRootUrl}", _configuration.CompiledUiRootUrl);
+            document = document.Replace("{analyticsEnabled}", _configuration.AnalyticsEnabled.ToString());
 
             var defaultConfiguration = new DartConfiguration();
             document = document.Replace("{dartUiRootUrl.default}", defaultConfiguration.DartUiRootUrl);
@@ -156,6 +169,7 @@ namespace OwinFramework.Dart
             document = document.Replace("{documentationRootUrl.default}", defaultConfiguration.DocumentationRootUrl);
             document = document.Replace("{uiRootUrl.default}", defaultConfiguration.UiRootUrl);
             document = document.Replace("{compiledUiRootUrl.default}", defaultConfiguration.CompiledUiRootUrl);
+            document = document.Replace("{analyticsEnabled.default}", defaultConfiguration.AnalyticsEnabled.ToString());
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
@@ -165,10 +179,12 @@ namespace OwinFramework.Dart
         {
             switch (documentationType)
             {
-                case InterfacesV1.Capability.DocumentationTypes.Configuration:
+                case DocumentationTypes.Configuration:
                     return new Uri(_configuration.DocumentationRootUrl, UriKind.Relative);
-                case InterfacesV1.Capability.DocumentationTypes.Overview:
+                case DocumentationTypes.Overview:
                     return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
+                case DocumentationTypes.SourceCode:
+                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Dart", UriKind.Absolute);
             }
             return null;
         }
@@ -183,54 +199,60 @@ namespace OwinFramework.Dart
             get { return "Rerwites requests for browsers that support Dart to Dart source files instead of compiled JavaScript"; }
         }
 
-        public IList<InterfacesV1.Capability.IEndpointDocumentation> Endpoints 
+        public IList<IEndpointDocumentation> Endpoints 
         { 
-            get 
+            get
             {
-                var documentation = new List<InterfacesV1.Capability.IEndpointDocumentation>
+                var documentation = new List<IEndpointDocumentation>();
+                if (!string.IsNullOrEmpty(_configuration.UiRootUrl))
                 {
-                    new EndpointDocumentation
-                    {
-                        RelativePath = _configuration.UiRootUrl,
-                        Description = "A user interface written in the Dart programming language",
-                        Attributes = new List<InterfacesV1.Capability.IEndpointAttributeDocumentation>
+                    documentation.Add(
+                        new EndpointDocumentation
                         {
-                            new EndpointAttributeDocumentation
+                            RelativePath = _configuration.UiRootUrl,
+                            Description = "A user interface written in the Dart programming language",
+                            Attributes = new List<IEndpointAttributeDocumentation>
                             {
-                                Type = "Method",
-                                Name = "GET",
-                                Description = "Returns static files needed to run a Dart application"
+                                new EndpointAttributeDocumentation
+                                {
+                                    Type = "Method",
+                                    Name = "GET",
+                                    Description = "Returns static files needed to run a Dart application"
+                                }
                             }
-                        }
-                    },
-                    new EndpointDocumentation
-                    {
-                        RelativePath = _configuration.DocumentationRootUrl,
-                        Description = "Documentation of the configuration options for the Dart middleware",
-                        Attributes = new List<InterfacesV1.Capability.IEndpointAttributeDocumentation>
+                        });
+                }
+                if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl))
+                {
+                    documentation.Add(
+                        new EndpointDocumentation
                         {
-                            new EndpointAttributeDocumentation
+                            RelativePath = _configuration.DocumentationRootUrl,
+                            Description = "Documentation of the configuration options for the Dart middleware",
+                            Attributes = new List<IEndpointAttributeDocumentation>
                             {
-                                Type = "Method",
-                                Name = "GET",
-                                Description = "Returns configuration documentation for Dart middleware in HTML format"
+                                new EndpointAttributeDocumentation
+                                {
+                                    Type = "Method",
+                                    Name = "GET",
+                                    Description = "Returns configuration documentation for Dart middleware in HTML format"
+                                }
                             }
-                        }
-                    },
+                        });
                 };
                 return documentation;
             } 
         }
 
-        private class EndpointDocumentation : InterfacesV1.Capability.IEndpointDocumentation
+        private class EndpointDocumentation : IEndpointDocumentation
         {
             public string RelativePath { get; set; }
             public string Description { get; set; }
             public string Examples { get; set; }
-            public IList<InterfacesV1.Capability.IEndpointAttributeDocumentation> Attributes { get; set; }
+            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
         }
 
-        private class EndpointAttributeDocumentation : InterfacesV1.Capability.IEndpointAttributeDocumentation
+        private class EndpointAttributeDocumentation : IEndpointAttributeDocumentation
         {
             public string Type { get; set; }
             public string Name { get; set; }
@@ -263,9 +285,55 @@ namespace OwinFramework.Dart
 
         #endregion
 
+        #region IAnalysable
+
+        public IList<IStatisticInformation> AvailableStatistics
+        {
+            get 
+            { 
+                var stats = new List<IStatisticInformation>();
+                if (_configuration.AnalyticsEnabled)
+                {
+                    stats.Add(new StatisticInformation
+                    {
+                        Id = "SupportedBrowserRequestCount",
+                        Name = "Supported browser requests",
+                        Description = "The number of requests served to browsers that have support for the Dart programming language",
+                        Units = ""
+                    });
+                    stats.Add(new StatisticInformation
+                    {
+                        Id = "UnsupportedBrowserRequestCount",
+                        Name = "Unsupported browser requests",
+                        Description = "The number of requests served to browsers that do not support for the Dart programming language",
+                        Units = ""
+                    });
+                }
+                return stats;
+            }
+        }
+
+        public IStatistic GetStatistic(string id)
+        {
+            if (_configuration.AnalyticsEnabled)
+            {
+                switch (id)
+                {
+                    case "SupportedBrowserRequestCount":
+                        return new LongStatistic(() => _supportedBrowserRequestCount);
+                    case "UnsupportedBrowserRequestCount":
+                        return new LongStatistic(() => _unsupportedBrowserRequestCount);
+                }
+            }
+            return null;
+        }
+
+        #endregion
+
         private class DartContext : IDart
         {
             public bool IsDartSupported { get; set; }
         }
+
     }
 }
