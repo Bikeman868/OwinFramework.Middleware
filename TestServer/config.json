@@ -55,7 +55,7 @@
             "documentationRootUrl": "/owin/dart",
             "uiRootUrl": "/ui",
             "dartUiRootUrl": "/ui/web",
-            "compiledUiRootUrl": "/ui/build/web",
+            "compiledUiRootUrl": "/ui/build/web"
         },
         "outputCache": { 
             "rules": [
