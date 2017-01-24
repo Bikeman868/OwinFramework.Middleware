@@ -11,6 +11,7 @@ namespace OwinFramework.NotFound
         public NotFoundConfiguration()
         {
             Template = "";
+            DocumentationRootUrl = "/owin/notFound/config";
         }
     }
 }

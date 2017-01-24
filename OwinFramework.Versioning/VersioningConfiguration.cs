@@ -51,6 +51,12 @@ namespace OwinFramework.Versioning
         [JsonProperty("exactVersion")]
         public bool ExactVersion { get; set; }
 
+        /// <summary>
+        /// Can be used to turn off the analytics for this middleware
+        /// </summary>
+        [JsonProperty("analyticsEnabled")]
+        public bool AnalyticsEnabled { get; set; }
+
         public VersioningConfiguration()
         {
             Version = 1;
@@ -64,6 +70,7 @@ namespace OwinFramework.Versioning
             ExactVersion = false;
             BrowserCacheTime = TimeSpan.FromDays(365);
             DocumentationRootUrl = "/versioning";
+            AnalyticsEnabled = true;
         }
     }
 

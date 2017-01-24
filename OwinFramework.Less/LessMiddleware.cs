@@ -12,20 +12,26 @@ using OwinFramework.Interfaces.Routing;
 using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.MiddlewareHelpers.Analysable;
 
 namespace OwinFramework.Less
 {
     public class LessMiddleware:
         IMiddleware<IResponseProducer>, 
-        InterfacesV1.Capability.IConfigurable,
-        InterfacesV1.Capability.ISelfDocumenting,
-        IRoutingProcessor
+        IConfigurable,
+        ISelfDocumenting,
+        IRoutingProcessor,
+        IAnalysable
     {
         private readonly IHostingEnvironment _hostingEnvironment;
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
+
+        private int _filesServedCount;
+        private int _fileModificationCount;
+        private int _filesCompiledCount;
 
         public LessMiddleware(IHostingEnvironment hostingEnvironment)
         {
@@ -62,6 +68,7 @@ namespace OwinFramework.Less
                         if (trace != null) trace.WriteLine(GetType().Name + " file has changed since output was cached. Output cache will not be used");
 #endif
                         outputCache.UseCachedContent = false;
+                        _fileModificationCount++;
                     }
                     else
                     {
@@ -74,7 +81,8 @@ namespace OwinFramework.Less
             }
 
 #if DEBUG
-            if (trace != null) trace.WriteLine(GetType().Name + " short-circuiting any further routing");
+            if (trace != null) trace.WriteLine(GetType().Name + " this is a css file request" 
+                + (cssFileContext.NeedsCompiling ? " that needs compiling" : ""));
 #endif
             return null;
         }
@@ -118,6 +126,7 @@ namespace OwinFramework.Less
                     {
                         fileContent = streamReader.ReadToEnd();
                     }
+                    _filesServedCount++;
 
                     context.Response.ContentType = "text/css";
                     if (cssFileContext.NeedsCompiling)
@@ -127,6 +136,7 @@ namespace OwinFramework.Less
 #endif
                         var css = dotless.Core.Less.Parse(fileContent);
                         context.Response.Write(css);
+                        _filesCompiledCount++;
                     }
                     else
                     {
@@ -195,12 +205,14 @@ namespace OwinFramework.Less
             document = document.Replace("{documentationRootUrl}", _configuration.DocumentationRootUrl);
             document = document.Replace("{rootDirectory}", _configuration.RootDirectory);
             document = document.Replace("{enabled}", _configuration.Enabled.ToString());
+            document = document.Replace("{analyicsEnabled}", _configuration.AnalyticsEnabled.ToString());
 
             var defaultConfiguration = new LessConfiguration();
             document = document.Replace("{rootUrl.default}", defaultConfiguration.RootUrl);
             document = document.Replace("{documentationRootUrl.default}", defaultConfiguration.DocumentationRootUrl);
             document = document.Replace("{rootDirectory.default}", defaultConfiguration.RootDirectory);
             document = document.Replace("{enabled.default}", defaultConfiguration.Enabled.ToString());
+            document = document.Replace("{analyicsEnabled.default}", defaultConfiguration.AnalyticsEnabled.ToString());
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
@@ -294,6 +306,60 @@ namespace OwinFramework.Less
             public string Type { get; set; }
             public string Name { get; set; }
             public string Description { get; set; }
+        }
+
+        #endregion
+
+        #region IAnalysable
+
+        public IList<IStatisticInformation> AvailableStatistics
+        {
+            get
+            {
+                var stats = new List<IStatisticInformation>();
+                if (_configuration.AnalyticsEnabled)
+                {
+                    stats.Add(
+                        new StatisticInformation
+                        {
+                            Id = "FilesServedCount",
+                            Name = "Number of file requests",
+                            Description = "The number of requests that resulted in a file being read from disk"
+                        });
+                    stats.Add(
+                        new StatisticInformation
+                        {
+                            Id = "FilesCompiledCount",
+                            Name = "Compiled count",
+                            Description = "The number of requests where the Less file was compiled to Css"
+                        });
+                    stats.Add(
+                        new StatisticInformation
+                        {
+                            Id = "FileModificationCount",
+                            Name = "Content modified count",
+                            Description = "The number of requests where the file was modified on disk since the content was added to the output cache"
+                        });
+                }
+                return stats;
+            }
+        }
+
+        public IStatistic GetStatistic(string id)
+        {
+            if (_configuration.AnalyticsEnabled)
+            {
+                switch (id)
+                {
+                    case "FilesServedCount":
+                        return new IntStatistic(() => _filesServedCount);
+                    case "FilesCompiledCount":
+                        return new IntStatistic(() => _filesCompiledCount);
+                    case "FileModificationCount":
+                        return new IntStatistic(() => _fileModificationCount);
+                }
+            }
+            return null;
         }
 
         #endregion

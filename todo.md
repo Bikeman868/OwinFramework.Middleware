@@ -39,3 +39,5 @@
 * Response rendering using templates and context handlers
 
 * Full featured URL rewriter
+
+* Site maintenance middleware

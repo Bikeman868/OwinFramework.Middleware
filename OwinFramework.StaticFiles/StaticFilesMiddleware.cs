@@ -12,6 +12,7 @@ using OwinFramework.Interfaces.Routing;
 using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.MiddlewareHelpers.Analysable;
 
 namespace OwinFramework.StaticFiles
 {
@@ -19,7 +20,8 @@ namespace OwinFramework.StaticFiles
         IMiddleware<IResponseProducer>, 
         IConfigurable,
         ISelfDocumenting,
-        IRoutingProcessor
+        IRoutingProcessor,
+        IAnalysable
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
@@ -27,6 +29,11 @@ namespace OwinFramework.StaticFiles
         string IMiddleware.Name { get; set; }
 
         private readonly IHostingEnvironment _hostingEnvironment;
+
+        private int _textFilesServedCount;
+        private int _binaryFilesServedCount;
+        private int _cachedContentExpiredCount;
+        private int _fileModificationCount;
 
         public StaticFilesMiddleware(IHostingEnvironment hostingEnvironment)
         {
@@ -40,13 +47,12 @@ namespace OwinFramework.StaticFiles
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
+#if DEBUG
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
-
+#endif
             StaticFileContext fileContext;
             if (!ShouldServeThisFile(context, out fileContext))
             {
-                if (trace != null) trace.WriteLine(GetType().Name + " request is not for a static file");
                 return next();
             }
 
@@ -59,7 +65,10 @@ namespace OwinFramework.StaticFiles
                 {
                     if (outputCache.TimeInCache > fileContext.Configuration.MaximumCacheTime)
                     {
+#if DEBUG
                         if (trace != null) trace.WriteLine(GetType().Name + " cached output is too old and will not be used");
+#endif
+                        _cachedContentExpiredCount++;
                         outputCache.UseCachedContent = false;
                     }
                     else
@@ -67,7 +76,10 @@ namespace OwinFramework.StaticFiles
                         var timeSinceLastUpdate = DateTime.UtcNow - fileContext.PhysicalFile.LastWriteTimeUtc;
                         if (outputCache.TimeInCache > timeSinceLastUpdate)
                         {
+#if DEBUG
                             if (trace != null) trace.WriteLine(GetType().Name + " file was modified since it was added to the output cache");
+#endif
+                            _fileModificationCount++;
                             outputCache.UseCachedContent = false;
                         }
                     }
@@ -79,31 +91,37 @@ namespace OwinFramework.StaticFiles
                 var authorization = context.GetFeature<InterfacesV1.Upstream.IUpstreamAuthorization>();
                 if (authorization != null)
                 {
+#if DEBUG
                     if (trace != null) trace.WriteLine(GetType().Name + " file access requires " + fileContext.Configuration.RequiredPermission + " permission");
+#endif
                     authorization.AddRequiredPermission(fileContext.Configuration.RequiredPermission);
                 }
             }
 
-            if (trace != null) trace.WriteLine(GetType().Name + " finished routing and short-circuiting any further routing");
+#if DEBUG
+            if (trace != null) trace.WriteLine(GetType().Name + " this is a static file request");
+#endif
             return null;
         }
 
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
+#if DEBUG
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting");
+#endif
 
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
+#endif
                 return DocumentConfiguration(context);
             }
 
             var staticFileContext = context.GetFeature<StaticFileContext>();
             if (staticFileContext == null)
             {
-                if (trace != null) trace.WriteLine(GetType().Name + " no static file context, probably not a static file request");
                 return next();
             }
 
@@ -113,7 +131,9 @@ namespace OwinFramework.StaticFiles
 
             if (configuration == null || physicalFile == null || extentionConfiguration == null)
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " required data is missing, file can not be served");
+#endif
                 return next();
             }
 
@@ -124,15 +144,19 @@ namespace OwinFramework.StaticFiles
                 outputCache.Category = largeFile ? "LargeStaticFile" : "SmallStaticFile";
                 outputCache.MaximumCacheTime = configuration.MaximumCacheTime;
                 outputCache.Priority = largeFile ? CachePriority.Never : CachePriority.High;
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " configured output cache " + outputCache.Category + " " + outputCache.Priority + " " + outputCache.MaximumCacheTime);
+#endif
             }
 
-            var result = Task.Factory.StartNew(() =>
+            return Task.Factory.StartNew(() =>
             {
                 context.Response.ContentType = extentionConfiguration.MimeType;
                 if (extentionConfiguration.MimeType.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
                 {
+#if DEBUG
                     if (trace != null) trace.WriteLine(GetType().Name + " responding with a text file");
+#endif
                     // Text files are handled differently because they can contain preamble bytes
                     string text;
                     using (var streamReader = physicalFile.OpenText())
@@ -140,10 +164,13 @@ namespace OwinFramework.StaticFiles
                         text = streamReader.ReadToEnd();
                     }
                     context.Response.Write(text);
+                    _textFilesServedCount++;
                 }
                 else
                 {
+#if DEBUG
                     if (trace != null) trace.WriteLine(GetType().Name + " responding with a binary file");
+#endif
                     var buffer = new byte[32 * 1024];
                     using (var stream = physicalFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
                     {
@@ -155,11 +182,9 @@ namespace OwinFramework.StaticFiles
                             if (length < buffer.Length) break;
                         }
                     }
+                    _binaryFilesServedCount++;
                 }
             });
-
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
-            return result;
         }
 
         #region IConfigurable
@@ -246,6 +271,7 @@ namespace OwinFramework.StaticFiles
             document = document.Replace("{maximumFileSizeToCache}", _configuration.MaximumFileSizeToCache.ToString());
             document = document.Replace("{maximumCacheTime}", _configuration.MaximumCacheTime.ToString());
             document = document.Replace("{requiredPermission}", _configuration.RequiredPermission);
+            document = document.Replace("{analyticsEnabled}", _configuration.AnalyticsEnabled.ToString());
 
             var defaultConfiguration = new StaticFilesConfiguration();
             document = document.Replace("{staticFilesRootUrl.default}", defaultConfiguration.StaticFilesRootUrl);
@@ -257,19 +283,22 @@ namespace OwinFramework.StaticFiles
             document = document.Replace("{maximumFileSizeToCache.default}", defaultConfiguration.MaximumFileSizeToCache.ToString());
             document = document.Replace("{maximumCacheTime.default}", defaultConfiguration.MaximumCacheTime.ToString());
             document = document.Replace("{requiredPermission.default}", defaultConfiguration.RequiredPermission);
+            document = document.Replace("{analyticsEnabled.default}", defaultConfiguration.AnalyticsEnabled.ToString());
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
         }
 
-        public Uri GetDocumentation(InterfacesV1.Capability.DocumentationTypes documentationType)
+        public Uri GetDocumentation(DocumentationTypes documentationType)
         {
             switch (documentationType)
             {
-                case InterfacesV1.Capability.DocumentationTypes.Configuration:
+                case DocumentationTypes.Configuration:
                     return new Uri(_configuration.DocumentationRootUrl, UriKind.Relative);
-                case InterfacesV1.Capability.DocumentationTypes.Overview:
+                case DocumentationTypes.Overview:
                     return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
+                case DocumentationTypes.SourceCode:
+                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.StaticFiles", UriKind.Absolute);
             }
             return null;
         }
@@ -288,23 +317,23 @@ namespace OwinFramework.StaticFiles
         { 
             get 
             {
-                var documentation = new List<InterfacesV1.Capability.IEndpointDocumentation>
-                {
-                    new EndpointDocumentation
-                    {
-                        RelativePath = _configuration.DocumentationRootUrl,
-                        Description = "Documentation of the configuration options for the Dart middleware",
-                        Attributes = new List<InterfacesV1.Capability.IEndpointAttributeDocumentation>
-                        {
-                            new EndpointAttributeDocumentation
+                var documentation = new List<IEndpointDocumentation>();
+                    if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl))
+                        documentation.Add(
+                            new EndpointDocumentation
                             {
-                                Type = "Method",
-                                Name = "GET",
-                                Description = "Returns configuration documentation for Dart middleware in HTML format"
-                            }
-                        }
-                    },
-                };
+                                RelativePath = _configuration.DocumentationRootUrl,
+                                Description = "Documentation of the configuration options for the Dart middleware",
+                                Attributes = new List<InterfacesV1.Capability.IEndpointAttributeDocumentation>
+                                {
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Method",
+                                        Name = "GET",
+                                        Description = "Returns configuration documentation for Dart middleware in HTML format"
+                                    }
+                                }
+                            });
                 foreach (var extension in _configuration.FileExtensions)
                 {
                     documentation.Add(
@@ -327,15 +356,15 @@ namespace OwinFramework.StaticFiles
             } 
         }
 
-        private class EndpointDocumentation : InterfacesV1.Capability.IEndpointDocumentation
+        private class EndpointDocumentation : IEndpointDocumentation
         {
             public string RelativePath { get; set; }
             public string Description { get; set; }
             public string Examples { get; set; }
-            public IList<InterfacesV1.Capability.IEndpointAttributeDocumentation> Attributes { get; set; }
+            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
         }
 
-        private class EndpointAttributeDocumentation : InterfacesV1.Capability.IEndpointAttributeDocumentation
+        private class EndpointAttributeDocumentation : IEndpointAttributeDocumentation
         {
             public string Type { get; set; }
             public string Name { get; set; }
@@ -364,6 +393,71 @@ namespace OwinFramework.StaticFiles
                     return reader.ReadToEnd();
                 }
             }
+        }
+
+        #endregion
+
+        #region IAnalysable
+
+        public IList<IStatisticInformation> AvailableStatistics
+        {
+            get
+            {
+                var stats = new List<IStatisticInformation>();
+                if (_configuration.AnalyticsEnabled)
+                {
+                    stats.Add(
+                        new StatisticInformation
+                        {
+                            Id = "TextFilesServedCount",
+                            Name = "Number of text files",
+                            Description = "The number of requests that resulted in a text file being read from disk",
+                            Explanation = "A text file is where the mime type for the content is text/* (for example text/html). Text files are handled differently because the file can contain preamble bytes that define the encoding"
+                        });
+                    stats.Add(
+                        new StatisticInformation
+                        {
+                            Id = "BinaryFilesServedCount",
+                            Name = "Number of binary files",
+                            Description = "The number of requests that resulted in a binary file being read from disk",
+                            Explanation = "A binary file is any file that is not a text file. Binary files are sent to the response stream byte-for-byte"
+                        });
+                    stats.Add(
+                        new StatisticInformation
+                        {
+                            Id = "CachedContentExpiredCount",
+                            Name = "Content expired count",
+                            Description = "The number of requests where the output cache had a cached copy of the file, but it had been cached for too long"
+                        });
+                    stats.Add(
+                        new StatisticInformation
+                        {
+                            Id = "FileModificationCount",
+                            Name = "Content modified count",
+                            Description = "The number of requests where the file was modified on disk since the content was added to the output cache"
+                        });
+                }
+                return stats;
+            }
+        }
+
+        public IStatistic GetStatistic(string id)
+        {
+            if (_configuration.AnalyticsEnabled)
+            {
+                switch (id)
+                {
+                    case "TextFilesServedCount":
+                        return new IntStatistic(() => _textFilesServedCount);
+                    case "BinaryFilesServedCount":
+                        return new IntStatistic(() => _binaryFilesServedCount);
+                    case "CachedContentExpiredCount":
+                        return new IntStatistic(() => _cachedContentExpiredCount);
+                    case "FileModificationCount":
+                        return new IntStatistic(() => _fileModificationCount);
+                }
+            }
+            return null;
         }
 
         #endregion
@@ -438,5 +532,6 @@ namespace OwinFramework.StaticFiles
         }
 
         #endregion
+
     }
 }

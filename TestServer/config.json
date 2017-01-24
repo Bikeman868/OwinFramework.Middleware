@@ -35,8 +35,8 @@
                 { "extension": ".js", "mimeType": "application/javascript" },
                 { "extension": ".dart", "mimeType": "application/dart" }
             ],
-            "maximumFileSizeToCache": 10000,
-            "totalCacheSize": 1000000,
+            "maximumFileSizeToCache": 100000,
+            "totalCacheSize": 10000000,
             "maximumCacheTime": "00:30:00",
             "requiredPermission": ""
         },
@@ -58,7 +58,30 @@
             "compiledUiRootUrl": "/ui/build/web",
         },
         "outputCache": { 
-            "maximumCacheTime": "01:00:00"
+            "rules": [
+                {
+                    "category":"",
+                    "priority":"Always",
+                    "cacheCategory":"OutputCache",
+                    "serverCacheTime":"03:00:00",
+                    "browserCacheTime":"2"
+                  },
+                  {
+                    "category":"",
+                    "priority":"High",
+                    "cacheCategory":"OutputCache",
+                    "serverCacheTime":"01:00:00",
+                    "browserCacheTime":"2"
+                  },
+                  {
+                    "category":"",
+                    "priority":"Medium",
+                    "cacheCategory":"OutputCache",
+                    "serverCacheTime":"00:10:00",
+                    "browserCacheTime":"2"
+                  }
+            ],
+            "documentationRootUrl": "/owin/outputCache"
         },
         "versioning": { 
             "version": 1,

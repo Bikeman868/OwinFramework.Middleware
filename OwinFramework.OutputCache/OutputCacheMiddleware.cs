@@ -9,18 +9,21 @@ using Microsoft.Owin;
 using Newtonsoft.Json;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
+using OwinFramework.InterfacesV1.Capability;
+using OwinFramework.InterfacesV1.Facilities;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.InterfacesV1.Upstream;
-using OwinFramework.MiddlewareHelpers;
+using OwinFramework.MiddlewareHelpers.Analysable;
 using OwinFramework.MiddlewareHelpers.ResponseRewriter;
 
 namespace OwinFramework.OutputCache
 {
     public class OutputCacheMiddleware:
         IMiddleware<IOutputCache>,
-        IUpstreamCommunicator<InterfacesV1.Upstream.IUpstreamOutputCache>,
-        InterfacesV1.Capability.IConfigurable,
-        InterfacesV1.Capability.ISelfDocumenting
+        IUpstreamCommunicator<IUpstreamOutputCache>,
+        IConfigurable,
+        ISelfDocumenting,
+        IAnalysable
     {
         private readonly InterfacesV1.Facilities.ICache _cache;
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
@@ -28,10 +31,15 @@ namespace OwinFramework.OutputCache
 
         string IMiddleware.Name { get; set; }
 
+        private int _cacheHitCount;
+        private int _cacheMissCount;
+        private int _useCachedContentCount;
+        private int _addedToCacheCount;
+
         private IDisposable _configurationRegistration;
         private OutputCacheConfiguration _configuration;
 
-        public OutputCacheMiddleware(InterfacesV1.Facilities.ICache cache)
+        public OutputCacheMiddleware(ICache cache)
         {
             _cache = cache;
             ConfigurationChanged(new OutputCacheConfiguration());
@@ -39,58 +47,64 @@ namespace OwinFramework.OutputCache
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
-
             var upstreamOutputCache = new OutputCacheContext(_cache, context, _configuration);
             context.SetFeature<IUpstreamOutputCache>(upstreamOutputCache);
 
-            var result = next();
+            if (upstreamOutputCache.CachedContentIsAvailable)
+                _cacheHitCount++;
+            else
+                _cacheMissCount++;
 
-            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished");
-            return result;
+            return next();
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
+#if DEBUG
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting  " + context.Request.Uri);
-            
+#endif
+
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
+#endif
                 return DocumentConfiguration(context);
             }
             
             var outputCache = context.GetFeature<IUpstreamOutputCache>() as OutputCacheContext;
             if (outputCache == null)
             {
-                if (trace != null) trace.WriteLine(GetType().Name + " has no context, chaining next middleware");
                 return next();
             }
 
             if (outputCache.CachedContentIsAvailable
                 && outputCache.UseCachedContent)
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " returning cached response");
+#endif
+                _useCachedContentCount++;
                 return outputCache.SendCachedResponse();
             }
 
             outputCache.CaptureResponse();
             context.SetFeature<IOutputCache>(outputCache);
 
-            var result = next().ContinueWith(t =>
+            return next().ContinueWith(t =>
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " flushing captured response to actual response stream");
+#endif
                 outputCache.SendCapturedOutput();
 
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " saving response to cache");
-                outputCache.SaveToCache();
+#endif
+                if (outputCache.SaveToCache())
+                    _addedToCacheCount++;
             });
-
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
-            return result;
         }
 
         #region IConfigurable
@@ -137,25 +151,15 @@ namespace OwinFramework.OutputCache
             };
             
             var document = GetEmbeddedResource("configuration.html");
-            document = document.Replace("{maximumCacheTime}", formatRules(_configuration.Rules));
+            document = document.Replace("{rules}", formatRules(_configuration.Rules));
+            document = document.Replace("{documentationUrl}", _configuration.DocumentationRootUrl);
 
             var defaultConfiguration = new OutputCacheConfiguration();
-            document = document.Replace("{maximumCacheTime.default}", formatRules(defaultConfiguration.Rules));
+            document = document.Replace("{rules.default}", formatRules(defaultConfiguration.Rules));
+            document = document.Replace("{documentationUrl.default}", defaultConfiguration.DocumentationRootUrl);
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
-        }
-
-        public Uri GetDocumentation(InterfacesV1.Capability.DocumentationTypes documentationType)
-        {
-            switch (documentationType)
-            {
-                case InterfacesV1.Capability.DocumentationTypes.Configuration:
-                    return new Uri(_configuration.DocumentationRootUrl, UriKind.Relative);
-                case InterfacesV1.Capability.DocumentationTypes.Overview:
-                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
-            }
-            return null;
         }
 
         public string LongDescription
@@ -168,12 +172,120 @@ namespace OwinFramework.OutputCache
             get { return "Caches output from downstream middleware"; }
         }
 
-        public IList<InterfacesV1.Capability.IEndpointDocumentation> Endpoints 
-        { 
+        Uri ISelfDocumenting.GetDocumentation(DocumentationTypes documentationType)
+        {
+            switch (documentationType)
+            {
+                case DocumentationTypes.Configuration:
+                    return string.IsNullOrEmpty(_configuration.DocumentationRootUrl) 
+                        ? null
+                        : new Uri(_configuration.DocumentationRootUrl, UriKind.Relative);
+                case DocumentationTypes.Overview:
+                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
+                case DocumentationTypes.SourceCode:
+                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.RouteVisualizer", UriKind.Absolute);
+            }
+            return null;
+        }
+
+        IList<IEndpointDocumentation> ISelfDocumenting.Endpoints
+        {
             get
             {
-                return new List<InterfacesV1.Capability.IEndpointDocumentation>();
-            } 
+                var documentation = new List<IEndpointDocumentation>();
+
+                if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl))
+                {
+                    documentation.Add(
+                        new EndpointDocumentation
+                        {
+                            RelativePath = _configuration.DocumentationRootUrl,
+                            Description = "Documentation of the configuration options for the output cache middleware",
+                            Attributes = new List<IEndpointAttributeDocumentation>
+                            {
+                                new EndpointAttributeDocumentation
+                                {
+                                    Type = "Method",
+                                    Name = "GET",
+                                    Description = "Returns output cache configuration documentation in HTML format"
+                                }
+                            }
+                        });
+                }
+                return documentation;
+            }
+        }
+
+        private class EndpointDocumentation : IEndpointDocumentation
+        {
+            public string RelativePath { get; set; }
+            public string Description { get; set; }
+            public string Examples { get; set; }
+            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
+        }
+
+        private class EndpointAttributeDocumentation : IEndpointAttributeDocumentation
+        {
+            public string Type { get; set; }
+            public string Name { get; set; }
+            public string Description { get; set; }
+        }
+
+        #endregion
+
+        #region IAnalysable
+
+        public IList<IStatisticInformation> AvailableStatistics
+        {
+            get
+            {
+                var stats = new List<IStatisticInformation>();
+                stats.Add(
+                    new StatisticInformation
+                    {
+                        Id = "CacheHitCount",
+                        Name = "Hit count",
+                        Description = "The number of times that cached data was available"
+                    });
+                stats.Add(
+                    new StatisticInformation
+                    {
+                        Id = "CacheMissCount",
+                        Name = "Miss count",
+                        Description = "The number of times that no cached data was available"
+                    });
+                stats.Add(
+                    new StatisticInformation
+                    {
+                        Id = "UseCachedContentCount",
+                        Name = "Cache use count",
+                        Description = "The number of times that cached content was returned to the browser"
+                    });
+                stats.Add(
+                    new StatisticInformation
+                    {
+                        Id = "AddedToCacheCount",
+                        Name = "Cached count",
+                        Description = "The number of times that generated output was saved in the cache"
+                    });
+                return stats;
+            }
+        }
+
+        public IStatistic GetStatistic(string id)
+        {
+            switch (id)
+            {
+                case "CacheHitCount":
+                    return new IntStatistic(() => _cacheHitCount);
+                case "CacheMissCount":
+                    return new IntStatistic(() => _cacheMissCount);
+                case "UseCachedContentCount":
+                    return new IntStatistic(() => _useCachedContentCount);
+                case "AddedToCacheCount":
+                    return new IntStatistic(() => _addedToCacheCount);
+            }
+            return null;
         }
 
         #endregion
@@ -202,7 +314,7 @@ namespace OwinFramework.OutputCache
 
         #endregion
 
-        #region Capturing the response
+        #region Serializable DTOs to store in cache
 
         [Serializable]
         private class CachedResponse
@@ -229,6 +341,8 @@ namespace OwinFramework.OutputCache
 
         #endregion
 
+        #region Request specific context
+
         /// <summary>
         /// An instance of this class is stored in the OWIN context for rach request
         /// that involves the output cache.
@@ -253,7 +367,7 @@ namespace OwinFramework.OutputCache
             private static readonly IList<string> _noCacheHeaders = new List<string>{ "content-length" };
 
             private readonly string _cacheKey;
-            private readonly InterfacesV1.Facilities.ICache _cache;
+            private readonly ICache _cache;
             private readonly IOwinContext _context;
             private readonly OutputCacheConfiguration _configuration;
 
@@ -263,7 +377,7 @@ namespace OwinFramework.OutputCache
 
 
             public OutputCacheContext(
-                InterfacesV1.Facilities.ICache cache, 
+                ICache cache, 
                 IOwinContext context,
                 OutputCacheConfiguration configuration)
             {
@@ -327,7 +441,7 @@ namespace OwinFramework.OutputCache
                     _responseCapture.Send();
             }
 
-            public void SaveToCache()
+            public bool SaveToCache()
             {
                 if (_responseCapture != null)
                 {
@@ -349,9 +463,11 @@ namespace OwinFramework.OutputCache
                             _cachedResponse.WhenCached = DateTime.UtcNow;
 
                             _cache.Put(_cacheKey, _cachedResponse, _rule.ServerCacheTime.Value, _rule.CacheCategory);
+                            return true;
                         }
                     }
                 }
+                return false;
             }
 
             private OutputCacheRule GetMatchingRule()
@@ -383,5 +499,7 @@ namespace OwinFramework.OutputCache
                 return "OutputCache:" + uri.PathAndQuery.ToLower();
             }
         }
+
+        #endregion
     }
 }

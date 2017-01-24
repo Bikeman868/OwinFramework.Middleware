@@ -43,7 +43,7 @@
     </head>
     <body>
         <h1>Owin Framework output cache middleware configuration</h1>
-        <p>The output cache middleware in the Owin  Framework supports the following configuration options:</p>
+        <p>The output cache middleware in the Owin Framework supports the following configuration options:</p>
         <table class="properties">
             <tr>
                 <th>Property</th>
@@ -52,12 +52,43 @@
                 <th>Description</th>
             </tr>
             <tr>
-                <td class="property">Template</td>
-                <td>{template.default}</td>
-                <td>{template}</td>
+                <td class="property">Rules</td>
+                <td>{rules.default}</td>
+                <td>{rules}</td>
                 <td>
                     <p>
+                        Specifies how long to cache data based on category and priority. This is a list of
+                        rules that are in a sequence. The first matching rule will be used to set the cache
+                        time.
                     </p>
+                    <p>
+                        When downstream middleware tells the output cache that it's OK to cache this content,
+                        it also specifies a cache priority and a cache category. This list of rules is where
+                        you map combinations of category and priority onto a configuration for that type of
+                        data. Note that the first rule is matched and blank matches everything. If there is
+                        no configuration for a specific category and priority combination then that data will
+                        not be cached.
+                    </p>
+                    <p>
+                        For each category and priority you can specify:
+                    </p>
+                    <ul>
+                        <li>
+                            <span class="code">cacheCategory</span> which is passed to the cache facility.
+                            The cache facility can be configured based on this category.
+                        </li>
+                        <li>
+                            <span class="code">serverCacheTime</span> is how long to cache this on the
+                            server. Subsequent requests within this much time will be served from the
+                            output cache. Leave this blank to prevent caching on the server.
+                        </li>
+                        <li>
+                            <span class="code">browserCacheTime</span> is how long to cache this in the
+                            browser. Subsequent references to this URL in the browser may not result in
+                            a request to the server. This is at the discretion of the browser. Leave this 
+                            blank to prevent browser caching.
+                        </li>
+                    </ul>
                 </td>
             </tr>
             <tr>
@@ -66,6 +97,8 @@
                 <td>{documentationUrl}</td>
                 <td>
                     <p>
+                        The URL within your web site where this documentation is available or blank to
+                        disable documentation (for production systems).
                     </p>
                 </td>
             </tr>

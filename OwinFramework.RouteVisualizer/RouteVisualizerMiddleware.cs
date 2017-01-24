@@ -57,7 +57,9 @@ namespace OwinFramework.RouteVisualizer
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
+#if DEBUG
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
+#endif
 
             var requiredPermission = _configuration.RequiredPermission;
             if (_configuration.Enabled && !string.IsNullOrEmpty(requiredPermission))
@@ -67,7 +69,9 @@ namespace OwinFramework.RouteVisualizer
                     var authorization = context.GetFeature<IUpstreamAuthorization>();
                     if (authorization != null)
                     {
+#if DEBUG
                         if (trace != null) trace.WriteLine(GetType().Name + " requires " + requiredPermission + " permission");
+#endif
                         authorization.AddRequiredPermission(requiredPermission);
                     }
                 }
@@ -78,21 +82,27 @@ namespace OwinFramework.RouteVisualizer
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
+#if DEBUG
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
+#endif
 
             if (!_configuration.Enabled)
                 return next();
 
             if (context.Request.Path.Equals(_visualizationPath))
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " returning route visualization");
+#endif
                 _requestCount++;
                 return VisualizeRouting(context);
             }
 
             if (context.Request.Path.Equals(_documentationPath))
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " returning documentation");
+#endif
                 _requestCount++;
                 return DocumentConfiguration(context);
             }

@@ -40,19 +40,24 @@ namespace OwinFramework.AnalysisReporter
             string path;
             if (!IsForThisMiddleware(context, out path))
                 return next();
-
+#if DEBUG
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
             if (trace != null) trace.WriteLine(GetType().Name + " handling this request");
+#endif
 
             if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " returning analysis report");
+#endif
                 return ReportAnalysis(context);
             }
 
             if (context.Request.Path.Value.Equals(path + ConfigDocsPath, StringComparison.OrdinalIgnoreCase))
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " returning configurartion documentation");
+#endif
                 return DocumentConfiguration(context);
             }
 

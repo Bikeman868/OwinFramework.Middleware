@@ -29,36 +29,37 @@ namespace OwinFramework.ExceptionReporter
 
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() starting " + context.Request.Uri);
-
-            var result = next();
-
-            if (trace != null) trace.WriteLine(GetType().Name + " Invoke() finished");
-            return result;
+            return next();
         }
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
+#if DEBUG
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
             if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
-
+#endif
             try
             {
                 var result = next();
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished");
+#endif
                 return result;
             }
             catch(HttpException httpException)
             {
                 context.Response.StatusCode = httpException.GetHttpCode();
                 context.Response.ReasonPhrase = httpException.GetHtmlErrorMessage();
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " HttpException caught with status code " + context.Response.StatusCode);
+#endif
                 return context.Response.WriteAsync("");
             }
             catch (Exception ex)
             {
+#if DEBUG
                 if (trace != null) trace.WriteLine(GetType().Name + " Exception caught: " + ex.Message);
+#endif
                 var isPrivate = false;
                 try
                 {
