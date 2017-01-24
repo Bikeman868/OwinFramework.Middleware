@@ -28,7 +28,7 @@ namespace OwinFramework.OutputCache
                 {
                     Priority = CachePriority.Always,
                     ServerCacheTime = TimeSpan.FromHours(3),
-                    BrowserCacheTime = TimeSpan.FromHours(48)
+                    BrowserCacheTime = TimeSpan.FromHours(6)
                 },
                 new OutputCacheRule
                 {
