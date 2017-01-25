@@ -30,11 +30,6 @@ namespace OwinFramework.Dart
         private int _supportedBrowserRequestCount;
         private int _unsupportedBrowserRequestCount;
 
-        public DartMiddleware()
-        {
-            this.RunAfter<IOutputCache>(null, false);
-        }
-
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
 
