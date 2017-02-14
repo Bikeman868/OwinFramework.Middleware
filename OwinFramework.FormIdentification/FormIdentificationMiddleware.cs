@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
-using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.MiddlewareHelpers.Analysable;
@@ -22,14 +21,17 @@ namespace OwinFramework.FormIdentification
         ISelfDocumenting,
         IAnalysable
     {
-        private readonly IHostingEnvironment _hostingEnvironment;
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
 
+        private int _signupSuccessCount;
+        private int _signupFailCount;
         private int _signinSuccessCount;
         private int _signinFailCount;
+        private int _signoutCount;
+        private int _renewSessionCount;
 
         private IDisposable _configurationRegistration;
         private FormIdentificationConfiguration _configuration;
@@ -51,20 +53,25 @@ namespace OwinFramework.FormIdentification
         private PathString _resetPasswordPage;
         private PathString _renewSessionPage;
 
-        public FormIdentificationMiddleware(IHostingEnvironment hostingEnvironment)
+        public FormIdentificationMiddleware()
         {
-            _hostingEnvironment = hostingEnvironment;
             ConfigurationChanged(new FormIdentificationConfiguration());
             this.RunAfter<ISession>();
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
-            if (context.Request.Path == _configPage)
-                return DocumentConfiguration(context);
+            if (context.Request.Method == "POST")
+            {
+
+            }
+            else if (context.Request.Method == "GET")
+            {
+                if (context.Request.Path == _configPage)
+                    return DocumentConfiguration(context);
+            }
 
             IdentifyUser(context);
-
             return next();
         }
 
@@ -72,7 +79,23 @@ namespace OwinFramework.FormIdentification
 
         private void IdentifyUser(IOwinContext context)
         {
+            // If identification middleware further up the pipeline already 
+            // identified the user then do nothing here
+            var identification = context.GetFeature<IIdentification>();
+            if (identification != null && !identification.IsAnonymous)
+                return;
 
+            context.SetFeature<IIdentification>(new Idenfitication
+            { 
+                IsAnonymous = false ,
+                Identity = "abcdef"
+            });
+        }
+
+        private class Idenfitication: IIdentification
+        {
+            public string Identity { get; set; }
+            public bool IsAnonymous { get; set; }
         }
 
         #endregion
@@ -131,16 +154,16 @@ namespace OwinFramework.FormIdentification
 
             _configPage = cleanUrl(configuration.DocumentationPage);
             _signupPage = cleanUrl(configuration.SignupPage);
-            _signinPage = cleanUrl(configuration.SignupPage);
-            _signoutPage = cleanUrl(configuration.SignupPage);
-            _signupSuccessPage = cleanUrl(configuration.SignupPage);
-            _signupFailPage = cleanUrl(configuration.SignupPage);
-            _signinSuccessPage = cleanUrl(configuration.SignupPage);
-            _signinFailPage = cleanUrl(configuration.SignupPage);
-            _signoutSuccessPage = cleanUrl(configuration.SignupPage);
-            _sendPasswordResetPage = cleanUrl(configuration.SignupPage);
-            _resetPasswordPage = cleanUrl(configuration.SignupPage);
-            _renewSessionPage = cleanUrl(configuration.SignupPage);
+            _signinPage = cleanUrl(configuration.SigninPage);
+            _signoutPage = cleanUrl(configuration.SignoutPage);
+            _signupSuccessPage = cleanUrl(configuration.SigninSuccessPage);
+            _signupFailPage = cleanUrl(configuration.SignupFailPage);
+            _signinSuccessPage = cleanUrl(configuration.SigninSuccessPage);
+            _signinFailPage = cleanUrl(configuration.SigninFailPage);
+            _signoutSuccessPage = cleanUrl(configuration.SignoutSuccessPage);
+            _sendPasswordResetPage = cleanUrl(configuration.SendPasswordResetPage);
+            _resetPasswordPage = cleanUrl(configuration.ResetPasswordPage);
+            _renewSessionPage = cleanUrl(configuration.RenewSessionPage);
 
             _secureDomain = configuration.SecureDomain;
             _cookieName = configuration.CookieName;
@@ -157,11 +180,41 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{documentationPage}", _configuration.DocumentationPage);
             document = document.Replace("{signupPage}", _configuration.SignupPage);
             document = document.Replace("{signinPage}", _configuration.SigninPage);
+            document = document.Replace("{signoutPage}", _configuration.SignoutPage);
+            document = document.Replace("{signupSuccessPage}", _configuration.SignupSuccessPage);
+            document = document.Replace("{signupFailPage}", _configuration.SignupFailPage);
+            document = document.Replace("{signinSuccessPage}", _configuration.SigninSuccessPage);
+            document = document.Replace("{signinFailPage}", _configuration.SigninFailPage);
+            document = document.Replace("{signoutSuccessPage}", _configuration.SignoutSuccessPage);
+            document = document.Replace("{sendPasswordResetPage}", _configuration.SendPasswordResetPage);
+            document = document.Replace("{resetPasswordPage}", _configuration.ResetPasswordPage);
+            document = document.Replace("{renewSessionPage}", _configuration.RenewSessionPage);
+            document = document.Replace("{clearSessionPage}", _configuration.ClearSessionPage);
+            document = document.Replace("{secureDomain}", _configuration.SecureDomain);
+            document = document.Replace("{cookieName}", _configuration.CookieName);
+            document = document.Replace("{sessionName}", _configuration.SessionName);
+            document = document.Replace("{rememberMeFor}", _configuration.RememberMeFor.ToString());
 
             var defaultConfiguration = new FormIdentificationConfiguration();
             document = document.Replace("{documentationPage.default}", defaultConfiguration.DocumentationPage);
             document = document.Replace("{signupPage.default}", defaultConfiguration.SignupPage);
             document = document.Replace("{signinPage.default}", defaultConfiguration.SigninPage);
+            document = document.Replace("{signoutPage.default}", defaultConfiguration.SignoutPage);
+            document = document.Replace("{signupSuccessPage.default}", defaultConfiguration.SignupSuccessPage);
+            document = document.Replace("{signupFailPage.default}", defaultConfiguration.SignupFailPage);
+            document = document.Replace("{signinSuccessPage.default}", defaultConfiguration.SigninSuccessPage);
+            document = document.Replace("{signinFailPage.default}", defaultConfiguration.SigninFailPage);
+            document = document.Replace("{signoutSuccessPage.default}", defaultConfiguration.SignoutSuccessPage);
+            document = document.Replace("{sendPasswordResetPage.default}", defaultConfiguration.SendPasswordResetPage);
+            document = document.Replace("{resetPasswordPage.default}", defaultConfiguration.ResetPasswordPage);
+            document = document.Replace("{renewSessionPage.default}", defaultConfiguration.RenewSessionPage);
+            document = document.Replace("{clearSessionPage.default}", defaultConfiguration.ClearSessionPage);
+            document = document.Replace("{secureDomain.default}", defaultConfiguration.SecureDomain);
+            document = document.Replace("{cookieName.default}", defaultConfiguration.CookieName);
+            document = document.Replace("{sessionName.default}", defaultConfiguration.SessionName);
+            document = document.Replace("{rememberMeFor.default}", defaultConfiguration.RememberMeFor.ToString());
+
+            document = document.Replace("{longDescription}", LongDescription);
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
@@ -185,12 +238,12 @@ namespace OwinFramework.FormIdentification
 
         public string LongDescription
         {
-            get { return "Returns a templated response with a status code of 404 (not found)"; }
+            get { return GetEmbeddedResource("description.html"); }
         }
 
         public string ShortDescription
         {
-            get { return "Returns a status 404 response"; }
+            get { return "Allows users of the site to create accounts, login to those accounts etc."; }
         }
 
         public IList<IEndpointDocumentation> Endpoints
@@ -220,7 +273,9 @@ namespace OwinFramework.FormIdentification
                     documentation.Add(
                         new EndpointDocumentation
                         {
-                            RelativePath = _signupPage.Value,
+                            RelativePath = string.IsNullOrEmpty(_secureDomain) 
+                                ? _signupPage.Value 
+                                : "https://" + _secureDomain + _signupPage.Value,
                             Description = "User account creation via email and password",
                             Attributes = new List<IEndpointAttributeDocumentation>
                                 {
@@ -255,7 +310,9 @@ namespace OwinFramework.FormIdentification
                     documentation.Add(
                         new EndpointDocumentation
                         {
-                            RelativePath = _signinPage.Value,
+                            RelativePath = string.IsNullOrEmpty(_secureDomain)
+                                ? _signinPage.Value
+                                : "https://" + _secureDomain + _signinPage.Value,
                             Description = "User login via email and password",
                             Attributes = new List<IEndpointAttributeDocumentation>
                                 {
@@ -290,7 +347,9 @@ namespace OwinFramework.FormIdentification
                     documentation.Add(
                         new EndpointDocumentation
                         {
-                            RelativePath = _signinPage.Value,
+                            RelativePath = string.IsNullOrEmpty(_secureDomain)
+                                ? _signoutPage.Value
+                                : "https://" + _secureDomain + _signoutPage.Value,
                             Description = "User logout",
                             Attributes = new List<IEndpointAttributeDocumentation>
                                 {
@@ -299,7 +358,112 @@ namespace OwinFramework.FormIdentification
                                         Type = "Method",
                                         Name = "POST",
                                         Description = "Logs out the current user and clears any cookie stored on the browser. Optionally Redirects the user"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = "email",
+                                        Description = "The email address of the user who wants to reset their password"
                                     }
+                                }
+                        });
+
+                if (_sendPasswordResetPage.HasValue)
+                    documentation.Add(
+                        new EndpointDocumentation
+                        {
+                            RelativePath = string.IsNullOrEmpty(_secureDomain)
+                                ? _sendPasswordResetPage.Value
+                                : "https://" + _secureDomain + _sendPasswordResetPage.Value,
+                            Description = "Request a password reset email to be sent",
+                            Attributes = new List<IEndpointAttributeDocumentation>
+                                {
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Method",
+                                        Name = "POST",
+                                        Description = "Sends the user a password reset email"
+                                    }
+                                }
+                        });
+
+                if (_resetPasswordPage.HasValue)
+                    documentation.Add(
+                        new EndpointDocumentation
+                        {
+                            RelativePath = string.IsNullOrEmpty(_secureDomain)
+                                ? _resetPasswordPage.Value
+                                : "https://" + _secureDomain + _resetPasswordPage.Value,
+                            Description = "Resets a user's password. One time use within expiry time",
+                            Attributes = new List<IEndpointAttributeDocumentation>
+                                {
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Method",
+                                        Name = "POST",
+                                        Description = "Sends the user a password reset email"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = "email",
+                                        Description = "The email address of the user who wants to reset their password"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = "token",
+                                        Description = "The password reset token that was included in the password reset email"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = "password",
+                                        Description = "The new password to set for this user"
+                                    }
+                                }
+                        });
+
+                if (_renewSessionPage.HasValue)
+                    documentation.Add(
+                        new EndpointDocumentation
+                        {
+                            RelativePath = string.IsNullOrEmpty(_secureDomain)
+                                ? _renewSessionPage.Value
+                                : "https://" + _secureDomain + _renewSessionPage.Value,
+                            Description = 
+                                "Identifies the user and adds user identification to the users session. "+
+                                "If the user is logged on then this is transparent to them. If they are not"+
+                                "logged on they will be redirected to the login page if there is one.",
+                            Attributes = new List<IEndpointAttributeDocumentation>
+                                {
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Method",
+                                        Name = "POST",
+                                        Description = "Renews the users session by identifying them securely"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Parameter",
+                                        Name = "sid",
+                                        Description = "(required) The session id of the session to renew"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Parameter",
+                                        Name = "success",
+                                        Description = 
+                                            "The URL to redirect the browser to when the renewal succeeds. "+
+                                            "The request will succeed if the user is logged in with remember me "+
+                                            "enabled and the remember me maximum time has not been exceeded."
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Parameter",
+                                        Name = "fail",
+                                        Description = "The URL to redirect the browser to when the renewal fails"
+                                    },
                                 }
                         });
 
@@ -334,10 +498,50 @@ namespace OwinFramework.FormIdentification
                 stats.Add(
                     new StatisticInformation
                     {
+                        Id = "SignupSuccessCount",
+                        Name = "Signup success count",
+                        Description = "The number of successful account creation requests since startup",
+                        Explanation = ""
+                    });
+                stats.Add(
+                    new StatisticInformation
+                    {
+                        Id = "SignupFailCount",
+                        Name = "Signup fail count",
+                        Description = "The number of unsuccessful account creation requests since startup",
+                        Explanation = ""
+                    });
+                stats.Add(
+                    new StatisticInformation
+                    {
                         Id = "SigninSuccessCount",
                         Name = "Signin success count",
                         Description = "The number of successful sign in requests since startup",
                         Explanation = ""
+                    });
+                stats.Add(
+                    new StatisticInformation
+                    {
+                        Id = "SigninFailCount",
+                        Name = "Signin fail count",
+                        Description = "The number of unsuccessful sign in requests since startup",
+                        Explanation = ""
+                    });
+                stats.Add(
+                    new StatisticInformation
+                    {
+                        Id = "SignoutCount",
+                        Name = "Signout count",
+                        Description = "The number of times users explicitly logged out since startup",
+                        Explanation = ""
+                    });
+                stats.Add(
+                    new StatisticInformation
+                    {
+                        Id = "RenewSessionCount",
+                        Name = "Renew session count",
+                        Description = "The number of times the user identification was updated in a session",
+                        Explanation = "These session refreshes happen whenever someone logs in, or gets reauthenticated because their session timed out"
                     });
                 return stats;
             }
@@ -347,8 +551,12 @@ namespace OwinFramework.FormIdentification
         {
             switch (id)
             {
-                case "SigninSuccessCount":
-                    return new IntStatistic(() => _signinSuccessCount);
+                case "SignupSuccessCount": return new IntStatistic(() => _signupSuccessCount);
+                case "SignupFailCount": return new IntStatistic(() => _signupFailCount);
+                case "SigninSuccessCount": return new IntStatistic(() => _signinSuccessCount);
+                case "SigninFailCount": return new IntStatistic(() => _signinFailCount);
+                case "SignoutCount": return new IntStatistic(() => _signoutCount);
+                case "RenewSessionCount": return new IntStatistic(() => _renewSessionCount);
             }
             return null;
         }

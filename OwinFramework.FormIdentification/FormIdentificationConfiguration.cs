@@ -17,19 +17,23 @@ namespace OwinFramework.NotFound
         public string SigninSuccessPage { get; set; }
         public string SigninFailPage { get; set; }
         public string SignoutSuccessPage { get; set; }
+
         public string SendPasswordResetPage { get; set; }
         public string ResetPasswordPage { get; set; }
+
         public string RenewSessionPage { get; set; }
         public string ClearSessionPage { get; set; }
 
         public string CookieName { get; set; }
         public string SessionName { get; set; }
+        public TimeSpan RememberMeFor { get; set; }
         
         public FormIdentificationConfiguration()
         {
             SecureDomain = string.Empty;
             CookieName = "forms_user_identification";
             SessionName = "forms_user_identification";
+            RememberMeFor = TimeSpan.FromDays(90);
 
             DocumentationPage = "/formId/config";
             SignupPage = "/formId/signup";

@@ -80,6 +80,11 @@ namespace OwinFramework.Middleware.TestServer
                 .RunAfter("LESS compiler")
                 .RunAfter("Dart");
 
+            // The form identification middleware provides login/logout password reset etc
+            builder.Register(ninject.Get<FormIdentification.FormIdentificationMiddleware>())
+                .As("Form Identification")
+                .ConfigureWith(config, "/middleware/formIdentification");
+
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<RouteVisualizer.RouteVisualizerMiddleware>())
                 .As("Route visualizer")

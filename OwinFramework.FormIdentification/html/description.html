@@ -1,0 +1,131 @@
+﻿<h3>Form Identification Middleware Description</h3>
+
+This middleware allows users of your site to:
+
+<ul>
+    <li>
+        Create an account using an email address and a password by making an HTTPS POST
+        request to the URL that you have configured (defaults to <span class="code">/formId/signup</span>). On success
+        redirects the user to a welcome page whose URL you can configure (defaults to <span class="code">/welcome</span>).
+        On failure redirects the user to a failed/retry page whose URL you can configure
+        (defaults to <span class="code">/formId/signup</span>). Your application is responsible for delivering the UI, this
+        middleware just accepts the POST, creates the account or not, and performs a redriection.
+    </li>
+
+    <li>
+        Log into an existing account using the email address and password used to create the
+        account. The email and password must be sent in an HTTPS POST to a URL that you can
+        configure (defaults to <span class="code">/formId/signin</span>). The POST will result in a redirect response. The URLs
+        for the success and fail cases can both be configured. Your application is responsible for
+        handling the HTTP(S) GET requests for these URLs.
+    </li>
+
+    <li>
+        Change their password by providing their current password and a new one.
+    </li>
+
+    <li>
+        Logout, securing their account.
+    </li>
+
+    <li>
+        Request a time-limited password reset email to be sent.
+    </li>
+
+    <li>
+        Click the single use link in the password reset email and reset their password
+        without knowing their current password.
+    </li>
+
+</ul>
+
+<p>
+    Note that there are other middleware packages that provide user identification from
+    social media, shared secrets and certificates. These middleware packages will all work
+    togther because each one will look to see if the user is already identified before
+    trying to perform its own identification. The first middleware in the pipeline that
+    successfully identifies the user will supply the user identity to the reast of the
+    pipeline and other identification middleware will not make any additional user
+    identification attempts after the user is identified.
+</p>
+
+<p>
+    Note that this middleware will store a cookie on the browser to indicate who the user
+    is logged in as. The lifetime of the cookie is configurable and defaults to 90 days.
+    To keep this cookie secure this middleware performs a few extra redirections that mean
+    that the cookie can be stored on the browser in a different domain than the non secure
+    pages of the site are served from.
+</p>
+
+<p>
+    When a browser makes a request to a server it includes all of the cookies that are stored
+    for that domain (for example <span class="code">www.mycompany.com</span>). If the login request set cookies in
+    the <span class="code">www.mycompany.com</span> domain then every time the browser requested any page in the
+    <span class="code">www.mycompany.com</span> domain it would send the cookie, and if any of these requests are not
+    encrypted (even requets for images or stylesheets etc) then anyone watching could copy
+    the cookie value and use it to impersonate that user for 90 days.
+</p>
+
+<p>
+    For this reason this middleware assumes that you will use a sub-domain for log in etc
+    and store cookies in this sub-domain on the browser so that they will not be sent with
+    non secure page requests. You don't have to do this and it will still work, but you
+    must then make sure all requests to your site are secure (using HTTPS) and if a user
+    types HTTP into their browser their user account will be at risk even if your server
+    does not handle the request.
+</p>
+
+<p>
+    Lets assume that your main site domain is <span class="code">http://www.mycompany.com/</span> and you choose to
+    use <span class="code">https://secure.mycompany.com/</span> for login, this is what happens when a user visits
+    your site:
+</p>
+
+<ol>
+    <li>
+        The very first time they visit <span class="code">http://www.mycompany.com/</span> this middleware will notice
+        that there is no login token in session and will redirect the browser to a page on the
+        secure sub-domain, for example <span class="code">https://secure.mycompany.com/renewSession</span> since this
+        is their first visit and no cookies have been set, tihs will store a value in session
+        indicating that they are an anonymous user and redirect them back to the page that
+        they initially requested. Now when the browser re-requests  <span class="code">http://www.mycompany.com/</span>
+        this middleware will find the anonymous token in session and serve the page as an
+        unidentified user.
+    </li>
+
+    <li>
+        For subsequent requests during the session, requests will continue to be processed as
+        an unidentified user. When the session times out, the process will revert back to step 1.
+    </li>
+
+    <li>
+        If the user decides to sign in by POSTing to <span class="code">https://secure.mycompany.com/signin</span> then
+        this middleware will check their credentials and respond with a page containing a
+        cookie that identifies the user and JavaScript to load <span class="code">https://secure.mycompany.com/renewSession</span>.
+        This will store the user identification cookie on the browser in the <span class="code">secure.mycompany.com</span>
+        domain and load <span class="code">https://secure.mycompany.com/renewSession</span>.
+    </li>
+
+    <li>
+        When the browser makes a request to <span class="code">https://secure.mycompany.com/renewSession</span> is will
+        include the cookies for the <span class="code">secure.mycompany.com</span> domain, including the user identification
+        cookie. This middleware will handle this request by putting information into the users
+        session about their identity, and redirecting back to the page they first came from on
+        <span class="code">http://www.mycompany.com/</span>.
+    </li>
+
+    <li>
+        When this middleware receives a request for <span class="code">http://www.mycompany.com/</span> it will see the
+        user's identity in their session and process the request as that identified user. Note that
+        the browser does not send the user identification cookie because this is for a different
+        domain (<span class="code">www.mycompany.com</span> instead of <span class="code">secure.mycompany.com</span>).
+    </li>
+
+    <li>
+        If the user's session expires whilst they are logged on, then this middleware will redirect
+        the browser to  <span class="code">https://secure.mycompany.com/renewSession</span>. When the browser makes this
+        request, because it is for the <span class="code">secure.mycompany.com</span> domain the user identification cookie
+        will be included in the request. This middleware will handle this request by storing the
+        user identity in the new session just like in step 4.
+    </li>
+</ol>

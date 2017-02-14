@@ -132,6 +132,10 @@
       <Project>{d0d8971b-e05e-4206-9d36-612cd201abe9}</Project>
       <Name>OwinFramework.ExceptionReporter.Net45</Name>
     </ProjectReference>
+    <ProjectReference Include="..\OwinFramework.FormIdentification\OwinFramework.FormIdentification.Net45.csproj">
+      <Project>{350980b3-5c57-4f41-b5bf-c5cdd9dfc3fd}</Project>
+      <Name>OwinFramework.FormIdentification.Net45</Name>
+    </ProjectReference>
     <ProjectReference Include="..\OwinFramework.Less\OwinFramework.Less.Net45.csproj">
       <Project>{d7c1cbd8-add7-463a-894f-00521ef173e3}</Project>
       <Name>OwinFramework.Less.Net45</Name>

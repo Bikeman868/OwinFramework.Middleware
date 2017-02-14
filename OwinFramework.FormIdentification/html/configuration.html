@@ -81,6 +81,30 @@
             </tr>
 
             <tr>
+                <td class="property">cookieName</td>
+                <td>{cookieName.default}</td>
+                <td>{cookieName}</td>
+                <td>
+                    <p>
+                        Specifies the name to use when saving the user identity on the browser in a cookie.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">rememberMeFor</td>
+                <td>{rememberMeFor.default}</td>
+                <td>{rememberMeFor}</td>
+                <td>
+                    <p>
+                        When users log in with the 'Remember me' option selected, a cookie will be saved on
+                        their browser so that they don't have to log in again. This cookie will expire after
+                        however much time you set in this configuration option.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
                 <td class="property">documentationPage</td>
                 <td>{documentationPage.default}</td>
                 <td>{documentationPage}</td>
@@ -230,11 +254,12 @@
                 </td>
             </tr>
         </table>
-        <p>
-            This middleware is configured the same way as all other middleware in the Owin Framework; you need 
-            to construct a class that implements <span class="code">IConfiguration</span> then add a fluid 
-            <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin 
-            Framework builder. Please read Owin Framework documentation on configuration for full details and examples.
-        </p>
+    <p>
+        This middleware is configured the same way as all other middleware in the Owin Framework; you need
+        to construct a class that implements <span class="code">IConfiguration</span> then add a fluid
+        <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin
+        Framework builder. Please read Owin Framework documentation on configuration for full details and examples.
+    </p>
+    {longDescription}
     </body>
 </html>
