@@ -148,22 +148,111 @@ namespace OwinFramework.FormIdentification
             get
             {
                 var documentation = new List<IEndpointDocumentation>();
-                if (!string.IsNullOrEmpty(_configuration.DocumentationPage))
+
+                if (_configPage.HasValue)
                     documentation.Add(
                         new EndpointDocumentation
                         {
-                            RelativePath = _configuration.DocumentationPage,
-                            Description = "Documentation of the configuration options for the Not Found middleware",
+                            RelativePath = _configPage.Value,
+                            Description = "Documentation of the configuration options for the Form Identification middleware",
                             Attributes = new List<IEndpointAttributeDocumentation>
                                 {
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Method",
                                         Name = "GET",
-                                        Description = "Returns configuration documentation for Not Found middleware in HTML format"
+                                        Description = "Returns configuration documentation for Form Identification middleware in HTML format"
                                     }
                                 }
                         });
+
+                if (_signupPage.HasValue)
+                    documentation.Add(
+                        new EndpointDocumentation
+                        {
+                            RelativePath = _signupPage.Value,
+                            Description = "User account creation via email and password",
+                            Attributes = new List<IEndpointAttributeDocumentation>
+                                {
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Method",
+                                        Name = "POST",
+                                        Description = "Tries to create a new account then redirects the browser to a success or fail page"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = "email",
+                                        Description = "The email address of the user wanting to create an account"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = "password",
+                                        Description = "The password of the user trying to create an account"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = "rememberMe",
+                                        Description = "A boolean flag indicating if a cookie should be stored on the browser to keep the user logged in"
+                                    }
+                                }
+                        });
+
+                if (_signinPage.HasValue)
+                    documentation.Add(
+                        new EndpointDocumentation
+                        {
+                            RelativePath = _signinPage.Value,
+                            Description = "User login via email and password",
+                            Attributes = new List<IEndpointAttributeDocumentation>
+                                {
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Method",
+                                        Name = "POST",
+                                        Description = "Tries to log the user in and then redirects the browser to a success or fail page"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = "email",
+                                        Description = "The email address of the user trying to login"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = "password",
+                                        Description = "The password of the user trying to login"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = "rememberMe",
+                                        Description = "A boolean flag indicating if a cookie should be stored on the browser to keep the user logged in"
+                                    }
+                                }
+                        });
+
+                if (_signoutPage.HasValue)
+                    documentation.Add(
+                        new EndpointDocumentation
+                        {
+                            RelativePath = _signinPage.Value,
+                            Description = "User logout",
+                            Attributes = new List<IEndpointAttributeDocumentation>
+                                {
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Method",
+                                        Name = "POST",
+                                        Description = "Logs out the current user and clears any cookie stored on the browser. Optionally Redirects the user"
+                                    }
+                                }
+                        });
+
                 return documentation;
             }
         }

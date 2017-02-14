@@ -20,15 +20,18 @@ namespace OwinFramework.NotFound
         public string SendPasswordResetPage { get; set; }
         public string ResetPasswordPage { get; set; }
         public string RenewSessionPage { get; set; }
+        public string ClearSessionPage { get; set; }
 
         public string CookieName { get; set; }
         public string SessionName { get; set; }
+        public string SecretKeyHeader { get; set; }
         
         public FormIdentificationConfiguration()
         {
             SecureDomain = string.Empty;
             CookieName = "forms_user_identification";
             SessionName = "forms_user_identification";
+            SecretKeyHeader = "x-api-key";
 
             DocumentationPage = "/formId/config";
             SignupPage = "/formId/signup";
@@ -42,6 +45,7 @@ namespace OwinFramework.NotFound
             SendPasswordResetPage = "/formId/sendPasswordReset";
             ResetPasswordPage = "/formId/resetPassword";
             RenewSessionPage = "/formId/renew";
+            ClearSessionPage = "/formId/clear";
         }
     }
 }

@@ -53,6 +53,47 @@
             </tr>
 
             <tr>
+                <td class="property">secureDomain</td>
+                <td>{secureDomain.default}</td>
+                <td>{secureDomain}</td>
+                <td>
+                    <p>
+                        Specifies the domain name to use in URLs that need the user identification cookie.
+                        By using a separate domain for these requests, the main web site can be insecure and 
+                        user identification cookie will not be leaked. 
+                    </p>
+                    <p>
+                        Leaving this blank or setting is to the same domain name as the site itself will also
+                        work, but in this case you must run all requests over HTTPS and never use HTTP.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">sessionName</td>
+                <td>{sessionName.default}</td>
+                <td>{sessionName}</td>
+                <td>
+                    <p>
+                        Specifies the name to use when saving the user identity token in the session store.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">secretKeyHeader</td>
+                <td>{secretKeyHeader.default}</td>
+                <td>{secretKeyHeader}</td>
+                <td>
+                    <p>
+                        This middleware will look for this custom header in requests and when present assume
+                        that is contains a secret key. It will use the secret key to identify the user making the
+                        call.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
                 <td class="property">documentationPage</td>
                 <td>{documentationPage.default}</td>
                 <td>{documentationPage}</td>
