@@ -24,14 +24,12 @@ namespace OwinFramework.NotFound
 
         public string CookieName { get; set; }
         public string SessionName { get; set; }
-        public string SecretKeyHeader { get; set; }
         
         public FormIdentificationConfiguration()
         {
             SecureDomain = string.Empty;
             CookieName = "forms_user_identification";
             SessionName = "forms_user_identification";
-            SecretKeyHeader = "x-api-key";
 
             DocumentationPage = "/formId/config";
             SignupPage = "/formId/signup";

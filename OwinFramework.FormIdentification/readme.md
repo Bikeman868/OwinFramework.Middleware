@@ -24,10 +24,13 @@ handling the HTTP(S) GET requests for these URLs.
 * Click the single use link in the password reset email and reset their password
 without knowing their current password.
 
-* Third party services can make requests on behalf of a user using a shared secret,
-but are limited to the specific functions permitted by the shared secret. The creation
-and management of shared secrets back-end is provided by the Identification Facility.
-This middleware only provides user identification for these shared secrets.
+Note that there are other middleware packages that provide user identification from
+social media, shared secrets and certificates. These middleware packages will all work 
+togther because each one will look to see if the user is already identified before
+trying to perform its own identification. The first middleware in the pipeline that
+successfully identifies the user will supply the user identity to the reast of the
+pipeline and other identification middleware will not make any additional user
+identification attempts after the user is identified.
 
 Note that this middleware will store a cookie on the browser to indicate who the user
 is logged in as. The lifetime of the cookie is configurable and defaults to 90 days.

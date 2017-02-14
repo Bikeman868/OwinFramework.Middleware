@@ -60,8 +60,56 @@ namespace OwinFramework.FormIdentification
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
+            if (context.Request.Path == _configPage)
+                return DocumentConfiguration(context);
+
+            IdentifyUser(context);
+
             return next();
         }
+
+        #region User identification
+
+        private void IdentifyUser(IOwinContext context)
+        {
+
+        }
+
+        #endregion
+
+        #region Account functions
+
+        private Task Signup(IOwinContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Task Signin(IOwinContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Task Signout(IOwinContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Task SendPasswordReset(IOwinContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Task ResetPassword(IOwinContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        private Task RenewSession(IOwinContext context)
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
 
         #region IConfigurable
 
@@ -108,10 +156,12 @@ namespace OwinFramework.FormIdentification
             var document = GetEmbeddedResource("configuration.html");
             document = document.Replace("{documentationPage}", _configuration.DocumentationPage);
             document = document.Replace("{signupPage}", _configuration.SignupPage);
+            document = document.Replace("{signinPage}", _configuration.SigninPage);
 
             var defaultConfiguration = new FormIdentificationConfiguration();
             document = document.Replace("{documentationPage.default}", defaultConfiguration.DocumentationPage);
             document = document.Replace("{signupPage.default}", defaultConfiguration.SignupPage);
+            document = document.Replace("{signinPage.default}", defaultConfiguration.SigninPage);
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
@@ -128,7 +178,7 @@ namespace OwinFramework.FormIdentification
                 case DocumentationTypes.Overview:
                     return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
                 case DocumentationTypes.SourceCode:
-                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.NotFound", UriKind.Absolute);
+                    return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.FormIdentification", UriKind.Absolute);
             }
             return null;
         }
