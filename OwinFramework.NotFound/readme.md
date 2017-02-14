@@ -1,4 +1,4 @@
-﻿# OWIN Framework No Found Middleware
+﻿# OWIN Framework Not Found Middleware
 
 This middleware will return a 404 response always. It will place itself after all other 
 middleware in the pipeline so that when no other middleware handled the request a 404

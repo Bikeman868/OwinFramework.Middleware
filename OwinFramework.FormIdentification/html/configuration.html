@@ -1,0 +1,212 @@
+﻿<html>
+    <head>
+        <title>Owin Framework not found middleware configuration</title>
+        <style type="text/css">
+             body{
+                 font-family: verdana,arial,sans-serif;
+                 font-size: 11px;
+             }
+
+             span.code{
+                 font-family: courrier;
+                 font-size: 13px;
+             }
+
+             table.properties {
+                 font-size: 11px;
+                 color: #333333;
+                 border-width: 1px;
+                 border-color: #666666;
+                 border-collapse: collapse;
+             }
+
+            table.properties th {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #dedede;
+            }
+
+            table.properties td {
+                border-width: 1px;
+                padding: 8px;
+                border-style: solid;
+                border-color: #666666;
+                background-color: #ffffff;
+            }
+
+            table.properties td.property {
+                font-weight: bold
+            }
+        </style>    
+    </head>
+    <body>
+        <h1>Owin Framework form identification middleware</h1>
+        <p>The form identification middleware in the Owin Framework supports the following configuration options:</p>
+        <table class="properties">
+            <tr>
+                <th>Property</th>
+                <th>Default</th>
+                <th>Current</th>
+                <th>Description</th>
+            </tr>
+
+            <tr>
+                <td class="property">documentationPage</td>
+                <td>{documentationPage.default}</td>
+                <td>{documentationPage}</td>
+                <td>
+                    <p>
+                        The relative path to this documentation page. Leave blank to disable documentation
+                        in production environments, or prevent this page from being retrieved from outside
+                        your local network.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">signupPage</td>
+                <td>{signupPage.default}</td>
+                <td>{signupPage}</td>
+                <td>
+                    <p>
+                        The relative path to POST to when users want to create a new account.
+                        Leave blank to prevent users from creating accounts.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">signinPage</td>
+                <td>{signinPage.default}</td>
+                <td>{signinPage}</td>
+                <td>
+                    <p>
+                        The relative path to POST to when users want to log in to their account.
+                        Leave blank to prevent users from logging in (for example if you only want
+                        to use the shared secret identification method).
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">signoutPage</td>
+                <td>{signoutPage.default}</td>
+                <td>{signoutPage}</td>
+                <td>
+                    <p>
+                        The relative path to POST to when users want to log out from their account.
+                        Leave blank to prevent users from logging out (for example if you only want
+                        to use the shared secret identification method).
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">signupSuccessPage</td>
+                <td>{signupSuccessPage.default}</td>
+                <td>{signupSuccessPage}</td>
+                <td>
+                    <p>
+                        Users will be redirected to this page after succesfully creating an account.
+                        Leave blank to leave the user on the page where they created their account.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">signupFailPage</td>
+                <td>{signupFailPage.default}</td>
+                <td>{signupFailPage}</td>
+                <td>
+                    <p>
+                        Users will be redirected to this page after failing to create an account.
+                        Leave blank to leave the user on the page where they tried to create an account.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">signinSuccessPage</td>
+                <td>{signinSuccessPage.default}</td>
+                <td>{signinSuccessPage}</td>
+                <td>
+                    <p>
+                        Users will be redirected to this page after successfully logging into an account
+                        Leave blank to leave the user on the page where they logged in.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">signinFailPage</td>
+                <td>{signinFailPage.default}</td>
+                <td>{signinFailPage}</td>
+                <td>
+                    <p>
+                        Users will be redirected to this page after failing to log into an account
+                        Leave blank to leave the user on the page where they tried to log in.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">signoutSuccessPage</td>
+                <td>{signoutSuccessPage.default}</td>
+                <td>{signoutSuccessPage}</td>
+                <td>
+                    <p>
+                        Users will be redirected to this page after logging out from their account.
+                        Leave blank to leave the user on the page where they logged out.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">sendPasswordResetPage</td>
+                <td>{sendPasswordResetPage.default}</td>
+                <td>{sendPasswordResetPage}</td>
+                <td>
+                    <p>
+                        Send a POST request to this page to trigger the sending of an email containing
+                        a time limited single use password reset token. The email will contain a link to
+                        the reset password page with the password reset token in the query string.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">resetPasswordPage</td>
+                <td>{resetPasswordPage.default}</td>
+                <td>{resetPasswordPage}</td>
+                <td>
+                    <p>
+                        Send a POST request to this page to reset a user's password. The form fields must
+                        contain a valid password reset token that has not been used before.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">renewSessionPage</td>
+                <td>{renewSessionPage.default}</td>
+                <td>{renewSessionPage}</td>
+                <td>
+                    <p>
+                        This middleware will redirect the browser to this page whenever the users session
+                        does not contain a user identity. This page will be handled by this middleware
+                        by identifying the user and putting their identity in session before redirecting
+                        back to the original page.
+                    </p>
+                </td>
+            </tr>
+        </table>
+        <p>
+            This middleware is configured the same way as all other middleware in the Owin Framework; you need 
+            to construct a class that implements <span class="code">IConfiguration</span> then add a fluid 
+            <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin 
+            Framework builder. Please read Owin Framework documentation on configuration for full details and examples.
+        </p>
+    </body>
+</html>
