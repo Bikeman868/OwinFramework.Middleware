@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
+using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.InterfacesV1.Upstream;
 
@@ -14,23 +13,26 @@ namespace OwinFramework.Session
 {
     public class InProcessSessionMidleware : 
         IMiddleware<ISession>, 
-        IUpstreamCommunicator<IUpstreamSession>
+        IUpstreamCommunicator<IUpstreamSession>,
+        IConfigurable
     {
         public string Name { get; set; }
         public IList<IDependency> Dependencies { get; private set; }
 
         private readonly IDictionary<string, Session> _sessions;
 
+        private IDisposable _configurationRegistration;
+        private SessionConfiguration _configuration;
+
         public InProcessSessionMidleware()
         {
             _sessions = new Dictionary<string, Session>();
             Dependencies = new List<IDependency>();
-            this.RunAfter<IIdentification>(null, false);
         }
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
-            context.SetFeature<IUpstreamSession>(new Session());
+            context.SetFeature<IUpstreamSession>(new Session(context, _configuration));
             return next();
         }
 
@@ -60,19 +62,45 @@ namespace OwinFramework.Session
             }
 
             if (session == null)
-                session = new Session();
+                session = new Session(context, _configuration);
 
             context.SetFeature<ISession>(session);
 
             return next();
         }
 
+        #region IConfigurable
+
+        public void Configure(IConfiguration configuration, string path)
+        {
+            _configurationRegistration = configuration.Register(
+                path,
+                ConfigurationChanged,
+                _configuration);
+        }
+
+        private void ConfigurationChanged(SessionConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
+
+        #endregion
+
         private class Session : ISession, IUpstreamSession
         {
+            private readonly IOwinContext _context;
+            private readonly SessionConfiguration _configuration ;
+
             private IDictionary<string, object> _sessionVariables;
 
             public bool HasSession { get { return _sessionVariables != null; } }
             public bool SessionRequired;
+
+            public Session(IOwinContext context, SessionConfiguration configuration)
+            {
+                _context = context;
+                _configuration = configuration;
+            }
 
             public bool EstablishSession()
             {

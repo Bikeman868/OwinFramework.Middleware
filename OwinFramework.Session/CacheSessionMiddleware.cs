@@ -10,15 +10,13 @@ using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Facilities;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.InterfacesV1.Upstream;
-using OwinFramework.MiddlewareHelpers.Analysable;
 
 namespace OwinFramework.Session
 {
     public class CacheSessionMiddleware:
         IMiddleware<ISession>,
         IUpstreamCommunicator<IUpstreamSession>,
-        IConfigurable,
-        IAnalysable
+        IConfigurable
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
@@ -27,13 +25,8 @@ namespace OwinFramework.Session
 
         string IMiddleware.Name { get; set; }
 
-        private int _createdCount;
-
         private IDisposable _configurationRegistration;
         private SessionConfiguration _configuration;
-        private string _cacheCategory;
-        private TimeSpan _sessionDuration;
-        private string _cookieName;
 
         public CacheSessionMiddleware(ICache cache)
         {
@@ -44,7 +37,7 @@ namespace OwinFramework.Session
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
             context.SetFeature<IUpstreamSession>(
-                new Session(_cache, context, _sessionDuration, _cacheCategory, _cookieName));
+                new Session(_cache, context, _configuration));
             return next();
         }
 
@@ -70,39 +63,6 @@ namespace OwinFramework.Session
         private void ConfigurationChanged(SessionConfiguration configuration)
         {
             _configuration = configuration;
-            _cacheCategory = configuration.CacheCategory;
-            _sessionDuration = configuration.SessionDuration;
-            _cookieName = configuration.CookieName;
-        }
-
-        #endregion
-
-        #region IAnalysable
-
-        public IList<IStatisticInformation> AvailableStatistics
-        {
-            get
-            {
-                var stats = new List<IStatisticInformation>();
-                stats.Add(
-                    new StatisticInformation
-                    {
-                        Id = "CreatedCount",
-                        Name = "Session created count",
-                        Description = "The number of sessions created since startup"
-                    });
-                return stats;
-            }
-        }
-
-        public IStatistic GetStatistic(string id)
-        {
-            switch (id)
-            {
-                case "CreatedCount":
-                    return new IntStatistic(() => _createdCount);
-            }
-            return null;
         }
 
         #endregion
@@ -122,9 +82,7 @@ namespace OwinFramework.Session
         {
             private readonly ICache _cache;
             private readonly IOwinContext _context;
-            private readonly TimeSpan _sessionDuration;
-            private readonly string _cacheCategory;
-            private readonly string _cookieName;
+            private readonly SessionConfiguration _configuration;
 
             private string _sessionId;
             private List<CacheEntry> _cacheEntries;
@@ -136,15 +94,11 @@ namespace OwinFramework.Session
             public Session(
                 ICache cache, 
                 IOwinContext context,
-                TimeSpan sessionDuration,
-                string cacheCategory,
-                string cookieName)
+                SessionConfiguration configuration)
             {
                 _cache = cache;
                 _context = context;
-                _sessionDuration = sessionDuration;
-                _cacheCategory = cacheCategory;
-                _cookieName = cookieName;
+                _configuration = configuration;
             }
 
             ~Session()
@@ -189,7 +143,7 @@ namespace OwinFramework.Session
                     }
 
                     _sessionVariables = null;
-                    _cache.Put(_sessionId, _cacheEntries, _sessionDuration, _cacheCategory);
+                    _cache.Put(_sessionId, _cacheEntries, _configuration.SessionDuration, _configuration.CacheCategory);
                 }
             }
 
@@ -197,13 +151,13 @@ namespace OwinFramework.Session
             {
                 if (!HasSession)
                 {
-                    _sessionId = _context.Request.Cookies[_cookieName];
+                    _sessionId = _context.Request.Cookies[_configuration.CookieName];
                     if (string.IsNullOrWhiteSpace(_sessionId))
                     {
                         _sessionId = Guid.NewGuid().ToShortString();
                         _cacheEntries = new List<CacheEntry>();
                         _context.Response.Cookies.Append(
-                            _cookieName, 
+                            _configuration.CookieName, 
                             _sessionId, 
                             new CookieOptions 
                             { 
@@ -212,9 +166,8 @@ namespace OwinFramework.Session
                     }
                     else
                     {
-                        _cacheEntries = _cache.Get<List<CacheEntry>>(_sessionId, null, null, _cacheCategory);
-                        if (_cacheEntries == null)
-                            _cacheEntries = new List<CacheEntry>();
+                        _cacheEntries = _cache.Get<List<CacheEntry>>(_sessionId, null, null, _configuration.CacheCategory) 
+                            ?? new List<CacheEntry>();
                     }
                     _modifiedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     _sessionVariables = new Dictionary<string, DeserializedCacheEntry>(StringComparer.OrdinalIgnoreCase);
