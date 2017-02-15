@@ -10,6 +10,7 @@ using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.InterfacesV1.Upstream;
 using OwinFramework.MiddlewareHelpers.Analysable;
 using OwinFramework.NotFound;
 
@@ -17,10 +18,13 @@ namespace OwinFramework.FormIdentification
 {
     public class FormIdentificationMiddleware:
         IMiddleware<IResponseProducer>,
+        IUpstreamCommunicator<IUpstreamSession>,
         IConfigurable,
         ISelfDocumenting,
         IAnalysable
     {
+        private const string _anonymousUserIdentity = "urn:form.identity.anonymous:";
+
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
@@ -32,6 +36,7 @@ namespace OwinFramework.FormIdentification
         private int _signinFailCount;
         private int _signoutCount;
         private int _renewSessionCount;
+        private int _clearSessionCount;
 
         private IDisposable _configurationRegistration;
         private FormIdentificationConfiguration _configuration;
@@ -52,6 +57,7 @@ namespace OwinFramework.FormIdentification
         private PathString _sendPasswordResetPage;
         private PathString _resetPasswordPage;
         private PathString _renewSessionPage;
+        private PathString _clearSessionPage;
 
         public FormIdentificationMiddleware()
         {
@@ -59,19 +65,45 @@ namespace OwinFramework.FormIdentification
             this.RunAfter<ISession>();
         }
 
+        public Task RouteRequest(IOwinContext context, Func<Task> next)
+        {
+            IdentifyUser(context);
+            return next();
+        }
+
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
             if (context.Request.Method == "POST")
             {
-
+                if (context.Request.Path == _signinPage)
+                    return HandleSignin(context);
+                if (context.Request.Path == _signoutPage)
+                    return HandleSignout(context);
+                if (context.Request.Path == _sendPasswordResetPage)
+                    return HandleSendPasswordReset(context);
+                if (context.Request.Path == _resetPasswordPage)
+                    return HandleResetPassword(context);
+                if (context.Request.Path == _signupPage)
+                    return HandleSignup(context);
             }
             else if (context.Request.Method == "GET")
             {
+                if (context.Request.Path == _renewSessionPage)
+                    return HandleRenewSession(context);
+                if (context.Request.Path == _clearSessionPage)
+                    return HandleClearSession(context);
                 if (context.Request.Path == _configPage)
                     return DocumentConfiguration(context);
             }
 
-            IdentifyUser(context);
+            var upstreamIdentification = context.GetFeature<IUpstreamIdentification>();
+            var identification = context.GetFeature<IIdentification>();
+
+            if (identification != null && identification.IsAnonymous && string.IsNullOrEmpty(identification.Identity))
+            {
+                return RenewSession(context, upstreamIdentification);
+            }
+
             return next();
         }
 
@@ -82,14 +114,62 @@ namespace OwinFramework.FormIdentification
             // If identification middleware further up the pipeline already 
             // identified the user then do nothing here
             var identification = context.GetFeature<IIdentification>();
-            if (identification != null && !identification.IsAnonymous)
+            if (identification != null && !string.IsNullOrEmpty(identification.Identity))
                 return;
 
-            context.SetFeature<IIdentification>(new Idenfitication
-            { 
-                IsAnonymous = false ,
-                Identity = "abcdef"
-            });
+            var upstreamSession = context.GetFeature<IUpstreamSession>();
+            if (upstreamSession == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
+            if (!upstreamSession.EstablishSession())
+                return;
+
+            var session = context.GetFeature<ISession>();
+            if (session == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
+            var identity = session.Get<string>(_sessionName);
+            context.SetFeature<IIdentification>(
+                new Idenfitication
+                {
+                    IsAnonymous = string.IsNullOrEmpty(identity) || string.Equals(identity, _anonymousUserIdentity),
+                    Identity = identity ?? string.Empty
+                });
+
+            // Provide a mechanism for downstream middleware to indicate if 
+            // annonymous access is allowed for this page
+            if (context.GetFeature<IUpstreamIdentification>() == null)
+                context.SetFeature<IUpstreamIdentification>(new UpstreamIdentification { AllowAnonymous = true });
+        }
+
+        private Task RenewSession(IOwinContext context, IUpstreamIdentification upstreamIdentification)
+        {
+            var session = context.GetFeature<ISession>();
+            if (session == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
+            var nonSecurePrefix = string.IsNullOrEmpty(_secureDomain)
+                ? string.Empty
+                : context.Request.Scheme + "://" + context.Request.Host;
+
+            var securePrefix = string.IsNullOrEmpty(_secureDomain)
+                ? string.Empty
+                : "https://" + _secureDomain;
+
+            var thisUrl = nonSecurePrefix + context.Request.Path + "?" + context.Request.QueryString;
+            var signinUrl = _signinPage.HasValue ? nonSecurePrefix + _signinPage.Value : thisUrl;
+            var renewSessionUrl = securePrefix + _renewSessionPage.Value;
+
+            renewSessionUrl += "?sid=" + "session_id"; // TODO: Modify ISession to include session ID
+            renewSessionUrl += "&success=" + thisUrl;
+
+            if (upstreamIdentification.AllowAnonymous)
+                renewSessionUrl += "&fail=" + thisUrl;
+            else
+                renewSessionUrl += "&fail=" + signinUrl;
+
+            context.Response.Redirect(renewSessionUrl);
+            return context.Response.WriteAsync(string.Empty);
         }
 
         private class Idenfitication: IIdentification
@@ -98,37 +178,57 @@ namespace OwinFramework.FormIdentification
             public bool IsAnonymous { get; set; }
         }
 
+        private class UpstreamIdentification : IUpstreamIdentification
+        {
+            public bool AllowAnonymous { get; set; }
+        }
+
         #endregion
 
         #region Account functions
 
-        private Task Signup(IOwinContext context)
+        private Task HandleSignup(IOwinContext context)
         {
             throw new NotImplementedException();
         }
 
-        private Task Signin(IOwinContext context)
+        private Task HandleSignin(IOwinContext context)
         {
             throw new NotImplementedException();
         }
 
-        private Task Signout(IOwinContext context)
+        private Task HandleSignout(IOwinContext context)
         {
             throw new NotImplementedException();
         }
 
-        private Task SendPasswordReset(IOwinContext context)
+        private Task HandleSendPasswordReset(IOwinContext context)
         {
             throw new NotImplementedException();
         }
 
-        private Task ResetPassword(IOwinContext context)
+        private Task HandleResetPassword(IOwinContext context)
         {
             throw new NotImplementedException();
         }
 
-        private Task RenewSession(IOwinContext context)
+        private Task HandleRenewSession(IOwinContext context)
         {
+            var upstreamSession = context.GetFeature<IUpstreamSession>();
+            if (upstreamSession == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
+            upstreamSession.EstablishSession(/* TODO: establish session from session ID */);
+            throw new NotImplementedException();
+        }
+
+        private Task HandleClearSession(IOwinContext context)
+        {
+            var upstreamSession = context.GetFeature<IUpstreamSession>();
+            if (upstreamSession == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
+            upstreamSession.EstablishSession(/* TODO: establish session from session ID */);
             throw new NotImplementedException();
         }
 
@@ -164,6 +264,7 @@ namespace OwinFramework.FormIdentification
             _sendPasswordResetPage = cleanUrl(configuration.SendPasswordResetPage);
             _resetPasswordPage = cleanUrl(configuration.ResetPasswordPage);
             _renewSessionPage = cleanUrl(configuration.RenewSessionPage);
+            _clearSessionPage = cleanUrl(configuration.ClearSessionPage);
 
             _secureDomain = configuration.SecureDomain;
             _cookieName = configuration.CookieName;
@@ -440,7 +541,7 @@ namespace OwinFramework.FormIdentification
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Method",
-                                        Name = "POST",
+                                        Name = "GET",
                                         Description = "Renews the users session by identifying them securely"
                                     },
                                     new EndpointAttributeDocumentation
@@ -456,14 +557,51 @@ namespace OwinFramework.FormIdentification
                                         Description = 
                                             "The URL to redirect the browser to when the renewal succeeds. "+
                                             "The request will succeed if the user is logged in with remember me "+
-                                            "enabled and the remember me maximum time has not been exceeded."
+                                            "enabled and the remember me maximum time has not been exceeded, or "+
+                                            "if the user sucesfully completes an account login"
                                     },
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Parameter",
                                         Name = "fail",
-                                        Description = "The URL to redirect the browser to when the renewal fails"
+                                        Description =
+                                            "The URL to redirect the browser to when the renewal fails." +
+                                            "Renewal will fail only if the user is not logged in and failes to " +
+                                            "provide valid credentials."
                                     },
+                                }
+                        });
+
+                if (_clearSessionPage.HasValue)
+                    documentation.Add(
+                        new EndpointDocumentation
+                        {
+                            RelativePath = string.IsNullOrEmpty(_secureDomain)
+                                ? _clearSessionPage.Value
+                                : "https://" + _secureDomain + _clearSessionPage.Value,
+                            Description =
+                                "Clears the user identification from session and also deletes the " +
+                                "user identification cookie on the browser.",
+                            Attributes = new List<IEndpointAttributeDocumentation>
+                                {
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Method",
+                                        Name = "GET",
+                                        Description = "Clears user identification information"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Parameter",
+                                        Name = "sid",
+                                        Description = "(required) The session id of the session to clear"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Parameter",
+                                        Name = "success",
+                                        Description = "The URL to redirect the browser to after clearing the session"
+                                    }
                                 }
                         });
 
@@ -586,5 +724,6 @@ namespace OwinFramework.FormIdentification
         }
 
         #endregion
+
     }
 }

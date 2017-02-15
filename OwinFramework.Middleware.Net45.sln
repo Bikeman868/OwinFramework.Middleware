@@ -47,6 +47,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Versioning.Ne
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.FormIdentification.Net45", "OwinFramework.FormIdentification\OwinFramework.FormIdentification.Net45.csproj", "{350980B3-5C57-4F41-B5BF-C5CDD9DFC3FD}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.Session.Net45", "OwinFramework.Session\OwinFramework.Session.Net45.csproj", "{235ECA8A-09F5-4897-805E-B9D4106749E9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -105,6 +107,10 @@ Global
 		{350980B3-5C57-4F41-B5BF-C5CDD9DFC3FD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{350980B3-5C57-4F41-B5BF-C5CDD9DFC3FD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{350980B3-5C57-4F41-B5BF-C5CDD9DFC3FD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{235ECA8A-09F5-4897-805E-B9D4106749E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{235ECA8A-09F5-4897-805E-B9D4106749E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{235ECA8A-09F5-4897-805E-B9D4106749E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{235ECA8A-09F5-4897-805E-B9D4106749E9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
