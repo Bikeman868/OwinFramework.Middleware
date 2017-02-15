@@ -15,7 +15,7 @@
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
     <tags>OWIN framework default-document</tags>
     <dependencies>
-      <dependency id="Owin.Framework" version="2.2.8" />
+      <dependency id="Owin.Framework" version="2.2.9" />
       <dependency id="Ioc.Modules" version="1.1.4" />
       <dependency id="Newtonsoft.Json" version="7.0.1" />
     </dependencies>

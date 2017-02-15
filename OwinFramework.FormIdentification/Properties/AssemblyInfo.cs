@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
 [assembly: AssemblyProduct("Owin Framework")]
-[assembly: AssemblyCopyright("Copyright © Martin Halliday 2016")]
+[assembly: AssemblyCopyright("Copyright © Martin Halliday 2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

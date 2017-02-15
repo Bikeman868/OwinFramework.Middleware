@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Owin.Framework.NotFound</id>
-    <version>2.2.4</version>
+    <version>1.0.0</version>
     <title>Owin.Framework.NotFound</title>
     <authors>Martin Halliday</authors>
     <owners>Martin Halliday</owners>

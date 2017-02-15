@@ -9,3 +9,5 @@ nuget.exe pack Owin.Framework.OutputCache.nuspec
 nuget.exe pack Owin.Framework.RouteVisualizer.nuspec
 nuget.exe pack Owin.Framework.StaticFiles.nuspec
 nuget.exe pack Owin.Framework.Versioning.nuspec
+nuget.exe pack Owin.Framework.Session.nuspec
+nuget.exe pack Owin.Framework.FormIdentification.nuspec

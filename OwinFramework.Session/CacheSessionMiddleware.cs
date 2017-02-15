@@ -84,11 +84,11 @@ namespace OwinFramework.Session
             private readonly IOwinContext _context;
             private readonly SessionConfiguration _configuration;
 
-            private string _sessionId;
             private List<CacheEntry> _cacheEntries;
             private IDictionary<string, DeserializedCacheEntry> _sessionVariables;
             private HashSet<string> _modifiedKeys;
 
+            public string SessionId { get; private set; }
             public bool HasSession { get { return _sessionVariables != null; } }
 
             public Session(
@@ -143,22 +143,22 @@ namespace OwinFramework.Session
                     }
 
                     _sessionVariables = null;
-                    _cache.Put(_sessionId, _cacheEntries, _configuration.SessionDuration, _configuration.CacheCategory);
+                    _cache.Put(SessionId, _cacheEntries, _configuration.SessionDuration, _configuration.CacheCategory);
                 }
             }
 
-            public bool EstablishSession()
+            public bool EstablishSession(string sessionId)
             {
-                if (!HasSession)
+                if (!HasSession || sessionId != null)
                 {
-                    _sessionId = _context.Request.Cookies[_configuration.CookieName];
-                    if (string.IsNullOrWhiteSpace(_sessionId))
+                    SessionId = sessionId ?? _context.Request.Cookies[_configuration.CookieName];
+                    if (string.IsNullOrWhiteSpace(SessionId))
                     {
-                        _sessionId = Guid.NewGuid().ToShortString();
+                        SessionId = Guid.NewGuid().ToShortString();
                         _cacheEntries = new List<CacheEntry>();
                         _context.Response.Cookies.Append(
                             _configuration.CookieName, 
-                            _sessionId, 
+                            SessionId, 
                             new CookieOptions 
                             { 
                                 Expires = DateTime.UtcNow.AddDays(1)
@@ -166,7 +166,7 @@ namespace OwinFramework.Session
                     }
                     else
                     {
-                        _cacheEntries = _cache.Get<List<CacheEntry>>(_sessionId, null, null, _configuration.CacheCategory) 
+                        _cacheEntries = _cache.Get<List<CacheEntry>>(SessionId, null, null, _configuration.CacheCategory) 
                             ?? new List<CacheEntry>();
                     }
                     _modifiedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);

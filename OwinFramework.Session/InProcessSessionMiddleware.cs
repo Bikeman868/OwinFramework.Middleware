@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Owin;
 using OwinFramework.Builder;
@@ -17,9 +19,12 @@ namespace OwinFramework.Session
         IConfigurable
     {
         public string Name { get; set; }
-        public IList<IDependency> Dependencies { get; private set; }
+
+        private readonly IList<IDependency> _dependencies = new List<IDependency>();
+        IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         private readonly IDictionary<string, Session> _sessions;
+        private readonly Thread _cleanupThread;
 
         private IDisposable _configurationRegistration;
         private SessionConfiguration _configuration;
@@ -27,46 +32,112 @@ namespace OwinFramework.Session
         public InProcessSessionMidleware()
         {
             _sessions = new Dictionary<string, Session>();
-            Dependencies = new List<IDependency>();
+            ConfigurationChanged(new SessionConfiguration());
+
+            _cleanupThread = new Thread(CleanUp) 
+            {
+                IsBackground = true,
+                Name = "RemoveExpiredSessions",
+                Priority = ThreadPriority.BelowNormal
+            };
+            _cleanupThread.Start();
         }
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
-            context.SetFeature<IUpstreamSession>(new Session(context, _configuration));
+            Session session;
+
+            var sessionId = context.Request.Cookies[_configuration.CookieName];
+            if (string.IsNullOrWhiteSpace(sessionId))
+            {
+                session = StartSession(context);
+                lock (_sessions)
+                    _sessions.Add(session.SessionId, session);
+            }
+            else
+            {
+                lock (_sessions)
+                {
+                    if (_sessions.TryGetValue(sessionId, out session))
+                    {
+                        if (session.IsExpired)
+                        {
+                            context.Response.Cookies.Delete(sessionId);
+                            _sessions.Remove(sessionId);
+
+                            session = StartSession(context);
+                            _sessions.Add(session.SessionId, session);
+                        }
+                    }
+                    else
+                    {
+                        session = StartSession(context);
+                        _sessions.Add(session.SessionId, session);
+                    }
+                }
+            }
+
+            context.SetFeature<IUpstreamSession>(session);
             return next();
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
             var session = context.GetFeature<IUpstreamSession>() as Session;
+            if (session != null)
+                context.SetFeature<ISession>(session);
 
-            if (session != null && session.SessionRequired)
-            {
-                var identification = context.GetFeature<IIdentification>();
-                if (identification != null && !identification.IsAnonymous)
+            return next();
+        }
+
+        private Session StartSession(IOwinContext context)
+        {
+            var sessionId = Guid.NewGuid().ToShortString();
+            context.Response.Cookies.Append(
+                _configuration.CookieName,
+                sessionId,
+                new CookieOptions
                 {
-                    lock (_sessions)
+                    Expires = DateTime.UtcNow.AddDays(1)
+                });
+            return new Session(sessionId, context, _configuration);
+        }
+
+        private void CleanUp()
+        {
+            while(true)
+            {
+                try
+                {
+                    Thread.Sleep(10);
+                    List<string> sessionIds;
+                    lock(_sessions)
                     {
-                        Session existingSession;
-                        if (_sessions.TryGetValue(identification.Identity, out existingSession))
+                        sessionIds = _sessions.Keys.ToList();
+                    }
+                    var i = 0;
+                    foreach (var sessionId in sessionIds)
+                    {
+                        if ((i++ & 15) == 0) Thread.Sleep(1);
+                        lock(_sessions)
                         {
-                            session = existingSession;
-                        }
-                        else
-                        {
-                            session.EstablishSession();
-                            _sessions.Add(identification.Identity, session);
+                            Session session;
+                            if (_sessions.TryGetValue(sessionId, out session))
+                            {
+                                if (session.IsExpired)
+                                    _sessions.Remove(sessionId);
+                            }
                         }
                     }
                 }
+                catch (ThreadAbortException)
+                {
+                    return;
+                }
+                catch
+                { 
+                }
             }
-
-            if (session == null)
-                session = new Session(context, _configuration);
-
-            context.SetFeature<ISession>(session);
-
-            return next();
         }
 
         #region IConfigurable
@@ -89,41 +160,40 @@ namespace OwinFramework.Session
         private class Session : ISession, IUpstreamSession
         {
             private readonly IOwinContext _context;
-            private readonly SessionConfiguration _configuration ;
+            private readonly SessionConfiguration _configuration;
+            private readonly DateTime _whenExpires;
+            private readonly IDictionary<string, object> _sessionVariables;
 
-            private IDictionary<string, object> _sessionVariables;
+            public string SessionId { get; private set; }
+            public bool HasSession { get { return true; } }
 
-            public bool HasSession { get { return _sessionVariables != null; } }
-            public bool SessionRequired;
-
-            public Session(IOwinContext context, SessionConfiguration configuration)
+            public Session(string sessionId, IOwinContext context, SessionConfiguration configuration)
             {
+                SessionId = sessionId;
                 _context = context;
                 _configuration = configuration;
+                _whenExpires = DateTime.UtcNow + configuration.SessionDuration;
+                _sessionVariables = new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
             }
 
-            public bool EstablishSession()
+            public bool IsExpired { get { return DateTime.UtcNow > _whenExpires; } }
+
+            public bool EstablishSession(string sessionId)
             {
-                SessionRequired = true;
-                if (!HasSession)
-                    _sessionVariables = new ConcurrentDictionary<string, object>(StringComparer.OrdinalIgnoreCase);
+                if (sessionId != null)
+                    throw new NotImplementedException("In-process session middleware does not have the ability to establish a specific session. Suggest using CacheSessionMiddleware instead");
                 return true;
             }
 
             public T Get<T>(string name)
             {
-                if (!HasSession) return default(T);
-
                 object value;
                 return _sessionVariables.TryGetValue(name, out value) ? (T)value : default(T);
             }
 
             public void Set<T>(string name, T value)
             {
-                if (HasSession)
-                {
-                    _sessionVariables[name] = value;
-                }
+                _sessionVariables[name] = value;
             }
 
             public object this[string name]

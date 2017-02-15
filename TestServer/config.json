@@ -102,8 +102,35 @@
             "browserCacheTime": "90",
             "exactVersion": "true"
         },
-        "formIdentification": { 
-            "secureDomain":  "secure.localhost"
+        "formIdentification": {
+            "secureDomain": "secure.localhost"
         }
+    },
+    "OwinFramework": {
+        "Facility": {
+            "IdentityStore.Prius": {
+                "PriusRepositoryName": "IdentityStore"
+            }
+        }
+    },
+    "prius": { 
+        "databases":[
+            {
+                "name":"Identity", 
+                "type":"MySql", 
+                "connectionString":"Server=localhost;Database=identity;Uid=test;Pwd=;"
+            }
+        ],
+        "fallbackPolicies":[
+            {"name":"none", "allowedFailurePercent":100}
+        ],
+        "repositories":[
+            {
+                "name":"IdentityStore",
+                "clusters":[
+                    {"sequence":1, "databases":["Identity"], "fallbackPolicy":"none"}
+                ]
+            }
+        ]
     }
 }

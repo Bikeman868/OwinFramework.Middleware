@@ -85,6 +85,11 @@ namespace OwinFramework.Middleware.TestServer
                 .As("Form Identification")
                 .ConfigureWith(config, "/middleware/formIdentification");
 
+            // The cache session middleware provides session management using the cache facility
+            builder.Register(ninject.Get<Session.CacheSessionMiddleware>())
+                .As("Cache session")
+                .ConfigureWith(config, "/middleware/session");
+
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<RouteVisualizer.RouteVisualizerMiddleware>())
                 .As("Route visualizer")

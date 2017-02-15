@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>Owin.Framework.FormIdentification</id>
+    <version>1.0.0</version>
+    <title>Owin.Framework.FormIdentification</title>
+    <authors>Martin Halliday</authors>
+    <owners>Martin Halliday</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Allows users to create an account and login to your web site using the form POST method</description>
+    <copyright>Copyright Martin Halliday 2017</copyright>
+    <releaseNotes>First release</releaseNotes>
+    <summary>Responds to POST requests on configurable URLs for creating user accounts, logging in, resetting password and logging out</summary>
+    <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.FormIdentification</projectUrl>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <tags>OWIN framework form identification login</tags>
+    <dependencies>
+      <dependency id="Owin.Framework" version="2.2.9" />
+      <dependency id="Ioc.Modules" version="1.1.4" />
+    </dependencies>
+    <references>
+    </references>
+  </metadata>
+  <files>
+    <file src="..\OwinFramework.FormIdentification\bin\Net40\Release\OwinFramework.FormIdentification.dll" target="lib\net40"/>
+    <file src="..\OwinFramework.FormIdentification\bin\Net45\Release\OwinFramework.FormIdentification.dll" target="lib\net45"/>
+    <file src="..\*.md" target=""/>
+  </files>
+</package>
