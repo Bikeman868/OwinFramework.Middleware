@@ -78,15 +78,13 @@ namespace OwinFramework.Session
             }
 
             context.SetFeature<IUpstreamSession>(session);
+            context.SetFeature<ISession>(session);
+
             return next();
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
-            var session = context.GetFeature<IUpstreamSession>() as Session;
-            if (session != null)
-                context.SetFeature<ISession>(session);
-
             return next();
         }
 
@@ -109,7 +107,7 @@ namespace OwinFramework.Session
             {
                 try
                 {
-                    Thread.Sleep(10);
+                    Thread.Sleep(100);
                     List<string> sessionIds;
                     lock(_sessions)
                     {
@@ -180,7 +178,7 @@ namespace OwinFramework.Session
 
             public bool EstablishSession(string sessionId)
             {
-                if (sessionId != null)
+                if (sessionId != null && !string.Equals(sessionId, SessionId, StringComparison.Ordinal))
                     throw new NotImplementedException("In-process session middleware does not have the ability to establish a specific session. Suggest using CacheSessionMiddleware instead");
                 return true;
             }

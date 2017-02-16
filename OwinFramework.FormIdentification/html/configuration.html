@@ -39,6 +39,10 @@
             table.properties td.property {
                 font-weight: bold
             }
+
+            span.property {
+                font-weight: bold
+            }
         </style>    
     </head>
     <body>
@@ -59,8 +63,8 @@
                 <td>
                     <p>
                         Specifies the domain name to use in URLs that need the user identification cookie.
-                        By using a separate domain for these requests, the main web site can be insecure and 
-                        user identification cookie will not be leaked. 
+                        By using a separate domain for these requests, the main web site can be insecure and
+                        user identification cookie will not be leaked.
                     </p>
                     <p>
                         Leaving this blank or setting is to the same domain name as the site itself will also
@@ -118,129 +122,6 @@
             </tr>
 
             <tr>
-                <td class="property">signupPage</td>
-                <td>{signupPage.default}</td>
-                <td>{signupPage}</td>
-                <td>
-                    <p>
-                        The relative path to POST to when users want to create a new account.
-                        Leave blank to prevent users from creating accounts.
-                    </p>
-                </td>
-            </tr>
-
-            <tr>
-                <td class="property">signinPage</td>
-                <td>{signinPage.default}</td>
-                <td>{signinPage}</td>
-                <td>
-                    <p>
-                        The relative path to POST to when users want to log in to their account.
-                        Leave blank to prevent users from logging in (for example if you only want
-                        to use the shared secret identification method).
-                    </p>
-                </td>
-            </tr>
-
-            <tr>
-                <td class="property">signoutPage</td>
-                <td>{signoutPage.default}</td>
-                <td>{signoutPage}</td>
-                <td>
-                    <p>
-                        The relative path to POST to when users want to log out from their account.
-                        Leave blank to prevent users from logging out (for example if you only want
-                        to use the shared secret identification method).
-                    </p>
-                </td>
-            </tr>
-
-            <tr>
-                <td class="property">signupSuccessPage</td>
-                <td>{signupSuccessPage.default}</td>
-                <td>{signupSuccessPage}</td>
-                <td>
-                    <p>
-                        Users will be redirected to this page after succesfully creating an account.
-                        Leave blank to leave the user on the page where they created their account.
-                    </p>
-                </td>
-            </tr>
-
-            <tr>
-                <td class="property">signupFailPage</td>
-                <td>{signupFailPage.default}</td>
-                <td>{signupFailPage}</td>
-                <td>
-                    <p>
-                        Users will be redirected to this page after failing to create an account.
-                        Leave blank to leave the user on the page where they tried to create an account.
-                    </p>
-                </td>
-            </tr>
-
-            <tr>
-                <td class="property">signinSuccessPage</td>
-                <td>{signinSuccessPage.default}</td>
-                <td>{signinSuccessPage}</td>
-                <td>
-                    <p>
-                        Users will be redirected to this page after successfully logging into an account
-                        Leave blank to leave the user on the page where they logged in.
-                    </p>
-                </td>
-            </tr>
-
-            <tr>
-                <td class="property">signinFailPage</td>
-                <td>{signinFailPage.default}</td>
-                <td>{signinFailPage}</td>
-                <td>
-                    <p>
-                        Users will be redirected to this page after failing to log into an account
-                        Leave blank to leave the user on the page where they tried to log in.
-                    </p>
-                </td>
-            </tr>
-
-            <tr>
-                <td class="property">signoutSuccessPage</td>
-                <td>{signoutSuccessPage.default}</td>
-                <td>{signoutSuccessPage}</td>
-                <td>
-                    <p>
-                        Users will be redirected to this page after logging out from their account.
-                        Leave blank to leave the user on the page where they logged out.
-                    </p>
-                </td>
-            </tr>
-
-            <tr>
-                <td class="property">sendPasswordResetPage</td>
-                <td>{sendPasswordResetPage.default}</td>
-                <td>{sendPasswordResetPage}</td>
-                <td>
-                    <p>
-                        Send a POST request to this page to trigger the sending of an email containing
-                        a time limited single use password reset token. The email will contain a link to
-                        the reset password page with the password reset token in the query string.
-                    </p>
-                </td>
-            </tr>
-
-            <tr>
-                <td class="property">resetPasswordPage</td>
-                <td>{resetPasswordPage.default}</td>
-                <td>{resetPasswordPage}</td>
-                <td>
-                    <p>
-                        Send a POST request to this page to reset a user's password. The form fields must
-                        contain a valid password reset token that has not been used before.
-                    </p>
-                </td>
-            </tr>
-
-            <tr>
                 <td class="property">renewSessionPage</td>
                 <td>{renewSessionPage.default}</td>
                 <td>{renewSessionPage}</td>
@@ -253,13 +134,114 @@
                     </p>
                 </td>
             </tr>
+
+            <tr>
+                <td class="property">clearSessionPage</td>
+                <td>{clearSessionPage.default}</td>
+                <td>{clearSessionPage}</td>
+                <td>
+                    <p>
+                        This middleware will redirect the browser to this page whenever the user chooses
+                        to logout. This page will be handled by this middleware by clearing the users
+                        session and cookies of any identity information.
+                    </p>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="property">emailFormField</td>
+                <td>{emailFormField.default}</td>
+                <td>{emailFormField}</td>
+                <td>The name of the form field that contains the users email address.</td>
+            </tr>
+            <tr>
+                <td class="property">passwordFormField</td>
+                <td>{passwordFormField.default}</td>
+                <td>{passwordFormField}</td>
+                <td>The name of the form field that contains the users password.</td>
+            </tr>
+            <tr>
+                <td class="property">newPasswordFormField</td>
+                <td>{newPasswordFormField.default}</td>
+                <td>{newPasswordFormField}</td>
+                <td>The name of the form field that contains the users new password.</td>
+            </tr>
+            <tr>
+                <td class="property">rememberMeFormField</td>
+                <td>{rememberMeFormField.default}</td>
+                <td>{rememberMeFormField}</td>
+                <td>The name of the form field that contains the 'remember me' checkbox.</td>
+            </tr>
+            <tr>
+                <td class="property">tokenFormField</td>
+                <td>{tokenFormField.default}</td>
+                <td>{tokenFormField}</td>
+                <td>
+                    <p>
+                        The name of the form field that contains the password reset token.
+                        This token is included in the email that is sent when the user requests a password reset.
+                    </p>
+                </td>
+            </tr>
         </table>
-    <p>
-        This middleware is configured the same way as all other middleware in the Owin Framework; you need
-        to construct a class that implements <span class="code">IConfiguration</span> then add a fluid
-        <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin
-        Framework builder. Please read Owin Framework documentation on configuration for full details and examples.
-    </p>
-    {longDescription}
+
+        <p>These configuration options allow you to change the location of form identification pages on your site</p>
+        <table class="properties">
+            <tr>
+                <th>Page</th>
+                <th>Property<br/>Default page<br/>Current page</th>
+                <th>Property<br />Default success page<br/>Current success page</th>
+                <th>Property<br />Default fail page<br />Current fail page</th>
+            </tr>
+
+            <tr>
+                <td>Create account</td>
+                <td><span class="property">signupPage</span><br />{signupPage.default}<br/>{signupPage}</td>
+                <td><span class="property">signupSuccessPage</span><br />{signupSuccessPage.default}<br />{signupSuccessPage}</td>
+                <td><span class="property">signupFailPage</span><br />{signupFailPage.default}<br />{signupFailPage}</td>
+            </tr>
+
+            <tr>
+                <td>Log in</td>
+                <td><span class="property">signinPage</span><br />{signinPage.default}<br />{signinPage}</td>
+                <td><span class="property">signinSuccessPage</span><br />{signinSuccessPage.default}<br />{signinSuccessPage}</td>
+                <td><span class="property">signinFailPage</span><br />{signinFailPage.default}<br />{signinFailPage}</td>
+            </tr>
+
+            <tr>
+                <td>Log out</td>
+                <td><span class="property">signoutPage</span><br />{signoutPage.default}<br />{signoutPage}</td>
+                <td><span class="property">signoutSuccessPage</span><br/>{signoutSuccessPage.default}<br/>{signoutSuccessPage}</td>
+                <td><i>Log out can not fail</i></td>
+            </tr>
+
+            <tr>
+                <td>Change password</td>
+                <td><span class="property">changePasswordPage</span><br />{changePasswordPage.default}<br />{changePasswordPage}</td>
+                <td><span class="property">changePasswordSuccessPage</span><br />{changePasswordSuccessPage.default}<br />{changePasswordSuccessPage}</td>
+                <td><span class="property">changePasswordFailPage</span><br />{changePasswordFailPage.default}<br />{changePasswordFailPage}</td>
+            </tr>
+
+            <tr>
+                <td>Send password reset</td>
+                <td><span class="property">sendPasswordResetPage</span><br />{sendPasswordResetPage.default}<br />{sendPasswordResetPage}</td>
+                <td><span class="property">sendPasswordResetSuccessPage</span><br />{sendPasswordResetSuccessPage.default}<br />{sendPasswordResetSuccessPage}</td>
+                <td><span class="property">sendPasswordResetFailPage</span><br />{sendPasswordResetFailPage.default}<br />{sendPasswordResetFailPage}</td>
+            </tr>
+
+            <tr>
+                <td>Reset password</td>
+                <td><span class="property">resetPasswordPage</span><br />{resetPasswordPage.default}<br />{resetPasswordPage}</td>
+                <td><span class="property">resetPasswordSuccessPage</span><br />{resetPasswordSuccessPage.default}<br />{resetPasswordSuccessPage}</td>
+                <td><span class="property">resetPasswordFailPage</span><br />{resetPasswordFailPage.default}<br />{resetPasswordFailPage}</td>
+            </tr>
+        </table>
+        <p>
+            This middleware is configured the same way as all other middleware in the Owin Framework; you need
+            to construct a class that implements <span class="code">IConfiguration</span> then add a fluid
+            <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin
+            Framework builder. Please read Owin Framework documentation on configuration for full details and examples.
+        </p>
+        {longDescription}
     </body>
 </html>

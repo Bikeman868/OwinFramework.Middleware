@@ -103,7 +103,7 @@
             "exactVersion": "true"
         },
         "formIdentification": {
-            "secureDomain": "secure.localhost"
+            "secureDomain": ""
         }
     },
     "OwinFramework": {

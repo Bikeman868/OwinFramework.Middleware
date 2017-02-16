@@ -119,6 +119,8 @@
   <ItemGroup>
     <Compile Include="HostingEnvironment.cs" />
     <Compile Include="Package.cs" />
+    <Compile Include="Prius\PriusErrorReporter.cs" />
+    <Compile Include="Prius\PriusFactory.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />

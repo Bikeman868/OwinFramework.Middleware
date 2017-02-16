@@ -30,13 +30,13 @@ namespace OwinFramework.FormIdentification
 
         string IMiddleware.Name { get; set; }
 
-        private int _signupSuccessCount;
-        private int _signupFailCount;
-        private int _signinSuccessCount;
-        private int _signinFailCount;
-        private int _signoutCount;
-        private int _renewSessionCount;
-        private int _clearSessionCount;
+        private volatile int _signupSuccessCount;
+        private volatile int _signupFailCount;
+        private volatile int _signinSuccessCount;
+        private volatile int _signinFailCount;
+        private volatile int _signoutCount;
+        private volatile int _renewSessionCount;
+        private volatile int _clearSessionCount;
 
         private IDisposable _configurationRegistration;
         private FormIdentificationConfiguration _configuration;
@@ -45,17 +45,31 @@ namespace OwinFramework.FormIdentification
         private string _cookieName;
         private string _sessionName;
 
-        private PathString _configPage;
+        private PathString _documentationPage;
+
         private PathString _signupPage;
-        private PathString _signinPage;
-        private PathString _signoutPage;
         private PathString _signupSuccessPage;
         private PathString _signupFailPage;
+
+        private PathString _signinPage;
         private PathString _signinSuccessPage;
         private PathString _signinFailPage;
+
+        private PathString _signoutPage;
         private PathString _signoutSuccessPage;
+
+        private PathString _changePasswordPage;
+        private PathString _changePasswordSuccessPage;
+        private PathString _changePasswordFailPage;
+
         private PathString _sendPasswordResetPage;
+        private PathString _sendPasswordResetSuccessPage;
+        private PathString _sendPasswordResetFailPage;
+
         private PathString _resetPasswordPage;
+        private PathString _resetPasswordSuccessPage;
+        private PathString _resetPasswordFailPage;
+
         private PathString _renewSessionPage;
         private PathString _clearSessionPage;
 
@@ -85,6 +99,8 @@ namespace OwinFramework.FormIdentification
                     return HandleResetPassword(context);
                 if (context.Request.Path == _signupPage)
                     return HandleSignup(context);
+                if (context.Request.Path == _changePasswordPage)
+                    return HandleChangePassword(context);
             }
             else if (context.Request.Method == "GET")
             {
@@ -92,7 +108,7 @@ namespace OwinFramework.FormIdentification
                     return HandleRenewSession(context);
                 if (context.Request.Path == _clearSessionPage)
                     return HandleClearSession(context);
-                if (context.Request.Path == _configPage)
+                if (context.Request.Path == _documentationPage)
                     return DocumentConfiguration(context);
             }
 
@@ -142,31 +158,32 @@ namespace OwinFramework.FormIdentification
                 context.SetFeature<IUpstreamIdentification>(new UpstreamIdentification { AllowAnonymous = true });
         }
 
-        private Task RenewSession(IOwinContext context, IUpstreamIdentification upstreamIdentification)
+        private Task RenewSession(
+            IOwinContext context, 
+            IUpstreamIdentification upstreamIdentification)
         {
             var session = context.GetFeature<ISession>();
-            if (session == null)
+            var upstreamSession = context.GetFeature<IUpstreamSession>();
+            if (session == null || upstreamSession == null)
                 throw new Exception("Session middleware is required for Form Identification to work");
 
-            var nonSecurePrefix = string.IsNullOrEmpty(_secureDomain)
-                ? string.Empty
-                : context.Request.Scheme + "://" + context.Request.Host;
+            var nonSecurePrefix = GetNonSecurePrefix(context);
+            var securePrefix = GetSecurePrefix();
 
-            var securePrefix = string.IsNullOrEmpty(_secureDomain)
-                ? string.Empty
-                : "https://" + _secureDomain;
+            var thisUrl = nonSecurePrefix + context.Request.Path;
+            if (context.Request.QueryString.HasValue && !string.IsNullOrEmpty(context.Request.QueryString.Value)) 
+                thisUrl += "?" + context.Request.QueryString.Value;
 
-            var thisUrl = nonSecurePrefix + context.Request.Path + "?" + context.Request.QueryString;
             var signinUrl = _signinPage.HasValue ? nonSecurePrefix + _signinPage.Value : thisUrl;
             var renewSessionUrl = securePrefix + _renewSessionPage.Value;
 
-            renewSessionUrl += "?sid=" + "session_id"; // TODO: Modify ISession to include session ID
-            renewSessionUrl += "&success=" + thisUrl;
+            renewSessionUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
+            renewSessionUrl += "&success=" + Uri.EscapeDataString(thisUrl);
 
             if (upstreamIdentification.AllowAnonymous)
-                renewSessionUrl += "&fail=" + thisUrl;
+                renewSessionUrl += "&fail=" +  Uri.EscapeDataString(thisUrl);
             else
-                renewSessionUrl += "&fail=" + signinUrl;
+                renewSessionUrl += "&fail=" + Uri.EscapeDataString(signinUrl);
 
             context.Response.Redirect(renewSessionUrl);
             return context.Response.WriteAsync(string.Empty);
@@ -189,47 +206,162 @@ namespace OwinFramework.FormIdentification
 
         private Task HandleSignup(IOwinContext context)
         {
+            var form = context.Request.ReadFormAsync().Result;
+
+            var emailField = form[_configuration.EmailFormField];
+            var passwordField = form[_configuration.PasswordFormField];
+            var rememberMeField = form[_configuration.RememberMeFormField];
+
+            _signupSuccessCount++;
+            _signupFailCount++;
+
             throw new NotImplementedException();
         }
 
         private Task HandleSignin(IOwinContext context)
         {
+            var form = context.Request.ReadFormAsync().Result;
+
+            var emailField = form[_configuration.EmailFormField];
+            var passwordField = form[_configuration.PasswordFormField];
+            var rememberMeField = form[_configuration.RememberMeFormField];
+            
+            _signinSuccessCount++;
+            _signinFailCount++;
+
             throw new NotImplementedException();
         }
 
         private Task HandleSignout(IOwinContext context)
         {
-            throw new NotImplementedException();
+            var upstreamSession = context.GetFeature<IUpstreamSession>();
+            if (upstreamSession == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
+            _signoutCount++;
+
+            var nonSecurePrefix = GetNonSecurePrefix(context);
+            var securePrefix = GetSecurePrefix();
+
+            var thisUrl = nonSecurePrefix + context.Request.Path;
+            if (context.Request.QueryString.HasValue && !string.IsNullOrEmpty(context.Request.QueryString.Value))
+                thisUrl += "?" + context.Request.QueryString.Value;
+
+            var successUrl = _signoutSuccessPage.HasValue ? nonSecurePrefix + _signoutSuccessPage.Value : thisUrl;
+
+            var clearSessionUrl = securePrefix + _clearSessionPage.Value;
+            clearSessionUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
+            clearSessionUrl += "&success=" + Uri.EscapeDataString(successUrl);
+
+            return Redirect(context, clearSessionUrl);
         }
 
         private Task HandleSendPasswordReset(IOwinContext context)
         {
+            var form = context.Request.ReadFormAsync().Result;
+
+            var emailField = form[_configuration.EmailFormField];
+            throw new NotImplementedException();
+        }
+
+        private Task HandleChangePassword(IOwinContext context)
+        {
+            var form = context.Request.ReadFormAsync().Result;
+
+            var emailField = form[_configuration.EmailFormField];
+            var passwordField = form[_configuration.PasswordFormField];
+            var newPasswordField = form[_configuration.NewPasswordFormField];
             throw new NotImplementedException();
         }
 
         private Task HandleResetPassword(IOwinContext context)
         {
+            var form = context.Request.ReadFormAsync().Result;
+
+            var emailField = form[_configuration.EmailFormField];
+            var passwordField = form[_configuration.PasswordFormField];
+            var rememberMeField = form[_configuration.RememberMeFormField];
+
             throw new NotImplementedException();
         }
 
         private Task HandleRenewSession(IOwinContext context)
         {
+            var sessionId = context.Request.Query["sid"];
+            var successUrl = context.Request.Query["success"];
+            var failUrl = context.Request.Query["fail"];
+
             var upstreamSession = context.GetFeature<IUpstreamSession>();
             if (upstreamSession == null)
                 throw new Exception("Session middleware is required for Form Identification to work");
 
-            upstreamSession.EstablishSession(/* TODO: establish session from session ID */);
-            throw new NotImplementedException();
+            _renewSessionCount++;
+
+            upstreamSession.EstablishSession(sessionId);
+            var session = context.GetFeature<ISession>();
+
+            var identity = context.Request.Cookies[_cookieName];
+            if (string.IsNullOrEmpty(identity))
+            {
+                session.Set(_sessionName, _anonymousUserIdentity);
+                return Redirect(context, failUrl);
+            }
+
+            session.Set(_sessionName, identity);
+            return Redirect(context, successUrl);
         }
 
         private Task HandleClearSession(IOwinContext context)
         {
+            var session = context.GetFeature<ISession>();
             var upstreamSession = context.GetFeature<IUpstreamSession>();
-            if (upstreamSession == null)
+            if (upstreamSession == null || session == null)
                 throw new Exception("Session middleware is required for Form Identification to work");
 
-            upstreamSession.EstablishSession(/* TODO: establish session from session ID */);
-            throw new NotImplementedException();
+            var sessionId = context.Request.Query["sid"];
+            var successUrl = context.Request.Query["success"];
+
+            upstreamSession.EstablishSession(sessionId);
+            session.Set<string>(_sessionName, null);
+
+            context.Response.Cookies.Delete(_cookieName);
+
+            _clearSessionCount++;
+
+            return RedirectWithCookies(context, successUrl);
+        }
+
+        private Task RedirectWithCookies(IOwinContext context, string url)
+        {
+            var html = GetEmbeddedResource("redirect.html");
+            html = html.Replace("{redirectUrl}", url);
+            return context.Response.WriteAsync(html);
+        }
+
+        private Task Redirect(IOwinContext context, string url)
+        {
+            context.Response.Redirect(url);
+            return context.Response.WriteAsync(string.Empty);
+        }
+
+        #endregion
+
+        #region Helper methods
+
+        private string GetSecurePrefix()
+        {
+            var securePrefix = string.IsNullOrEmpty(_secureDomain)
+                ? string.Empty
+                : "https://" + _secureDomain;
+            return securePrefix;
+        }
+
+        private string GetNonSecurePrefix(IOwinContext context)
+        {
+            var nonSecurePrefix = string.IsNullOrEmpty(_secureDomain)
+                ? string.Empty
+                : context.Request.Scheme + "://" + context.Request.Host;
+            return nonSecurePrefix;
         }
 
         #endregion
@@ -252,23 +384,37 @@ namespace OwinFramework.FormIdentification
 
             _configuration = configuration;
 
-            _configPage = cleanUrl(configuration.DocumentationPage);
+            _documentationPage = cleanUrl(configuration.DocumentationPage);
+
             _signupPage = cleanUrl(configuration.SignupPage);
-            _signinPage = cleanUrl(configuration.SigninPage);
-            _signoutPage = cleanUrl(configuration.SignoutPage);
-            _signupSuccessPage = cleanUrl(configuration.SigninSuccessPage);
+            _signupSuccessPage = cleanUrl(configuration.SignupSuccessPage);
             _signupFailPage = cleanUrl(configuration.SignupFailPage);
+
+            _signinPage = cleanUrl(configuration.SigninPage);
             _signinSuccessPage = cleanUrl(configuration.SigninSuccessPage);
             _signinFailPage = cleanUrl(configuration.SigninFailPage);
+
+            _signoutPage = cleanUrl(configuration.SignoutPage);
             _signoutSuccessPage = cleanUrl(configuration.SignoutSuccessPage);
+
             _sendPasswordResetPage = cleanUrl(configuration.SendPasswordResetPage);
+            _sendPasswordResetSuccessPage = cleanUrl(configuration.SendPasswordResetSuccessPage);
+            _sendPasswordResetFailPage = cleanUrl(configuration.SendPasswordResetFailPage);
+
+            _changePasswordPage = cleanUrl(configuration.ChangePasswordPage);
+            _changePasswordSuccessPage = cleanUrl(configuration.ChangePasswordSuccessPage);
+            _changePasswordFailPage = cleanUrl(configuration.ChangePasswordFailPage);
+
             _resetPasswordPage = cleanUrl(configuration.ResetPasswordPage);
+            _resetPasswordSuccessPage = cleanUrl(configuration.ResetPasswordSuccessPage);
+            _resetPasswordFailPage = cleanUrl(configuration.ResetPasswordFailPage);
+
             _renewSessionPage = cleanUrl(configuration.RenewSessionPage);
             _clearSessionPage = cleanUrl(configuration.ClearSessionPage);
 
-            _secureDomain = configuration.SecureDomain;
-            _cookieName = configuration.CookieName;
-            _sessionName = configuration.SessionName;
+            _secureDomain = (configuration.SecureDomain ?? string.Empty).ToLower();
+            _cookieName = (configuration.CookieName ?? string.Empty).ToLower().Replace(' ', '-');
+            _sessionName = (configuration.SessionName ?? string.Empty).ToLower().Replace(' ', '-');
         }
 
         #endregion
@@ -278,42 +424,85 @@ namespace OwinFramework.FormIdentification
         private Task DocumentConfiguration(IOwinContext context)
         {
             var document = GetEmbeddedResource("configuration.html");
-            document = document.Replace("{documentationPage}", _configuration.DocumentationPage);
-            document = document.Replace("{signupPage}", _configuration.SignupPage);
-            document = document.Replace("{signinPage}", _configuration.SigninPage);
-            document = document.Replace("{signoutPage}", _configuration.SignoutPage);
-            document = document.Replace("{signupSuccessPage}", _configuration.SignupSuccessPage);
-            document = document.Replace("{signupFailPage}", _configuration.SignupFailPage);
-            document = document.Replace("{signinSuccessPage}", _configuration.SigninSuccessPage);
-            document = document.Replace("{signinFailPage}", _configuration.SigninFailPage);
-            document = document.Replace("{signoutSuccessPage}", _configuration.SignoutSuccessPage);
-            document = document.Replace("{sendPasswordResetPage}", _configuration.SendPasswordResetPage);
-            document = document.Replace("{resetPasswordPage}", _configuration.ResetPasswordPage);
-            document = document.Replace("{renewSessionPage}", _configuration.RenewSessionPage);
-            document = document.Replace("{clearSessionPage}", _configuration.ClearSessionPage);
-            document = document.Replace("{secureDomain}", _configuration.SecureDomain);
-            document = document.Replace("{cookieName}", _configuration.CookieName);
-            document = document.Replace("{sessionName}", _configuration.SessionName);
+
+            document = document.Replace("{documentationPage}", _documentationPage.ToString());
+
+            document = document.Replace("{signupPage}", _signupPage.ToString());
+            document = document.Replace("{signupSuccessPage}", _signupSuccessPage.ToString());
+            document = document.Replace("{signupFailPage}", _signupFailPage.ToString());
+
+            document = document.Replace("{signinPage}", _signinPage.ToString());
+            document = document.Replace("{signinSuccessPage}", _signinSuccessPage.ToString());
+            document = document.Replace("{signinFailPage}", _signinFailPage.ToString());
+
+            document = document.Replace("{signoutPage}", _signoutPage.ToString());
+            document = document.Replace("{signoutSuccessPage}", _signoutSuccessPage.ToString());
+
+            document = document.Replace("{sendPasswordResetPage}", _sendPasswordResetPage.ToString());
+            document = document.Replace("{sendPasswordResetSuccessPage}", _sendPasswordResetSuccessPage.ToString());
+            document = document.Replace("{sendPasswordResetFailPage}", _sendPasswordResetFailPage.ToString());
+
+            document = document.Replace("{resetPasswordPage}", _resetPasswordPage.ToString());
+            document = document.Replace("{resetPasswordSuccessPage}", _resetPasswordSuccessPage.ToString());
+            document = document.Replace("{resetPasswordFailPage}", _resetPasswordFailPage.ToString());
+
+            document = document.Replace("{changePasswordPage}", _changePasswordPage.ToString());
+            document = document.Replace("{changePasswordSuccessPage}", _changePasswordSuccessPage.ToString());
+            document = document.Replace("{changePasswordFailPage}", _changePasswordFailPage.ToString());
+
+            document = document.Replace("{renewSessionPage}", _renewSessionPage.ToString());
+            document = document.Replace("{clearSessionPage}", _clearSessionPage.ToString());
+
+            document = document.Replace("{secureDomain}", _secureDomain);
+            document = document.Replace("{cookieName}", _cookieName);
+            document = document.Replace("{sessionName}", _sessionName);
             document = document.Replace("{rememberMeFor}", _configuration.RememberMeFor.ToString());
+
+            document = document.Replace("{emailFormField}", _configuration.EmailFormField);
+            document = document.Replace("{passwordFormField}", _configuration.PasswordFormField);
+            document = document.Replace("{newPasswordFormField}", _configuration.NewPasswordFormField);
+            document = document.Replace("{rememberMeFormField}", _configuration.RememberMeFormField);
+            document = document.Replace("{tokenFormField}", _configuration.TokenFormField);
 
             var defaultConfiguration = new FormIdentificationConfiguration();
             document = document.Replace("{documentationPage.default}", defaultConfiguration.DocumentationPage);
+
             document = document.Replace("{signupPage.default}", defaultConfiguration.SignupPage);
-            document = document.Replace("{signinPage.default}", defaultConfiguration.SigninPage);
-            document = document.Replace("{signoutPage.default}", defaultConfiguration.SignoutPage);
             document = document.Replace("{signupSuccessPage.default}", defaultConfiguration.SignupSuccessPage);
             document = document.Replace("{signupFailPage.default}", defaultConfiguration.SignupFailPage);
+
+            document = document.Replace("{signinPage.default}", defaultConfiguration.SigninPage);
             document = document.Replace("{signinSuccessPage.default}", defaultConfiguration.SigninSuccessPage);
             document = document.Replace("{signinFailPage.default}", defaultConfiguration.SigninFailPage);
+
+            document = document.Replace("{signoutPage.default}", defaultConfiguration.SignoutPage);
             document = document.Replace("{signoutSuccessPage.default}", defaultConfiguration.SignoutSuccessPage);
+
             document = document.Replace("{sendPasswordResetPage.default}", defaultConfiguration.SendPasswordResetPage);
+            document = document.Replace("{sendPasswordResetSuccessPage.default}", defaultConfiguration.SendPasswordResetSuccessPage);
+            document = document.Replace("{sendPasswordResetFailPage.default}", defaultConfiguration.SendPasswordResetFailPage);
+
             document = document.Replace("{resetPasswordPage.default}", defaultConfiguration.ResetPasswordPage);
+            document = document.Replace("{resetPasswordSuccessPage.default}", defaultConfiguration.ResetPasswordSuccessPage);
+            document = document.Replace("{resetPasswordFailPage.default}", defaultConfiguration.ResetPasswordFailPage);
+
+            document = document.Replace("{changePasswordPage.default}", defaultConfiguration.ChangePasswordPage);
+            document = document.Replace("{changePasswordSuccessPage.default}", defaultConfiguration.ChangePasswordSuccessPage);
+            document = document.Replace("{changePasswordFailPage.default}", defaultConfiguration.ChangePasswordFailPage);
+
             document = document.Replace("{renewSessionPage.default}", defaultConfiguration.RenewSessionPage);
             document = document.Replace("{clearSessionPage.default}", defaultConfiguration.ClearSessionPage);
+
             document = document.Replace("{secureDomain.default}", defaultConfiguration.SecureDomain);
             document = document.Replace("{cookieName.default}", defaultConfiguration.CookieName);
             document = document.Replace("{sessionName.default}", defaultConfiguration.SessionName);
             document = document.Replace("{rememberMeFor.default}", defaultConfiguration.RememberMeFor.ToString());
+
+            document = document.Replace("{emailFormField.default}", defaultConfiguration.EmailFormField);
+            document = document.Replace("{passwordFormField.default}", defaultConfiguration.PasswordFormField);
+            document = document.Replace("{newPasswordFormField.default}", defaultConfiguration.NewPasswordFormField);
+            document = document.Replace("{rememberMeFormField.default}", defaultConfiguration.RememberMeFormField);
+            document = document.Replace("{tokenFormField.default}", defaultConfiguration.TokenFormField);
 
             document = document.Replace("{longDescription}", LongDescription);
 
@@ -353,11 +542,11 @@ namespace OwinFramework.FormIdentification
             {
                 var documentation = new List<IEndpointDocumentation>();
 
-                if (_configPage.HasValue)
+                if (_documentationPage.HasValue)
                     documentation.Add(
                         new EndpointDocumentation
                         {
-                            RelativePath = _configPage.Value,
+                            RelativePath = _documentationPage.Value,
                             Description = "Documentation of the configuration options for the Form Identification middleware",
                             Attributes = new List<IEndpointAttributeDocumentation>
                                 {

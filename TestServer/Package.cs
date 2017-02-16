@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Ioc.Modules;
 using OwinFramework.Interfaces.Utility;
+using OwinFramework.Middleware.TestServer.Prius;
+using Prius.Contracts.Interfaces.External;
 
 namespace OwinFramework.Middleware.TestServer
 {
@@ -20,6 +22,8 @@ namespace OwinFramework.Middleware.TestServer
                 return new List<IocRegistration>
                 {
                     new IocRegistration().Init<IHostingEnvironment, HostingEnvironment>(),
+                    new IocRegistration().Init<IFactory, PriusFactory>(),
+                    new IocRegistration().Init<IErrorReporter, PriusErrorReporter>(),
                 };
             }
         }

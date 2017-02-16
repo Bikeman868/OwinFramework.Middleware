@@ -7,6 +7,7 @@ using Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Utility;
+using OwinFramework.InterfacesV1.Middleware;
 using Urchin.Client.Sources;
 
 namespace OwinFramework.Middleware.TestServer
@@ -50,20 +51,21 @@ namespace OwinFramework.Middleware.TestServer
             // downstream middleware and reusing it for the next request
             builder.Register(ninject.Get<OutputCache.OutputCacheMiddleware>())
                 .As("Output cache")
-                .ConfigureWith(config, "/middleware/outputCache");
+                .ConfigureWith(config, "/middleware/outputCache")
+                .RunAfter("Dart");
 
             // The Versioning middleware will add version numbers to static assets and cache them
             // in the browser
             builder.Register(ninject.Get<Versioning.VersioningMiddleware>())
                 .As("Versioning")
-                .ConfigureWith(config, "/middleware/versioning");
+                .ConfigureWith(config, "/middleware/versioning")
+                .RunAfter<IOutputCache>();
 
             // The dart middleware will allow the example Dart UI to run in browsers that support Dart
             // natively as well as supplying compiled JavaScript to browsers that dont support Dart natively.
             builder.Register(ninject.Get<Dart.DartMiddleware>())
                 .As("Dart")
-                .ConfigureWith(config, "/middleware/dart")
-                .RunAfter("Versioning");
+                .ConfigureWith(config, "/middleware/dart");
 
             // The Less middleware will compile LESS into CSS on the fly
             builder.Register(ninject.Get<Less.LessMiddleware>())
@@ -83,17 +85,20 @@ namespace OwinFramework.Middleware.TestServer
             // The form identification middleware provides login/logout password reset etc
             builder.Register(ninject.Get<FormIdentification.FormIdentificationMiddleware>())
                 .As("Form Identification")
-                .ConfigureWith(config, "/middleware/formIdentification");
+                .ConfigureWith(config, "/middleware/formIdentification")
+                .RunAfter("Static files");
 
             // The cache session middleware provides session management using the cache facility
             builder.Register(ninject.Get<Session.CacheSessionMiddleware>())
                 .As("Cache session")
-                .ConfigureWith(config, "/middleware/session");
+                .ConfigureWith(config, "/middleware/session")
+                .RunAfter("Static files");
 
             // The route visualizer middleware will produce an SVG showing the Owin pipeline configuration
             builder.Register(ninject.Get<RouteVisualizer.RouteVisualizerMiddleware>())
                 .As("Route visualizer")
-                .ConfigureWith(config, "/middleware/visualizer");
+                .ConfigureWith(config, "/middleware/visualizer")
+                .RunAfter<IIdentification>();
 
             // The default document middleware will rewrite a request for the root document to a page on the site
             builder.Register(ninject.Get<DefaultDocument.DefaultDocumentMiddleware>())
@@ -112,13 +117,15 @@ namespace OwinFramework.Middleware.TestServer
             // HTML, plain text and JSON
             builder.Register(ninject.Get<AnalysisReporter.AnalysisReporterMiddleware>())
                 .As("Analysis reporter")
-                .ConfigureWith(config, "/middleware/analysis");
+                .ConfigureWith(config, "/middleware/analysis")
+                .RunAfter<IIdentification>();
 
             // The documenter middleware will extract documentation from middleware that is 
             // self documenting
             builder.Register(ninject.Get<Documenter.DocumenterMiddleware>())
                 .As("Documenter")
-                .ConfigureWith(config, "/middleware/documenter");
+                .ConfigureWith(config, "/middleware/documenter")
+                .RunAfter<IIdentification>();
 
             // The exception reporter middleware will catch exceptions and produce diagnostic output
             builder.Register(ninject.Get<ExceptionReporter.ExceptionReporterMiddleware>())

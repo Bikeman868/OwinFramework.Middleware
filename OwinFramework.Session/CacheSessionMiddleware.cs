@@ -36,18 +36,22 @@ namespace OwinFramework.Session
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
-            context.SetFeature<IUpstreamSession>(
-                new Session(_cache, context, _configuration));
+            var session = new Session(_cache, context, _configuration);
+            context.SetFeature<IUpstreamSession>(session);
+            context.SetFeature<ISession>(session);
+
             return next();
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
-            var session = context.GetFeature<IUpstreamSession>() as Session;
-            if (session != null)
-                context.SetFeature<ISession>(session);
+            var result = next();
 
-            return next();
+            var session = context.GetFeature<ISession>() as Session;
+            if (session != null)
+                session.Dispose();
+
+            return result;
         }
 
         #region IConfigurable
