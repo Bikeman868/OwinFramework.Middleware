@@ -1,24 +1,24 @@
 ﻿<html>
-    <head>
-        <title>Owin Framework not found middleware configuration</title>
-        <style type="text/css">
-             body{
-                 font-family: verdana,arial,sans-serif;
-                 font-size: 11px;
-             }
+<head>
+    <title>Owin Framework Form Identification middleware configuration</title>
+    <style type="text/css">
+        body {
+            font-family: verdana,arial,sans-serif;
+            font-size: 11px;
+        }
 
-             span.code{
-                 font-family: courrier;
-                 font-size: 13px;
-             }
+        span.code {
+            font-family: courrier;
+            font-size: 13px;
+        }
 
-             table.properties {
-                 font-size: 11px;
-                 color: #333333;
-                 border-width: 1px;
-                 border-color: #666666;
-                 border-collapse: collapse;
-             }
+        table.properties {
+            font-size: 11px;
+            color: #333333;
+            border-width: 1px;
+            border-color: #666666;
+            border-collapse: collapse;
+        }
 
             table.properties th {
                 border-width: 1px;
@@ -36,212 +36,263 @@
                 background-color: #ffffff;
             }
 
-            table.properties td.property {
-                font-weight: bold
-            }
+                table.properties td.property {
+                    font-weight: bold;
+                }
 
-            span.property {
-                font-weight: bold
-            }
-        </style>    
-    </head>
-    <body>
-        <h1>Owin Framework form identification middleware</h1>
-        <p>The form identification middleware in the Owin Framework supports the following configuration options:</p>
-        <table class="properties">
-            <tr>
-                <th>Property</th>
-                <th>Default</th>
-                <th>Current</th>
-                <th>Description</th>
-            </tr>
+        span.property {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Owin Framework Form Identification middleware</h1>
+    <p>
+        The Form Identification middleware allows users of the site to do the following things
+        using <span class="code">&lt;form /></span> elements on the pages:
+    </p>
+    <ul>
+        <li>Create an account with an email address and a password</li>
+        <li>Remember me by storing a cookie on my browser so I don't have to log in again</li>
+        <li>Log in, log out and change password</li>
+        <li>Request a password reset email to be sent and use this email to reset the password</li>
+    </ul>
+    <p>The Form Identification middleware in the Owin Framework supports the following configuration options:</p>
+    <table class="properties">
+        <tr>
+            <th>Property</th>
+            <th>Default</th>
+            <th>Current</th>
+            <th>Description</th>
+        </tr>
 
-            <tr>
-                <td class="property">secureDomain</td>
-                <td>{secureDomain.default}</td>
-                <td>{secureDomain}</td>
-                <td>
-                    <p>
-                        Specifies the domain name to use in URLs that need the user identification cookie.
-                        By using a separate domain for these requests, the main web site can be insecure and
-                        user identification cookie will not be leaked.
-                    </p>
-                    <p>
-                        Leaving this blank or setting is to the same domain name as the site itself will also
-                        work, but in this case you must run all requests over HTTPS and never use HTTP.
-                    </p>
-                </td>
-            </tr>
+        <tr>
+            <td class="property">secureDomain</td>
+            <td>{secureDomain.default}</td>
+            <td>{secureDomain}</td>
+            <td>
+                <p>
+                    Specifies the domain name to use in URLs that need the user identification cookie.
+                    By using a separate domain for these requests, the main web site can be insecure and
+                    user identification cookie will not be leaked.
+                </p>
+                <p>
+                    Leaving this blank or setting is to the same domain name as the site itself will also
+                    work, but in this case you must run all requests over HTTPS and never use HTTP.
+                </p>
+            </td>
+        </tr>
 
-            <tr>
-                <td class="property">sessionName</td>
-                <td>{sessionName.default}</td>
-                <td>{sessionName}</td>
-                <td>
-                    <p>
-                        Specifies the name to use when saving the user identity token in the session store.
-                    </p>
-                </td>
-            </tr>
+        <tr>
+            <td class="property">sessionIdentityName</td>
+            <td>{sessionIdentityName.default}</td>
+            <td>{sessionIdentityName}</td>
+            <td>
+                <p>
+                    Specifies the name to use when saving the user identity token in the session store.
+                </p>
+            </td>
+        </tr>
 
-            <tr>
-                <td class="property">cookieName</td>
-                <td>{cookieName.default}</td>
-                <td>{cookieName}</td>
-                <td>
-                    <p>
-                        Specifies the name to use when saving the user identity on the browser in a cookie.
-                    </p>
-                </td>
-            </tr>
+        <tr>
+            <td class="property">sessionPurposeName</td>
+            <td>{sessionPurposeName.default}</td>
+            <td>{sessionPurposeName}</td>
+            <td>
+                <p>
+                    Specifies the name to use when saving the user purpose list in the session store.
+                </p>
+            </td>
+        </tr>
 
-            <tr>
-                <td class="property">rememberMeFor</td>
-                <td>{rememberMeFor.default}</td>
-                <td>{rememberMeFor}</td>
-                <td>
-                    <p>
-                        When users log in with the 'Remember me' option selected, a cookie will be saved on
-                        their browser so that they don't have to log in again. This cookie will expire after
-                        however much time you set in this configuration option.
-                    </p>
-                </td>
-            </tr>
+        <tr>
+            <td class="property">sessionStatusName</td>
+            <td>{sessionStatusName.default}</td>
+            <td>{sessionStatusName}</td>
+            <td>
+                <p>
+                    Specifies the name to use when saving the user authentication status in the session store.
+                </p>
+            </td>
+        </tr>
 
-            <tr>
-                <td class="property">documentationPage</td>
-                <td>{documentationPage.default}</td>
-                <td>{documentationPage}</td>
-                <td>
-                    <p>
-                        The relative path to this documentation page. Leave blank to disable documentation
-                        in production environments, or prevent this page from being retrieved from outside
-                        your local network.
-                    </p>
-                </td>
-            </tr>
+        <tr>
+            <td class="property">cookieName</td>
+            <td>{cookieName.default}</td>
+            <td>{cookieName}</td>
+            <td>
+                <p>
+                    Specifies the name to use when saving the user identity on the browser in a cookie.
+                </p>
+            </td>
+        </tr>
 
-            <tr>
-                <td class="property">renewSessionPage</td>
-                <td>{renewSessionPage.default}</td>
-                <td>{renewSessionPage}</td>
-                <td>
-                    <p>
-                        This middleware will redirect the browser to this page whenever the users session
-                        does not contain a user identity. This page will be handled by this middleware
-                        by identifying the user and putting their identity in session before redirecting
-                        back to the original page.
-                    </p>
-                </td>
-            </tr>
+        <tr>
+            <td class="property">rememberMeFor</td>
+            <td>{rememberMeFor.default}</td>
+            <td>{rememberMeFor}</td>
+            <td>
+                <p>
+                    When users log in with the 'Remember me' option selected, a cookie will be saved on
+                    their browser so that they don't have to log in again. This cookie will expire after
+                    however much time you set in this configuration option.
+                </p>
+            </td>
+        </tr>
 
-            <tr>
-                <td class="property">clearSessionPage</td>
-                <td>{clearSessionPage.default}</td>
-                <td>{clearSessionPage}</td>
-                <td>
-                    <p>
-                        This middleware will redirect the browser to this page whenever the user chooses
-                        to logout. This page will be handled by this middleware by clearing the users
-                        session and cookies of any identity information.
-                    </p>
-                </td>
-            </tr>
+        <tr>
+            <td class="property">documentationPage</td>
+            <td>{documentationPage.default}</td>
+            <td>{documentationPage}</td>
+            <td>
+                <p>
+                    The relative path to this documentation page. Leave blank to disable documentation
+                    in production environments.
+                </p>
+            </td>
+        </tr>
 
-            <tr>
-                <td class="property">emailFormField</td>
-                <td>{emailFormField.default}</td>
-                <td>{emailFormField}</td>
-                <td>The name of the form field that contains the users email address.</td>
-            </tr>
-            <tr>
-                <td class="property">passwordFormField</td>
-                <td>{passwordFormField.default}</td>
-                <td>{passwordFormField}</td>
-                <td>The name of the form field that contains the users password.</td>
-            </tr>
-            <tr>
-                <td class="property">newPasswordFormField</td>
-                <td>{newPasswordFormField.default}</td>
-                <td>{newPasswordFormField}</td>
-                <td>The name of the form field that contains the users new password.</td>
-            </tr>
-            <tr>
-                <td class="property">rememberMeFormField</td>
-                <td>{rememberMeFormField.default}</td>
-                <td>{rememberMeFormField}</td>
-                <td>The name of the form field that contains the 'remember me' checkbox.</td>
-            </tr>
-            <tr>
-                <td class="property">tokenFormField</td>
-                <td>{tokenFormField.default}</td>
-                <td>{tokenFormField}</td>
-                <td>
-                    <p>
-                        The name of the form field that contains the password reset token.
-                        This token is included in the email that is sent when the user requests a password reset.
-                    </p>
-                </td>
-            </tr>
-        </table>
+        <tr>
+            <td class="property">renewSessionPage</td>
+            <td>{renewSessionPage.default}</td>
+            <td>{renewSessionPage}</td>
+            <td>
+                <p>
+                    The Form Identification middleware will redirect the browser to this page whenever
+                    the users session does not contain a user identity. This page will be handled by
+                    the Form Identification middleware by identifying the user and putting their 
+                    identity in session before redirecting back to the original page.
+                </p>
+            </td>
+        </tr>
 
-        <p>These configuration options allow you to change the location of form identification pages on your site</p>
-        <table class="properties">
-            <tr>
-                <th>Page</th>
-                <th>Property<br/>Default page<br/>Current page</th>
-                <th>Property<br />Default success page<br/>Current success page</th>
-                <th>Property<br />Default fail page<br />Current fail page</th>
-            </tr>
+        <tr>
+            <td class="property">updateIdentityPage</td>
+            <td>{updateIdentityPage.default}</td>
+            <td>{updateIdentityPage}</td>
+            <td>
+                <p>
+                    The Form Identification middleware will redirect the browser to this page whenever
+                    the user identity changes due to login or logout. This page will be handled by
+                    the Form Identification middleware by storing the users identity in a cookie
+                    and redirecting back to a non-secure page.
+                </p>
+            </td>
+        </tr>
 
-            <tr>
-                <td>Create account</td>
-                <td><span class="property">signupPage</span><br />{signupPage.default}<br/>{signupPage}</td>
-                <td><span class="property">signupSuccessPage</span><br />{signupSuccessPage.default}<br />{signupSuccessPage}</td>
-                <td><span class="property">signupFailPage</span><br />{signupFailPage.default}<br />{signupFailPage}</td>
-            </tr>
+        <tr>
+            <td class="property">emailFormField</td>
+            <td>{emailFormField.default}</td>
+            <td>{emailFormField}</td>
+            <td>The name of the form field that contains the users email address.</td>
+        </tr>
+        <tr>
+            <td class="property">passwordFormField</td>
+            <td>{passwordFormField.default}</td>
+            <td>{passwordFormField}</td>
+            <td>The name of the form field that contains the users password.</td>
+        </tr>
+        <tr>
+            <td class="property">newPasswordFormField</td>
+            <td>{newPasswordFormField.default}</td>
+            <td>{newPasswordFormField}</td>
+            <td>The name of the form field that contains the users new password.</td>
+        </tr>
+        <tr>
+            <td class="property">rememberMeFormField</td>
+            <td>{rememberMeFormField.default}</td>
+            <td>{rememberMeFormField}</td>
+            <td>The name of the form field that contains the 'remember me' checkbox.</td>
+        </tr>
+        <tr>
+            <td class="property">tokenFormField</td>
+            <td>{tokenFormField.default}</td>
+            <td>{tokenFormField}</td>
+            <td>
+                <p>
+                    The name of the form field that contains the password reset token.
+                    This token is included in the email that is sent when the user requests a password reset.
+                </p>
+            </td>
+        </tr>
+    </table>
 
-            <tr>
-                <td>Log in</td>
-                <td><span class="property">signinPage</span><br />{signinPage.default}<br />{signinPage}</td>
-                <td><span class="property">signinSuccessPage</span><br />{signinSuccessPage.default}<br />{signinSuccessPage}</td>
-                <td><span class="property">signinFailPage</span><br />{signinFailPage.default}<br />{signinFailPage}</td>
-            </tr>
+    <p>
+        These configuration options allow you to change the location of form identification pages on your site.
+        The names in bold are the name of the property you can set in the confguration file.
+    </p>
+    <p>
+        The Form Identification middleware will respond to POST requests for the urls in the 'POST Url' column.
+        You can invoke these actions in static HTML by placing a <span class="code">submit</span> input
+        inside a <span class="code">form</span> element and set its <span class="code">formaction</span> to the
+        URL shown in the 'POST Url' column of the table below. For example:
+    </p>
+    <pre>
+            &lt;form>
+                &lt;input type="submit" value="Sign in" formaction="{signinPage}">
+            &lt;form />
+        </pre>
+    <p>
+        In response to the POST the Form Identification middleware will redirect the browser to either
+        the success page or the fail page. These pages must be provided by your application. You can
+        prevent these redirections by setting the configuration to blank string or null.
+    </p>
+    <table class="properties">
+        <tr>
+            <th>Page</th>
+            <th>POST Url<br />Default page<br />Current page</th>
+            <th>Redirect on success<br />Default success page<br />Current success page</th>
+            <th>Redirect on fail<br />Default fail page<br />Current fail page</th>
+        </tr>
 
-            <tr>
-                <td>Log out</td>
-                <td><span class="property">signoutPage</span><br />{signoutPage.default}<br />{signoutPage}</td>
-                <td><span class="property">signoutSuccessPage</span><br/>{signoutSuccessPage.default}<br/>{signoutSuccessPage}</td>
-                <td><i>Log out can not fail</i></td>
-            </tr>
+        <tr>
+            <td>Create account</td>
+            <td><span class="property">signupPage</span><br />{signupPage.default}<br />{signupPage}</td>
+            <td><span class="property">signupSuccessPage</span><br />{signupSuccessPage.default}<br />{signupSuccessPage}</td>
+            <td><span class="property">signupFailPage</span><br />{signupFailPage.default}<br />{signupFailPage}</td>
+        </tr>
 
-            <tr>
-                <td>Change password</td>
-                <td><span class="property">changePasswordPage</span><br />{changePasswordPage.default}<br />{changePasswordPage}</td>
-                <td><span class="property">changePasswordSuccessPage</span><br />{changePasswordSuccessPage.default}<br />{changePasswordSuccessPage}</td>
-                <td><span class="property">changePasswordFailPage</span><br />{changePasswordFailPage.default}<br />{changePasswordFailPage}</td>
-            </tr>
+        <tr>
+            <td>Log in</td>
+            <td><span class="property">signinPage</span><br />{signinPage.default}<br />{signinPage}</td>
+            <td><span class="property">signinSuccessPage</span><br />{signinSuccessPage.default}<br />{signinSuccessPage}</td>
+            <td><span class="property">signinFailPage</span><br />{signinFailPage.default}<br />{signinFailPage}</td>
+        </tr>
 
-            <tr>
-                <td>Send password reset</td>
-                <td><span class="property">sendPasswordResetPage</span><br />{sendPasswordResetPage.default}<br />{sendPasswordResetPage}</td>
-                <td><span class="property">sendPasswordResetSuccessPage</span><br />{sendPasswordResetSuccessPage.default}<br />{sendPasswordResetSuccessPage}</td>
-                <td><span class="property">sendPasswordResetFailPage</span><br />{sendPasswordResetFailPage.default}<br />{sendPasswordResetFailPage}</td>
-            </tr>
+        <tr>
+            <td>Log out</td>
+            <td><span class="property">signoutPage</span><br />{signoutPage.default}<br />{signoutPage}</td>
+            <td><span class="property">signoutSuccessPage</span><br />{signoutSuccessPage.default}<br />{signoutSuccessPage}</td>
+            <td><i>Log out can not fail</i></td>
+        </tr>
 
-            <tr>
-                <td>Reset password</td>
-                <td><span class="property">resetPasswordPage</span><br />{resetPasswordPage.default}<br />{resetPasswordPage}</td>
-                <td><span class="property">resetPasswordSuccessPage</span><br />{resetPasswordSuccessPage.default}<br />{resetPasswordSuccessPage}</td>
-                <td><span class="property">resetPasswordFailPage</span><br />{resetPasswordFailPage.default}<br />{resetPasswordFailPage}</td>
-            </tr>
-        </table>
-        <p>
-            This middleware is configured the same way as all other middleware in the Owin Framework; you need
-            to construct a class that implements <span class="code">IConfiguration</span> then add a fluid
-            <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin
-            Framework builder. Please read Owin Framework documentation on configuration for full details and examples.
-        </p>
-        {longDescription}
-    </body>
+        <tr>
+            <td>Change password</td>
+            <td><span class="property">changePasswordPage</span><br />{changePasswordPage.default}<br />{changePasswordPage}</td>
+            <td><span class="property">changePasswordSuccessPage</span><br />{changePasswordSuccessPage.default}<br />{changePasswordSuccessPage}</td>
+            <td><span class="property">changePasswordFailPage</span><br />{changePasswordFailPage.default}<br />{changePasswordFailPage}</td>
+        </tr>
+
+        <tr>
+            <td>Send password reset</td>
+            <td><span class="property">sendPasswordResetPage</span><br />{sendPasswordResetPage.default}<br />{sendPasswordResetPage}</td>
+            <td><span class="property">sendPasswordResetSuccessPage</span><br />{sendPasswordResetSuccessPage.default}<br />{sendPasswordResetSuccessPage}</td>
+            <td><span class="property">sendPasswordResetFailPage</span><br />{sendPasswordResetFailPage.default}<br />{sendPasswordResetFailPage}</td>
+        </tr>
+
+        <tr>
+            <td>Reset password</td>
+            <td><span class="property">resetPasswordPage</span><br />{resetPasswordPage.default}<br />{resetPasswordPage}</td>
+            <td><span class="property">resetPasswordSuccessPage</span><br />{resetPasswordSuccessPage.default}<br />{resetPasswordSuccessPage}</td>
+            <td><span class="property">resetPasswordFailPage</span><br />{resetPasswordFailPage.default}<br />{resetPasswordFailPage}</td>
+        </tr>
+    </table>
+    <p>
+        This middleware is configured the same way as all other middleware in the Owin Framework; you need
+        to construct a class that implements <span class="code">IConfiguration</span> then add a fluid
+        <span class="code">.ConfigureWith()</span> when you register this middleware with the Owin
+        Framework builder. Please read Owin Framework documentation on configuration for full details and examples.
+    </p>
+    {longDescription}
+</body>
 </html>

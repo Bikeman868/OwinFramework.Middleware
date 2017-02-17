@@ -33,10 +33,12 @@ namespace OwinFramework.NotFound
         public string ResetPasswordFailPage { get; set; }
 
         public string RenewSessionPage { get; set; }
-        public string ClearSessionPage { get; set; }
+        public string UpdateIdentityPage { get; set; }
 
         public string CookieName { get; set; }
-        public string SessionName { get; set; }
+        public string SessionIdentityName { get; set; }
+        public string SessionPurposeName { get; set; }
+        public string SessionStatusName { get; set; }
         public TimeSpan RememberMeFor { get; set; }
 
         public string EmailFormField { get; set; }
@@ -48,8 +50,10 @@ namespace OwinFramework.NotFound
         public FormIdentificationConfiguration()
         {
             SecureDomain = string.Empty;
-            CookieName = "form-identification-identity";
-            SessionName = "form-identification-identity";
+            CookieName = "form-identification";
+            SessionIdentityName = "form-identification-identity";
+            SessionPurposeName = "form-identification-purpose";
+            SessionStatusName = "form-identification-status";
             RememberMeFor = TimeSpan.FromDays(90);
 
             DocumentationPage = "/formId/config";
@@ -78,7 +82,7 @@ namespace OwinFramework.NotFound
             ResetPasswordFailPage = "/formId/resetPassword";
 
             RenewSessionPage = "/formId/renew";
-            ClearSessionPage = "/formId/clear";
+            UpdateIdentityPage = "/formId/update";
 
             EmailFormField = "email";
             PasswordFormField = "password";

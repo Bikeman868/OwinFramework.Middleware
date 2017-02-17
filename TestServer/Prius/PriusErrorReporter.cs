@@ -8,10 +8,12 @@ namespace OwinFramework.Middleware.TestServer.Prius
     {
         public void ReportError(Exception e, SqlCommand cmd, string subject, params object[] otherInfo)
         {
+            Console.WriteLine("Prius exception " + e.Message + " executing " + cmd.CommandText);
         }
 
         public void ReportError(Exception e, string subject, params object[] otherInfo)
         {
+            Console.WriteLine("Prius exception " + e.Message + " whilst " + subject);
         }
 
         public void Dispose()

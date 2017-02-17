@@ -1,0 +1,25 @@
+﻿<html>
+<head>
+    <title>Sign In Failed</title>
+</head>
+<body>
+    <h1>Failed to sign into your account</h1>
+
+    <form action="/FormId/signin.html" method="POST">
+        <div>
+            <label>Email address <input type="text" name="email"/></label>
+        </div>
+        <div>
+            <label>Password <input type="password" name="password" /></label>
+        </div>
+        <div>
+            <label><input type="checkbox" name="rememberMe" value="true" checked="checked"/>Remember me</label>
+        </div>
+        <div>
+            <input type="submit" value="Sign In">
+            <input type="submit" value="Create Account" formaction="/FormId/signup.html">
+            <input type="submit" value="Reset Password" formaction="/FormId/sendPasswordReset.html">
+        </div>
+    </form>
+</body>
+</html>

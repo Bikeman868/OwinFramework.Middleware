@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Ioc.Modules;
+using Ninject;
 using OwinFramework.Interfaces.Utility;
 using OwinFramework.Middleware.TestServer.Prius;
 using Prius.Contracts.Interfaces.External;

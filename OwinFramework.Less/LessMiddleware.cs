@@ -396,6 +396,9 @@ namespace OwinFramework.Less
         {
             cssFileContext = new CssFileContext();
 
+            if (!string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return false;
+
             var path = context.Request.Path;
 
             if (!_configuration.Enabled || 

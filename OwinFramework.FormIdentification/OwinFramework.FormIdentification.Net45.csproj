@@ -62,6 +62,7 @@
   <ItemGroup>
     <Compile Include="FormIdentificationConfiguration.cs" />
     <Compile Include="FormIdentificationMiddleware.cs" />
+    <Compile Include="Package.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

@@ -20,7 +20,7 @@
             "message": "<p>This is a <i>custom</i> message.</p>",
             "template": "exception.html",
             "localhost": true,
-            "emailAddress": "bitbucket@mailinator.com",
+            "emailAddress": null,
             "subject": "Test server unhandled exception"
         },
         "staticFiles": {
@@ -103,7 +103,21 @@
             "exactVersion": "true"
         },
         "formIdentification": {
-            "secureDomain": ""
+            "secureDomain": "",
+            "signupPage": "/formId/signup.html",
+            "signupSuccessPage": "/welcome.html",
+            "signupFailPage": "/formId/signupFail.html",
+            "signinPage": "/formId/signin.html",
+            "signinFailPage": "/formId/signinFail.html",
+            "signoutPage": "/formId/signout.html",
+            "changePasswordPage": "/formId/changePassword.html",
+            "changePasswordSuccessPage": "/formId/changePasswordSuccess.html",
+            "changePasswordFailPage": "/formId/changePasswordFail.html",
+            "sendPasswordResetPage": "/formId/sendPasswordReset.html",
+            "sendPasswordResetSuccessPage": "/formId/sendPasswordResetSuccess.html",
+            "sendPasswordResetFailPage": "/formId/sendPasswordResetFail.html",
+            "resetPasswordPage": "/formId/resetPassword.html",
+            "resetPasswordFailPage": "/formId/resetPasswordFail.html"
         }
     },
     "OwinFramework": {
@@ -118,7 +132,7 @@
             {
                 "name":"Identity", 
                 "type":"MySql", 
-                "connectionString":"Server=localhost;Database=identity;Uid=test;Pwd=;"
+                "connectionString":"Server=devdb1;Database=identity;Uid=test;Pwd=;"
             }
         ],
         "fallbackPolicies":[

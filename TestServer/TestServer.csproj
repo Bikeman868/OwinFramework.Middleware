@@ -88,8 +88,8 @@
       <HintPath>..\packages\Owin.Framework.Facilities.Cache.Local.2.2.2\lib\net45\OwinFramework.Facilities.Cache.Local.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OwinFramework.Facilities.IdentityStore.Prius, Version=2.2.2.27647, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.Facilities.IdentityStore.Prius.2.2.2\lib\net45\OwinFramework.Facilities.IdentityStore.Prius.dll</HintPath>
+    <Reference Include="OwinFramework.Facilities.IdentityStore.Prius, Version=2.2.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.Facilities.IdentityStore.Prius.2.2.3\lib\net45\OwinFramework.Facilities.IdentityStore.Prius.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Prius.Contracts, Version=2.0.1.20, Culture=neutral, processorArchitecture=MSIL">
@@ -190,6 +190,13 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="exception.html" />
+    <Content Include="FormId\changePassword.html" />
+    <Content Include="FormId\signout.html" />
+    <Content Include="FormId\signin.html" />
+    <Content Include="FormId\signinFail.html" />
+    <Content Include="FormId\signupFail.html" />
+    <Content Include="FormId\signup.html" />
+    <Content Include="welcome.html" />
     <Content Include="ui\web\favicon.ico" />
     <Content Include="ui\web\index.html" />
     <None Include="ui\web\styles.less" />

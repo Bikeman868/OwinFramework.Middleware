@@ -25,7 +25,7 @@ namespace OwinFramework.OutputCache
         ISelfDocumenting,
         IAnalysable
     {
-        private readonly InterfacesV1.Facilities.ICache _cache;
+        private readonly ICache _cache;
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
@@ -47,6 +47,9 @@ namespace OwinFramework.OutputCache
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
+            if (!string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return next();
+
             var upstreamOutputCache = new OutputCacheContext(_cache, context, _configuration);
             context.SetFeature<IUpstreamOutputCache>(upstreamOutputCache);
 
@@ -60,6 +63,9 @@ namespace OwinFramework.OutputCache
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
+            if (!string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+                return next();
+
 #if DEBUG
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
 #endif

@@ -6,21 +6,16 @@ namespace OwinFramework.Middleware.TestServer.Prius
 {
     internal class PriusFactory: IFactory
     {
-        private readonly StandardKernel _ninject;
-
-        public PriusFactory(StandardKernel ninject)
-        {
-            _ninject = ninject;
-        }
+        public static StandardKernel Ninject;
 
         public object Create(Type type)
         {
-            return _ninject.Get(type);
+            return Ninject.Get(type);
         }
 
         public T Create<T>() where T : class
         {
-            return _ninject.Get<T>();
+            return Ninject.Get<T>();
         }
     }
 }

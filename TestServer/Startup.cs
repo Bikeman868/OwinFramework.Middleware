@@ -8,6 +8,7 @@ using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.Middleware.TestServer.Prius;
 using Urchin.Client.Sources;
 
 namespace OwinFramework.Middleware.TestServer
@@ -33,6 +34,9 @@ namespace OwinFramework.Middleware.TestServer
             // Construct the Ninject IoC container and configure it using information from 
             // the package locator
             var ninject = new StandardKernel(new Ioc.Modules.Ninject.Module(packageLocator));
+
+            // The prius factory needs Ninject to resolve interfaces to concrete types
+            PriusFactory.Ninject = ninject;
             
             // Tell urchin to get its configuration from the config.json file in this project. Note that if
             // you edit this file whilst the application is running the changes will be applied without 

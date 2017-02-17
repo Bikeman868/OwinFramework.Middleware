@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
@@ -66,7 +67,17 @@ namespace OwinFramework.ExceptionReporter
                     context.Response.StatusCode = 500;
                     context.Response.ReasonPhrase = "Server Error";
 
-                    SendEmail(context, ex);
+                    try
+                    {
+                        SendEmail(context, ex);
+                    }
+                    catch (Exception mailException)
+                    {
+#if DEBUG
+                        if (trace != null) trace.WriteLine(GetType().Name + " failed to send email: " + mailException.Message);
+#endif
+                        Trace.WriteLine(GetType().Name + " failed to send email: " + mailException.Message);
+                    }
 
                     isPrivate = IsPrivate(context);
                     if (isPrivate) return PrivateResponse(context, ex);
@@ -236,31 +247,26 @@ namespace OwinFramework.ExceptionReporter
             var subject = _configuration.EmailSubject;
             if (string.IsNullOrEmpty(email)) return;
 
-            try
+            if (string.IsNullOrEmpty(subject)) subject = "Exception in " + context.Request.Host;
+
+            var message = new StringBuilder();
+            message.AppendLine("The Owin exception reporter caught an exception in the following request:");
+            message.AppendLine("Url: " + context.Request.Uri);
+            message.AppendLine("IP: " + context.Request.RemoteIpAddress);
+            message.AppendLine("Headers:");
+            foreach (var header in context.Request.Headers)
+                message.AppendLine("   " + header.Key + " = " + header.Value);
+            while (ex != null)
             {
-                if (string.IsNullOrEmpty(subject)) subject = "Exception in " + context.Request.Host;
-
-                var message = new StringBuilder();
-                message.AppendLine("The Owin exception reporter caught an exception in the following request:");
-                message.AppendLine("Url: " + context.Request.Uri);
-                message.AppendLine("IP: " + context.Request.RemoteIpAddress);
-                message.AppendLine("Headers:");
-                foreach (var header in context.Request.Headers)
-                    message.AppendLine("   " + header.Key + " = " + header.Value);
-                while (ex != null)
-                {
-                    message.AppendLine();
-                    message.AppendLine(ex.Message);
-                    message.AppendLine(ex.StackTrace);
-                    ex = ex.InnerException;
-                }
-
-                var mailMessage = new MailMessage(email, email, subject, message.ToString());
-                var smtp = new SmtpClient();
-                smtp.SendAsync(mailMessage, null);
+                message.AppendLine();
+                message.AppendLine(ex.Message);
+                message.AppendLine(ex.StackTrace);
+                ex = ex.InnerException;
             }
-            catch
-            { }
+
+            var mailMessage = new MailMessage(email, email, subject, message.ToString());
+            var smtp = new SmtpClient();
+            smtp.SendAsync(mailMessage, null);
         }
 
         #region IConfigurable

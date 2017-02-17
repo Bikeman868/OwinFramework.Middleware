@@ -476,6 +476,9 @@ namespace OwinFramework.StaticFiles
                 RootUrl = _rootUrl
             };
 
+            if (!string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase)) 
+                return false;
+
             var request = context.Request;
 
             if (!_configuration.Enabled 
