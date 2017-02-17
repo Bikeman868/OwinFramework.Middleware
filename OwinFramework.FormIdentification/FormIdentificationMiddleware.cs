@@ -242,17 +242,24 @@ namespace OwinFramework.FormIdentification
 
                 if (rememberMe)
                 {
-                    var nonSecurePrefix = GetNonSecurePrefix(context);
-                    var securePrefix = GetSecurePrefix();
-                    var thisUrl = GetThisUrl(context);
+                    if (string.IsNullOrEmpty(_secureDomain))
+                    {
+                        UpdateIdentityCookie(context);
+                    }
+                    else
+                    {
+                        var nonSecurePrefix = GetNonSecurePrefix(context);
+                        var securePrefix = GetSecurePrefix();
+                        var thisUrl = GetThisUrl(context);
 
-                    var signupSuccessPage = _signupSuccessPage.HasValue ? nonSecurePrefix + _signupSuccessPage.Value : thisUrl;
+                        var signupSuccessPage = _signupSuccessPage.HasValue ? nonSecurePrefix + _signupSuccessPage.Value : thisUrl;
 
-                    var updateIdentityUrl = securePrefix + _updateIdentityPage.Value;
-                    updateIdentityUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
-                    updateIdentityUrl += "&success=" + Uri.EscapeDataString(signupSuccessPage);
+                        var updateIdentityUrl = securePrefix + _updateIdentityPage.Value;
+                        updateIdentityUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
+                        updateIdentityUrl += "&success=" + Uri.EscapeDataString(signupSuccessPage);
 
-                    return Redirect(context, updateIdentityUrl);
+                        return Redirect(context, updateIdentityUrl);
+                    }
                 }
 
                 if (_signupSuccessPage.HasValue)
@@ -305,17 +312,24 @@ namespace OwinFramework.FormIdentification
 
                 if (rememberMe)
                 {
-                    var nonSecurePrefix = GetNonSecurePrefix(context);
-                    var securePrefix = GetSecurePrefix();
-                    var thisUrl = GetThisUrl(context);
+                    if (string.IsNullOrEmpty(_secureDomain))
+                    {
+                        UpdateIdentityCookie(context);
+                    }
+                    else
+                    {
+                        var nonSecurePrefix = GetNonSecurePrefix(context);
+                        var securePrefix = GetSecurePrefix();
+                        var thisUrl = GetThisUrl(context);
 
-                    var signinSuccessPage = _signinSuccessPage.HasValue ? nonSecurePrefix + _signinSuccessPage.Value : thisUrl;
+                        var signinSuccessPage = _signinSuccessPage.HasValue ? nonSecurePrefix + _signinSuccessPage.Value : thisUrl;
 
-                    var updateIdentityUrl = securePrefix + _updateIdentityPage.Value;
-                    updateIdentityUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
-                    updateIdentityUrl += "&success=" + Uri.EscapeDataString(signinSuccessPage);
+                        var updateIdentityUrl = securePrefix + _updateIdentityPage.Value;
+                        updateIdentityUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
+                        updateIdentityUrl += "&success=" + Uri.EscapeDataString(signinSuccessPage);
 
-                    return Redirect(context, updateIdentityUrl);
+                        return Redirect(context, updateIdentityUrl);
+                    }
                 }
 
                 if (_signinSuccessPage.HasValue)
@@ -340,6 +354,12 @@ namespace OwinFramework.FormIdentification
             _signoutCount++;
 
             SetSession(session, null, null, AuthenticationStatus.NotFound);
+
+            if (string.IsNullOrEmpty(_secureDomain))
+            {
+                UpdateIdentityCookie(context);
+                return context.Response.WriteAsync(string.Empty);
+            }
 
             var nonSecurePrefix = GetNonSecurePrefix(context);
             var securePrefix = GetSecurePrefix();
@@ -432,6 +452,14 @@ namespace OwinFramework.FormIdentification
             var successUrl = context.Request.Query["success"];
 
             upstreamSession.EstablishSession(sessionId);
+            UpdateIdentityCookie(context);
+
+            return RedirectWithCookies(context, successUrl);
+        }
+
+        private void UpdateIdentityCookie(IOwinContext context)
+        {
+            var session = context.GetFeature<ISession>();
 
             string identity;
             IList<string> purpose;
@@ -444,17 +472,16 @@ namespace OwinFramework.FormIdentification
                 context.Response.Cookies.Delete(_cookieName);
             else
                 context.Response.Cookies.Append(
-                    _cookieName, 
-                    identity, 
-                    new CookieOptions 
-                    { 
+                    _cookieName,
+                    identity,
+                    new CookieOptions
+                    {
                         HttpOnly = true,
                         Secure = true,
                         Expires = DateTime.UtcNow + _configuration.RememberMeFor
                     });
 
             _updateIdentityCount++;
-            return RedirectWithCookies(context, successUrl);
         }
 
         private Task RedirectWithCookies(IOwinContext context, string url)
