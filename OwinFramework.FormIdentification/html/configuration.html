@@ -67,6 +67,19 @@
         </tr>
 
         <tr>
+            <td class="property">secureProtcol</td>
+            <td>{secureProtocol.default}</td>
+            <td>{secureProtocol}</td>
+            <td>
+                <p>
+                    Specifies the protocol to use in URLs that need the user identification cookie.
+                    For production environments this must always be set to https. For development
+                    environments you can set this to http to make debugging easier.
+                </p>
+            </td>
+        </tr>
+
+        <tr>
             <td class="property">secureDomain</td>
             <td>{secureDomain.default}</td>
             <td>{secureDomain}</td>
@@ -77,8 +90,18 @@
                     user identification cookie will not be leaked.
                 </p>
                 <p>
+                    If your site url is www.mycompany.com then I would recommend setting this property to
+                    secure.mycompany.com. The servers that handle requests to www.mycompany.com and
+                    secure.mycompany.com must share the same session service for this middleware to work.
+                    The easiest way to do this is just bind www.mycompany.com and secure.mycompany.com
+                    to the same web site. This Form Identification middleware needs to be in the OWIN
+                    pipeline for both www.mycompany.com and secure.mycompany.com. If they are both bound to
+                    the same web site that this is obviously not a problem.
+                </p>
+                <p>
                     Leaving this blank or setting is to the same domain name as the site itself will also
-                    work, but in this case you must run all requests over HTTPS and never use HTTP.
+                    work, but in this case you must ensure that your entire site uses HTTPS and it 
+                    must never uses HTTP.
                 </p>
             </td>
         </tr>

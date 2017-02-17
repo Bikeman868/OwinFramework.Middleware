@@ -14,12 +14,17 @@ namespace OwinFramework.Middleware.TestServer
         static void Main(string[] args)
         {
             const string url = "http://localhost:12345";
+            const string secureUrl = "http://localhost:54321";
 
             try
             {
-                using (WebApp.Start<Startup>(url))
+                var startOptions = new StartOptions
                 {
-                    Console.WriteLine("Test server listening on " + url);
+                    Urls = { url, secureUrl }
+                };
+                using (WebApp.Start<Startup>(startOptions))
+                {
+                    Console.WriteLine("Test server listening on " + url + " and " + secureUrl);
                     Console.WriteLine("Press any key to stop");
                     Console.ReadLine();
                 }

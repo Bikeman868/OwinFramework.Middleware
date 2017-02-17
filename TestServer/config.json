@@ -103,7 +103,8 @@
             "exactVersion": "true"
         },
         "formIdentification": {
-            "secureDomain": "",
+            "secureProtocol": "http",
+            "secureDomain": "localhost:54321",
             "signupPage": "/formId/signup.html",
             "signupSuccessPage": "/welcome.html",
             "signupFailPage": "/formId/signupFail.html",

@@ -1,10 +1,11 @@
 ﻿using System;
 
-namespace OwinFramework.NotFound
+namespace OwinFramework.FormIdentification
 {
     [Serializable]
     internal class FormIdentificationConfiguration
     {
+        public string SecureProtocol { get; set; }
         public string SecureDomain { get; set; }
         
         public string DocumentationPage { get; set; }
@@ -50,6 +51,8 @@ namespace OwinFramework.NotFound
         public FormIdentificationConfiguration()
         {
             SecureDomain = string.Empty;
+            SecureProtocol = "https";
+
             CookieName = "form-identification";
             SessionIdentityName = "form-identification-identity";
             SessionPurposeName = "form-identification-purpose";

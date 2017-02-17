@@ -13,7 +13,6 @@ using OwinFramework.InterfacesV1.Facilities;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.InterfacesV1.Upstream;
 using OwinFramework.MiddlewareHelpers.Analysable;
-using OwinFramework.NotFound;
 
 namespace OwinFramework.FormIdentification
 {
@@ -45,6 +44,7 @@ namespace OwinFramework.FormIdentification
         private FormIdentificationConfiguration _configuration;
 
         private string _secureDomain;
+        private string _secureProtcol;
         private string _cookieName;
         private string _sessionIdentityName;
         private string _sessionPurposeName;
@@ -530,7 +530,7 @@ namespace OwinFramework.FormIdentification
         {
             var securePrefix = string.IsNullOrEmpty(_secureDomain)
                 ? string.Empty
-                : "https://" + _secureDomain;
+                : _secureProtcol + "://" + _secureDomain;
             return securePrefix;
         }
 
@@ -591,6 +591,7 @@ namespace OwinFramework.FormIdentification
             _updateIdentityPage = cleanUrl(configuration.UpdateIdentityPage);
 
             _secureDomain = (configuration.SecureDomain ?? string.Empty).ToLower();
+            _secureProtcol = (configuration.SecureProtocol ?? "https").ToLower();
             _cookieName = (configuration.CookieName ?? string.Empty).ToLower().Replace(' ', '-');
             _sessionIdentityName = (configuration.SessionIdentityName ?? string.Empty).ToLower().Replace(' ', '-');
             _sessionPurposeName = (configuration.SessionPurposeName ?? string.Empty).ToLower().Replace(' ', '-');
@@ -634,6 +635,7 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{updateIdentityPage}", _updateIdentityPage.ToString());
 
             document = document.Replace("{secureDomain}", _secureDomain);
+            document = document.Replace("{secureProtocol}", _secureProtcol);
             document = document.Replace("{cookieName}", _cookieName);
             document = document.Replace("{sessionIdentityName}", _sessionIdentityName);
             document = document.Replace("{sessionPurposeName}", _sessionPurposeName);
@@ -676,6 +678,7 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{updateIdentityPage.default}", defaultConfiguration.UpdateIdentityPage);
 
             document = document.Replace("{secureDomain.default}", defaultConfiguration.SecureDomain);
+            document = document.Replace("{secureProtocol.default}", defaultConfiguration.SecureProtocol);
             document = document.Replace("{cookieName.default}", defaultConfiguration.CookieName);
             document = document.Replace("{sessionIdentityName.default}", defaultConfiguration.SessionIdentityName);
             document = document.Replace("{sessionPurposeName.default}", defaultConfiguration.SessionPurposeName);
@@ -747,10 +750,8 @@ namespace OwinFramework.FormIdentification
                     documentation.Add(
                         new EndpointDocumentation
                         {
-                            RelativePath = string.IsNullOrEmpty(_secureDomain) 
-                                ? _signupPage.Value 
-                                : "https://" + _secureDomain + _signupPage.Value,
-                            Description = "User account creation via email and password",
+                            RelativePath = _signupPage.Value,
+                            Description = "User account creation via email and password. Always POST to this endpoint over HTTPS",
                             Attributes = new List<IEndpointAttributeDocumentation>
                                 {
                                     new EndpointAttributeDocumentation
@@ -784,10 +785,8 @@ namespace OwinFramework.FormIdentification
                     documentation.Add(
                         new EndpointDocumentation
                         {
-                            RelativePath = string.IsNullOrEmpty(_secureDomain)
-                                ? _signinPage.Value
-                                : "https://" + _secureDomain + _signinPage.Value,
-                            Description = "User login via email and password",
+                            RelativePath = _signinPage.Value,
+                            Description = "User login via email and password. Always POST to this endpoint over HTTPS",
                             Attributes = new List<IEndpointAttributeDocumentation>
                                 {
                                     new EndpointAttributeDocumentation
@@ -821,9 +820,7 @@ namespace OwinFramework.FormIdentification
                     documentation.Add(
                         new EndpointDocumentation
                         {
-                            RelativePath = string.IsNullOrEmpty(_secureDomain)
-                                ? _signoutPage.Value
-                                : "https://" + _secureDomain + _signoutPage.Value,
+                            RelativePath = _signoutPage.Value,
                             Description = "User logout",
                             Attributes = new List<IEndpointAttributeDocumentation>
                                 {
@@ -846,9 +843,7 @@ namespace OwinFramework.FormIdentification
                     documentation.Add(
                         new EndpointDocumentation
                         {
-                            RelativePath = string.IsNullOrEmpty(_secureDomain)
-                                ? _sendPasswordResetPage.Value
-                                : "https://" + _secureDomain + _sendPasswordResetPage.Value,
+                            RelativePath = _sendPasswordResetPage.Value,
                             Description = "Request a password reset email to be sent",
                             Attributes = new List<IEndpointAttributeDocumentation>
                                 {
@@ -865,10 +860,8 @@ namespace OwinFramework.FormIdentification
                     documentation.Add(
                         new EndpointDocumentation
                         {
-                            RelativePath = string.IsNullOrEmpty(_secureDomain)
-                                ? _resetPasswordPage.Value
-                                : "https://" + _secureDomain + _resetPasswordPage.Value,
-                            Description = "Resets a user's password. One time use within expiry time",
+                            RelativePath = _resetPasswordPage.Value,
+                            Description = "Resets a user's password. One time use within expiry time. Always POST to this endpoint over HTTPS",
                             Attributes = new List<IEndpointAttributeDocumentation>
                                 {
                                     new EndpointAttributeDocumentation
@@ -904,7 +897,7 @@ namespace OwinFramework.FormIdentification
                         {
                             RelativePath = string.IsNullOrEmpty(_secureDomain)
                                 ? _renewSessionPage.Value
-                                : "https://" + _secureDomain + _renewSessionPage.Value,
+                                : _secureProtcol + "://" + _secureDomain + _renewSessionPage.Value,
                             Description = 
                                 "Identifies the user and adds user identification to the users session. "+
                                 "If the user is logged on then this is transparent to them. If they are not"+
@@ -951,7 +944,7 @@ namespace OwinFramework.FormIdentification
                         {
                             RelativePath = string.IsNullOrEmpty(_secureDomain)
                                 ? _updateIdentityPage.Value
-                                : "https://" + _secureDomain + _updateIdentityPage.Value,
+                                : _secureProtcol + "://" + _secureDomain + _updateIdentityPage.Value,
                             Description =
                                 "Updates the user identification cookie from session",
                             Attributes = new List<IEndpointAttributeDocumentation>
