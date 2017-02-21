@@ -40,6 +40,9 @@ namespace OwinFramework.FormIdentification
         public string SessionIdentityName { get; set; }
         public string SessionPurposeName { get; set; }
         public string SessionStatusName { get; set; }
+        public string SessionRememberMeName { get; set; }
+        public string SessionEmailName { get; set; }
+
         public TimeSpan RememberMeFor { get; set; }
 
         public string EmailFormField { get; set; }
@@ -57,6 +60,9 @@ namespace OwinFramework.FormIdentification
             SessionIdentityName = "form-identification-identity";
             SessionPurposeName = "form-identification-purpose";
             SessionStatusName = "form-identification-status";
+            SessionRememberMeName = "form-identification-rememberme";
+            SessionEmailName = "form-identification-email";
+
             RememberMeFor = TimeSpan.FromDays(90);
 
             DocumentationPage = "/formId/config";

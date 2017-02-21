@@ -38,7 +38,7 @@ namespace OwinFramework.FormIdentification
         private volatile int _signinFailCount;
         private volatile int _signoutCount;
         private volatile int _renewSessionCount;
-        private volatile int _updateIdentityCount;
+        private volatile int _updateRememberMeCount;
 
         private IDisposable _configurationRegistration;
         private FormIdentificationConfiguration _configuration;
@@ -49,6 +49,8 @@ namespace OwinFramework.FormIdentification
         private string _sessionIdentityName;
         private string _sessionPurposeName;
         private string _sessionStatusName;
+        private string _sessionRememberMeName;
+        private string _sessionEmailName;
 
         private PathString _documentationPage;
 
@@ -115,7 +117,7 @@ namespace OwinFramework.FormIdentification
                 if (context.Request.Path == _renewSessionPage)
                     return HandleRenewSession(context);
                 if (context.Request.Path == _updateIdentityPage)
-                    return HandleUpdateIdentity(context);
+                    return HandleRememberMe(context);
                 if (context.Request.Path == _documentationPage)
                     return DocumentConfiguration(context);
             }
@@ -209,13 +211,18 @@ namespace OwinFramework.FormIdentification
 
         #region Account functions
 
+        /// <summary>
+        /// This request is handled in the main site domain when the user POSTs
+        /// the sign up form.
+        /// </summary>
         private Task HandleSignup(IOwinContext context)
         {
             var form = context.Request.ReadFormAsync().Result;
 
             var email = form[_configuration.EmailFormField];
             var password = form[_configuration.PasswordFormField];
-            var rememberMe = form[_configuration.RememberMeFormField] != null;
+            var rememberMe = !string.IsNullOrEmpty(form[_configuration.RememberMeFormField]);
+            var thisUrl = GetThisUrl(context);
 
             bool success;
             string identity = null;
@@ -238,50 +245,57 @@ namespace OwinFramework.FormIdentification
                 if (session == null || upstreamSession == null)
                     throw new Exception("Session middleware is required for Form Identification to work");
 
-                SetSession(session, identity, null, AuthenticationStatus.Authenticated);
+                var authenticationResult = _identityStore.AuthenticateWithCredentials(email, password);
 
-                if (rememberMe)
+                if (authenticationResult.Status != AuthenticationStatus.Authenticated)
+                    throw new Exception("Login failed on newly created account");
+
+                SetSession(
+                    session, 
+                    identity, 
+                    authenticationResult.Purposes, 
+                    authenticationResult.Status, 
+                    rememberMe ? authenticationResult.RememberMeToken : null,
+                    email);
+
+                if (string.IsNullOrEmpty(_secureDomain))
                 {
-                    if (string.IsNullOrEmpty(_secureDomain))
-                    {
-                        UpdateIdentityCookie(context);
-                    }
-                    else
-                    {
-                        var nonSecurePrefix = GetNonSecurePrefix(context);
-                        var securePrefix = GetSecurePrefix();
-                        var thisUrl = GetThisUrl(context);
+                    UpdateRememberMeCookie(context);
+                }
+                else
+                {
+                    var nonSecurePrefix = GetNonSecurePrefix(context);
+                    var securePrefix = GetSecurePrefix();
 
-                        var signupSuccessPage = _signupSuccessPage.HasValue ? nonSecurePrefix + _signupSuccessPage.Value : thisUrl;
+                    var signupSuccessPage = _signupSuccessPage.HasValue ? nonSecurePrefix + _signupSuccessPage.Value : thisUrl;
 
-                        var updateIdentityUrl = securePrefix + _updateIdentityPage.Value;
-                        updateIdentityUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
-                        updateIdentityUrl += "&success=" + Uri.EscapeDataString(signupSuccessPage);
+                    var updateIdentityUrl = securePrefix + _updateIdentityPage.Value;
+                    updateIdentityUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
+                    updateIdentityUrl += "&success=" + Uri.EscapeDataString(signupSuccessPage);
 
-                        return Redirect(context, updateIdentityUrl);
-                    }
+                    return Redirect(context, updateIdentityUrl);
                 }
 
-                if (_signupSuccessPage.HasValue)
-                    return Redirect(context, _signupSuccessPage.Value);
-                return context.Response.WriteAsync(string.Empty);
+                return Redirect(context, _signupSuccessPage.HasValue ? _signupSuccessPage.Value : thisUrl);
             }
 
             _signupFailCount++;
 
-            if (_signupFailPage.HasValue)
-                return Redirect(context, _signupFailPage.Value);
-
-            return context.Response.WriteAsync(string.Empty);
+            return Redirect(context, _signupFailPage.HasValue ? _signupFailPage.Value : thisUrl);
         }
 
+        /// <summary>
+        /// This request is handled in the main site domain when the user POSTs
+        /// the sign in form.
+        /// </summary>
         private Task HandleSignin(IOwinContext context)
         {
             var form = context.Request.ReadFormAsync().Result;
 
             var email = form[_configuration.EmailFormField];
             var password = form[_configuration.PasswordFormField];
-            var rememberMe = form[_configuration.RememberMeFormField] != null;
+            var rememberMe = !string.IsNullOrEmpty(form[_configuration.RememberMeFormField]);
+            var thisUrl = GetThisUrl(context);
 
             bool success;
             IAuthenticationResult authenticationResult = null;
@@ -308,42 +322,40 @@ namespace OwinFramework.FormIdentification
                     session, 
                     authenticationResult.Identity, 
                     authenticationResult.Purposes,
-                    authenticationResult.Status);
+                    authenticationResult.Status,
+                    rememberMe ? authenticationResult.RememberMeToken : null,
+                    email);
 
-                if (rememberMe)
+                if (string.IsNullOrEmpty(_secureDomain))
                 {
-                    if (string.IsNullOrEmpty(_secureDomain))
-                    {
-                        UpdateIdentityCookie(context);
-                    }
-                    else
-                    {
-                        var nonSecurePrefix = GetNonSecurePrefix(context);
-                        var securePrefix = GetSecurePrefix();
-                        var thisUrl = GetThisUrl(context);
+                    UpdateRememberMeCookie(context);
+                }
+                else
+                {
+                    var nonSecurePrefix = GetNonSecurePrefix(context);
+                    var securePrefix = GetSecurePrefix();
 
-                        var signinSuccessPage = _signinSuccessPage.HasValue ? nonSecurePrefix + _signinSuccessPage.Value : thisUrl;
+                    var signinSuccessPage = _signinSuccessPage.HasValue ? nonSecurePrefix + _signinSuccessPage.Value : thisUrl;
 
-                        var updateIdentityUrl = securePrefix + _updateIdentityPage.Value;
-                        updateIdentityUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
-                        updateIdentityUrl += "&success=" + Uri.EscapeDataString(signinSuccessPage);
+                    var updateIdentityUrl = securePrefix + _updateIdentityPage.Value;
+                    updateIdentityUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
+                    updateIdentityUrl += "&success=" + Uri.EscapeDataString(signinSuccessPage);
 
-                        return Redirect(context, updateIdentityUrl);
-                    }
+                    return Redirect(context, updateIdentityUrl);
                 }
 
-                if (_signinSuccessPage.HasValue)
-                    return Redirect(context, _signinSuccessPage.Value);
-                return context.Response.WriteAsync(string.Empty);
+                return Redirect(context, _signinSuccessPage.HasValue ? _signinSuccessPage.Value : thisUrl);
             }
 
             _signinFailCount++;
 
-            if (_signinFailPage.HasValue)
-                return Redirect(context, _signinFailPage.Value);
-            return context.Response.WriteAsync(string.Empty);
+            return Redirect(context, _signinFailPage.HasValue ? _signinFailPage.Value : thisUrl);
         }
 
+        /// <summary>
+        /// This request is handled in the main site domain when the user POSTs
+        /// the sign out form.
+        /// </summary>
         private Task HandleSignout(IOwinContext context)
         {
             var upstreamSession = context.GetFeature<IUpstreamSession>();
@@ -353,11 +365,11 @@ namespace OwinFramework.FormIdentification
 
             _signoutCount++;
 
-            SetSession(session, null, null, AuthenticationStatus.NotFound);
+            SetSession(session, null, null, AuthenticationStatus.NotFound, null, null);
 
             if (string.IsNullOrEmpty(_secureDomain))
             {
-                UpdateIdentityCookie(context);
+                UpdateRememberMeCookie(context);
                 return context.Response.WriteAsync(string.Empty);
             }
 
@@ -374,23 +386,10 @@ namespace OwinFramework.FormIdentification
             return Redirect(context, updateIdentityUrl);
         }
 
-        private string GetThisUrl(IOwinContext context)
-        {
-            var thisUrl = GetNonSecurePrefix(context) + context.Request.Path;
-            if (context.Request.QueryString.HasValue && !string.IsNullOrEmpty(context.Request.QueryString.Value))
-                thisUrl += "?" + context.Request.QueryString.Value;
-            return thisUrl;
-        }
-
-        private Task HandleSendPasswordReset(IOwinContext context)
-        {
-            var form = context.Request.ReadFormAsync().Result;
-
-            var email = form[_configuration.EmailFormField];
-
-            throw new NotImplementedException();
-        }
-
+        /// <summary>
+        /// This request is handled in the main site domain when the user POSTs
+        /// the change password form.
+        /// </summary>
         private Task HandleChangePassword(IOwinContext context)
         {
             var form = context.Request.ReadFormAsync().Result;
@@ -399,20 +398,60 @@ namespace OwinFramework.FormIdentification
             var password = form[_configuration.PasswordFormField];
             var newPassword = form[_configuration.NewPasswordFormField];
 
+            var thisUrl = GetThisUrl(context);
+
+            var authenticationResult = _identityStore.AuthenticateWithCredentials(email, password);
+            if (authenticationResult.Status != AuthenticationStatus.Authenticated)
+                return Redirect(context, _changePasswordFailPage.HasValue ? _changePasswordFailPage.Value : thisUrl);
+
+            var credential = _identityStore.GetRememberMeCredential(authenticationResult.RememberMeToken);
+            if (_identityStore.ChangePassword(credential, newPassword))
+                return Redirect(context, _changePasswordSuccessPage.HasValue ? _changePasswordSuccessPage.Value : thisUrl);
+
+            return Redirect(context, _changePasswordFailPage.HasValue ? _changePasswordFailPage.Value : thisUrl);
+        }
+
+        /// <summary>
+        /// This request is handled in the main site domain when the user POSTs
+        /// the send password reset form.
+        /// </summary>
+        private Task HandleSendPasswordReset(IOwinContext context)
+        {
+            var form = context.Request.ReadFormAsync().Result;
+            var email = form[_configuration.EmailFormField];
+
+            var thisUrl = GetThisUrl(context);
+
+            var credential = _identityStore.GetUsernameCredential(email);
+            if (credential == null)
+                return Redirect(context, _sendPasswordResetFailPage.HasValue ? _sendPasswordResetFailPage.Value : thisUrl);
+
+            // TODO: send password reset email
+
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// This request is handled in the main site domain when the user POSTs
+        /// the reset password form.
+        /// </summary>
         private Task HandleResetPassword(IOwinContext context)
         {
             var form = context.Request.ReadFormAsync().Result;
 
+            var token = form[_configuration.TokenFormField];
             var email = form[_configuration.EmailFormField];
-            var password = form[_configuration.PasswordFormField];
-            var rememberMe = form[_configuration.RememberMeFormField] != null;
+            var newPassword = form[_configuration.NewPasswordFormField];
+
+            // TODO: reset password from email link
 
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// This request is handled in the secure sub-domain when the users session expires.
+        /// It tries to log the user in again using the remember me cookie.
+        /// </summary>
         private Task HandleRenewSession(IOwinContext context)
         {
             var sessionId = context.Request.Query["sid"];
@@ -428,20 +467,34 @@ namespace OwinFramework.FormIdentification
             upstreamSession.EstablishSession(sessionId);
             var session = context.GetFeature<ISession>();
 
-            var identity = context.Request.Cookies[_cookieName];
-            // TODO: decrypt token and split into identity and purposes
-
-            if (string.IsNullOrEmpty(identity))
+            var rememberMeToken = context.Request.Cookies[_cookieName];
+            if (string.IsNullOrEmpty(rememberMeToken))
             {
-                SetSession(session, _anonymousUserIdentity, null, AuthenticationStatus.NotFound);
+                SetSession(session, _anonymousUserIdentity, null, AuthenticationStatus.NotFound, null, null);
                 return Redirect(context, failUrl);
             }
 
-            session.Set(_sessionIdentityName, identity);
-            return Redirect(context, successUrl);
+            var authenticationResult = _identityStore.RememberMe(rememberMeToken);
+            SetSession(
+                session, 
+                authenticationResult.Identity, 
+                authenticationResult.Purposes, 
+                authenticationResult.Status, 
+                authenticationResult.RememberMeToken,
+                null);
+
+            return Redirect(
+                context, 
+                authenticationResult.Status == AuthenticationStatus.Authenticated 
+                    ? successUrl : failUrl);
         }
 
-        private Task HandleUpdateIdentity(IOwinContext context)
+        /// <summary>
+        /// This request is handled on the secure sub-domain whenever the user logs in or out.
+        /// It is responsible for setting or clearing the cookie thet is stored in the 
+        /// secure sub-domain.
+        /// </summary>
+        private Task HandleRememberMe(IOwinContext context)
         {
             var session = context.GetFeature<ISession>();
             var upstreamSession = context.GetFeature<IUpstreamSession>();
@@ -452,28 +505,28 @@ namespace OwinFramework.FormIdentification
             var successUrl = context.Request.Query["success"];
 
             upstreamSession.EstablishSession(sessionId);
-            UpdateIdentityCookie(context);
+            UpdateRememberMeCookie(context);
 
             return RedirectWithCookies(context, successUrl);
         }
 
-        private void UpdateIdentityCookie(IOwinContext context)
+        private void UpdateRememberMeCookie(IOwinContext context)
         {
             var session = context.GetFeature<ISession>();
 
             string identity;
             IList<string> purpose;
             AuthenticationStatus status;
-            GetSession(session, out identity, out purpose, out status);
+            string rememberMeToken;
+            string email;
+            GetSession(session, out identity, out purpose, out status, out rememberMeToken, out email);
 
-            // TODO: Store purposes in cookie with encryption
-
-            if (string.IsNullOrEmpty(identity))
+            if (string.IsNullOrEmpty(rememberMeToken))
                 context.Response.Cookies.Delete(_cookieName);
             else
                 context.Response.Cookies.Append(
                     _cookieName,
-                    identity,
+                    rememberMeToken,
                     new CookieOptions
                     {
                         HttpOnly = true,
@@ -481,7 +534,7 @@ namespace OwinFramework.FormIdentification
                         Expires = DateTime.UtcNow + _configuration.RememberMeFor
                     });
 
-            _updateIdentityCount++;
+            _updateRememberMeCount++;
         }
 
         private Task RedirectWithCookies(IOwinContext context, string url)
@@ -501,7 +554,9 @@ namespace OwinFramework.FormIdentification
             ISession session,
             string identity,
             IList<string> purposes,
-            AuthenticationStatus status)
+            AuthenticationStatus status,
+            string rememberMeToken,
+            string email)
         {
             session.Set(_sessionIdentityName, identity ?? string.Empty);
             session.Set(_sessionPurposeName,
@@ -509,17 +564,31 @@ namespace OwinFramework.FormIdentification
                 ? new List<string>()
                 : purposes.ToList());
             session.Set(_sessionStatusName, status);
+            session.Set(_sessionRememberMeName, rememberMeToken);
+            session.Set(_sessionEmailName, email);
         }
 
         private void GetSession(
             ISession session,
             out string identity,
             out IList<string> purposes,
-            out AuthenticationStatus status)
+            out AuthenticationStatus status,
+            out string rememberMeToken,
+            out string email)
         {
             identity = session.Get<string>(_sessionIdentityName) ?? string.Empty;
             purposes = session.Get<List<string>>(_sessionPurposeName) ?? new List<string>();
             status = session.Get<AuthenticationStatus>(_sessionStatusName);
+            rememberMeToken = session.Get<string>(_sessionRememberMeName);
+            email = session.Get<string>(_sessionEmailName);
+        }
+
+        private string GetThisUrl(IOwinContext context)
+        {
+            var thisUrl = GetNonSecurePrefix(context) + context.Request.Path;
+            if (context.Request.QueryString.HasValue && !string.IsNullOrEmpty(context.Request.QueryString.Value))
+                thisUrl += "?" + context.Request.QueryString.Value;
+            return thisUrl;
         }
 
         #endregion
@@ -596,6 +665,8 @@ namespace OwinFramework.FormIdentification
             _sessionIdentityName = (configuration.SessionIdentityName ?? string.Empty).ToLower().Replace(' ', '-');
             _sessionPurposeName = (configuration.SessionPurposeName ?? string.Empty).ToLower().Replace(' ', '-');
             _sessionStatusName = (configuration.SessionStatusName ?? string.Empty).ToLower().Replace(' ', '-');
+            _sessionRememberMeName = (configuration.SessionRememberMeName ?? string.Empty).ToLower().Replace(' ', '-');
+            _sessionEmailName = (configuration.SessionEmailName ?? string.Empty).ToLower().Replace(' ', '-');
         }
 
         #endregion
@@ -640,6 +711,9 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{sessionIdentityName}", _sessionIdentityName);
             document = document.Replace("{sessionPurposeName}", _sessionPurposeName);
             document = document.Replace("{sessionStatusName}", _sessionStatusName);
+            document = document.Replace("{SessionRememberMeName}", _sessionRememberMeName);
+            document = document.Replace("{SessionEmailName}", _sessionEmailName);
+
             document = document.Replace("{rememberMeFor}", _configuration.RememberMeFor.ToString());
 
             document = document.Replace("{emailFormField}", _configuration.EmailFormField);
@@ -683,6 +757,9 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{sessionIdentityName.default}", defaultConfiguration.SessionIdentityName);
             document = document.Replace("{sessionPurposeName.default}", defaultConfiguration.SessionPurposeName);
             document = document.Replace("{sessionStatusName.default}", defaultConfiguration.SessionStatusName);
+            document = document.Replace("{SessionRememberMeName.default}", defaultConfiguration.SessionRememberMeName);
+            document = document.Replace("{SessionEmailName.default}", defaultConfiguration.SessionEmailName);
+
             document = document.Replace("{rememberMeFor.default}", defaultConfiguration.RememberMeFor.ToString());
 
             document = document.Replace("{emailFormField.default}", defaultConfiguration.EmailFormField);
@@ -1046,6 +1123,14 @@ namespace OwinFramework.FormIdentification
                         Description = "The number of times the user identification was updated in a session",
                         Explanation = "These session refreshes happen whenever someone logs in, or gets reauthenticated because their session timed out"
                     });
+                stats.Add(
+                    new StatisticInformation
+                    {
+                        Id = "UpdateRememberMeCount",
+                        Name = "Update remember me count",
+                        Description = "The number of times a remember me token was stored in the users cookies",
+                        Explanation = "These updates happen whenever a user logs in with credentials or logs out"
+                    });
                 return stats;
             }
         }
@@ -1060,6 +1145,7 @@ namespace OwinFramework.FormIdentification
                 case "SigninFailCount": return new IntStatistic(() => _signinFailCount);
                 case "SignoutCount": return new IntStatistic(() => _signoutCount);
                 case "RenewSessionCount": return new IntStatistic(() => _renewSessionCount);
+                case "UpdateRememberMeCount": return new IntStatistic(() => _updateRememberMeCount);
             }
             return null;
         }

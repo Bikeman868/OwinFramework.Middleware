@@ -133,7 +133,7 @@
             {
                 "name":"Identity", 
                 "type":"MySql", 
-                "connectionString":"Server=devdb1;Database=identity;Uid=test;Pwd=;"
+                "connectionString":"Server=localhost;Database=identity;Uid=test;Pwd=;"
             }
         ],
         "fallbackPolicies":[
