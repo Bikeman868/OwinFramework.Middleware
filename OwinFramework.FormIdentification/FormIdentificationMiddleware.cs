@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Mail;
+using System.Net.Mime;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -31,6 +33,7 @@ namespace OwinFramework.FormIdentification
         string IMiddleware.Name { get; set; }
 
         private readonly IIdentityStore _identityStore;
+        private readonly ITokenStore _tokenStore;
 
         private volatile int _signupSuccessCount;
         private volatile int _signupFailCount;
@@ -81,9 +84,11 @@ namespace OwinFramework.FormIdentification
         private PathString _updateIdentityPage;
 
         public FormIdentificationMiddleware(
-            IIdentityStore identityStore)
+            IIdentityStore identityStore, 
+            ITokenStore tokenStore)
         {
             _identityStore = identityStore;
+            _tokenStore = tokenStore;
 
             ConfigurationChanged(new FormIdentificationConfiguration());
             this.RunAfter<ISession>();
@@ -426,9 +431,35 @@ namespace OwinFramework.FormIdentification
             if (credential == null)
                 return Redirect(context, _sendPasswordResetFailPage.HasValue ? _sendPasswordResetFailPage.Value : thisUrl);
 
-            // TODO: send password reset email
+            var tokenString = _tokenStore.CreateToken(_configuration.PasswordResetTokenType, "ResetPassword", email);
 
-            throw new NotImplementedException();
+            var emailHtml = GetEmbeddedResource("PasswordResetEmail.html");
+            var emailText = GetEmbeddedResource("PasswordResetEmail.txt");
+
+            var pageUrl = GetNonSecurePrefix(context) + _resetPasswordPage;
+
+            emailHtml = emailHtml
+                .Replace("{email}", email)
+                .Replace("{page}", pageUrl)
+                .Replace("{token}", tokenString);
+
+            emailText = emailText
+                .Replace("{email}", email)
+                .Replace("{page}", pageUrl)
+                .Replace("{token}", tokenString);
+
+            var fromEmail = _configuration.PasswordResetEmailFrom;
+            if (string.IsNullOrWhiteSpace(fromEmail))
+                fromEmail = "password-reset@" + context.Request.Host;
+
+            var mailMessage = new MailMessage(fromEmail, email, _configuration.PasswordResetEmailSubject, emailText);
+            mailMessage.Subject = _configuration.PasswordResetEmailSubject;
+            mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(emailHtml, new ContentType("text/html")));
+
+            var emailClient = new SmtpClient();
+            emailClient.Send(mailMessage);
+
+            return Redirect(context, _sendPasswordResetSuccessPage.HasValue ? _sendPasswordResetSuccessPage.Value : thisUrl);
         }
 
         /// <summary>
@@ -439,13 +470,34 @@ namespace OwinFramework.FormIdentification
         {
             var form = context.Request.ReadFormAsync().Result;
 
-            var token = form[_configuration.TokenFormField];
+            var tokenString = form[_configuration.TokenFormField];
             var email = form[_configuration.EmailFormField];
             var newPassword = form[_configuration.NewPasswordFormField];
 
-            // TODO: reset password from email link
+            if (string.IsNullOrEmpty(tokenString))
+                tokenString = context.Request.Query["token"];
 
-            throw new NotImplementedException();
+            var thisUrl = GetThisUrl(context);
+
+            var token = _tokenStore.GetToken(_configuration.PasswordResetTokenType, tokenString, "ResetPassword", email);
+            if (token.Status == TokenStatus.Allowed)
+            {
+                var credential =_identityStore.GetUsernameCredential(email);
+                if (credential != null)
+                {
+                    if (_identityStore.ChangePassword(credential, newPassword))
+                    {
+                        _tokenStore.DeleteToken(tokenString);
+                        return Redirect(
+                            context,
+                            _resetPasswordSuccessPage.HasValue 
+                                ? _resetPasswordSuccessPage.Value 
+                                : thisUrl);
+                    }
+                }
+            }
+
+            return Redirect(context, _resetPasswordFailPage.HasValue ? _resetPasswordFailPage.Value : thisUrl);
         }
 
         /// <summary>
