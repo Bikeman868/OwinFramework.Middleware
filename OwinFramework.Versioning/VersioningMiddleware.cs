@@ -119,6 +119,7 @@ namespace OwinFramework.Versioning
             document = document.Replace("{fileExtensions}", f(_configuration.FileExtensions));
             document = document.Replace("{browserCacheTime}", _configuration.BrowserCacheTime.ToString());
             document = document.Replace("{exactVersion}", _configuration.ExactVersion.ToString());
+            document = document.Replace("{analyticsEnabled}", _configuration.AnalyticsEnabled.ToString());
 
             var defaultConfiguration = new VersioningConfiguration();
             document = document.Replace("{documentationRootUrl.default}", defaultConfiguration.DocumentationRootUrl);
@@ -127,6 +128,7 @@ namespace OwinFramework.Versioning
             document = document.Replace("{fileExtensions.default}", f(defaultConfiguration.FileExtensions));
             document = document.Replace("{browserCacheTime.default}", defaultConfiguration.BrowserCacheTime.ToString());
             document = document.Replace("{exactVersion.default}", defaultConfiguration.ExactVersion.ToString());
+            document = document.Replace("{analyticsEnabled.default}", defaultConfiguration.AnalyticsEnabled.ToString());
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
