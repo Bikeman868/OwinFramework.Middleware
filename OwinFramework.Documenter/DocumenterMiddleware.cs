@@ -121,12 +121,16 @@ namespace OwinFramework.Documenter
                 throw new Exception("The documenter can only be used if you used OwinFramework to build your OWIN pipeline.");
 
             var documentation = new List<IEndpointDocumentation>();
-            AddDocumentation(documentation, router);
+            var analysedMiddleware = new List<Type>();
+            AddDocumentation(documentation, router, analysedMiddleware);
 
             return documentation.OrderBy(e => e.RelativePath).ToList();
         }
 
-        private void AddDocumentation(IList<IEndpointDocumentation> documentation, IRouter router)
+        private void AddDocumentation(
+            IList<IEndpointDocumentation> documentation, 
+            IRouter router, 
+            IList<Type> analysedMiddleware)
         {
             if (router.Segments != null)
             {
@@ -136,14 +140,21 @@ namespace OwinFramework.Documenter
                     {
                         foreach (var middleware in segment.Middleware)
                         {
-                            AddDocumentation(documentation, middleware);
+                            if (!analysedMiddleware.Contains(middleware.GetType()))
+                            {
+                                analysedMiddleware.Add(middleware.GetType());
+                                AddDocumentation(documentation, middleware, analysedMiddleware);
+                            }
                         }
                     }
                 }
             }
         }
 
-        private void AddDocumentation(IList<IEndpointDocumentation> documentation, IMiddleware middleware)
+        private void AddDocumentation(
+            IList<IEndpointDocumentation> documentation, 
+            IMiddleware middleware, 
+            IList<Type> analysedMiddleware)
         {
             var selfDocumenting = middleware as ISelfDocumenting;
             if (selfDocumenting != null)
@@ -156,7 +167,7 @@ namespace OwinFramework.Documenter
             }
 
             var router = middleware as IRouter;
-            if (router != null) AddDocumentation(documentation, router);
+            if (router != null) AddDocumentation(documentation, router, analysedMiddleware);
         }
 
         #endregion

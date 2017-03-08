@@ -307,13 +307,14 @@ namespace OwinFramework.AnalysisReporter
                 throw new Exception("The analysis reporter can only be used if you used OwinFramework to build your OWIN pipeline.");
 
             var stats = new List<AnalysableInfo>();
-            AddStats(stats, router);
+            var analysedMiddleware = new List<IMiddleware>();
+            AddStats(stats, router, analysedMiddleware);
 
             _stats = stats;
             return stats;
         }
 
-        private void AddStats(IList<AnalysableInfo> stats, IRouter router)
+        private void AddStats(IList<AnalysableInfo> stats, IRouter router, IList<IMiddleware> analysedMiddleware)
         {
             if (router.Segments != null)
             {
@@ -323,14 +324,18 @@ namespace OwinFramework.AnalysisReporter
                     {
                         foreach (var middleware in segment.Middleware)
                         {
-                            AddStats(stats, middleware);
+                            if (!analysedMiddleware.Contains(middleware))
+                            {
+                                analysedMiddleware.Add(middleware);
+                                AddStats(stats, middleware, analysedMiddleware);
+                            }
                         }
                     }
                 }
             }
         }
 
-        private void AddStats(IList<AnalysableInfo> stats, IMiddleware middleware)
+        private void AddStats(IList<AnalysableInfo> stats, IMiddleware middleware, IList<IMiddleware> analysedMiddleware)
         {
             var analysable = middleware as IAnalysable;
             if (analysable != null)
@@ -382,7 +387,7 @@ namespace OwinFramework.AnalysisReporter
             }
 
             var router = middleware as IRouter;
-            if (router != null) AddStats(stats, router);
+            if (router != null) AddStats(stats, router, analysedMiddleware);
         }
 
         private class AnalysableInfo
