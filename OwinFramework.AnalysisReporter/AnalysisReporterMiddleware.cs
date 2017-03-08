@@ -28,6 +28,8 @@ namespace OwinFramework.AnalysisReporter
 
         public string Name { get; set; }
 
+        private DateTime _nextUpdate;
+
         public AnalysisReporterMiddleware()
         {
             this.RunAfter<IAuthorization>(null, false);
@@ -300,7 +302,10 @@ namespace OwinFramework.AnalysisReporter
 
         private IList<AnalysableInfo> GetAnalysisData(IOwinContext context)
         {
-            if (_stats != null) return _stats;
+            if (_stats != null &&  DateTime.UtcNow < _nextUpdate) 
+                return _stats;
+
+            _nextUpdate = DateTime.UtcNow.AddMinutes(1);
 
             var router = context.Get<IRouter>("OwinFramework.Router");
             if (router == null)
