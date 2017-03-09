@@ -140,11 +140,7 @@ namespace OwinFramework.Documenter
                     {
                         foreach (var middleware in segment.Middleware)
                         {
-                            if (!analysedMiddleware.Contains(middleware.GetType()))
-                            {
-                                analysedMiddleware.Add(middleware.GetType());
-                                AddDocumentation(documentation, middleware, analysedMiddleware);
-                            }
+                            AddDocumentation(documentation, middleware, analysedMiddleware);
                         }
                     }
                 }
@@ -159,10 +155,14 @@ namespace OwinFramework.Documenter
             var selfDocumenting = middleware as ISelfDocumenting;
             if (selfDocumenting != null)
             {
-                if (selfDocumenting.Endpoints != null)
+                if (!analysedMiddleware.Contains(middleware.GetType()))
                 {
-                    foreach (var endpoint in selfDocumenting.Endpoints)
-                        documentation.Add(endpoint);
+                    analysedMiddleware.Add(middleware.GetType());
+                    if (selfDocumenting.Endpoints != null)
+                    {
+                        foreach (var endpoint in selfDocumenting.Endpoints)
+                            documentation.Add(endpoint);
+                    }
                 }
             }
 
