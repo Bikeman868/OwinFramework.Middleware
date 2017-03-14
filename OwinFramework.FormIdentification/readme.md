@@ -139,3 +139,42 @@ configuration management then your configuration file can be set up like this:
 
 ```
 
+## Templates
+
+This middleware contains templates embedded into the DLL. These templates are described
+in more detail below. When the middleware needs one of these templates it will first
+look in the main web site folder for a file with that name, and if none is found will
+revert back to the embedded templates inside the DLL.
+
+To customize these templates you just have to deploy a file into the root folder of
+your site. The template files are:
+
+### PasswordResetEmail.txt
+
+This is a template for the plain text version of the email that gets sent out when users 
+request a password reset. You should customize this template to make it more specific to 
+your website. When customizing this template, start from the built in one which is in the
+`html` folder in the source code.
+
+### PasswordResetEmail.txt
+
+This is a template for the html version of the email that gets sent out when users 
+request a password reset. You should customize this template to make it more specific to 
+your website. When customizing this template, start from the built in one which is in the
+`html` folder in the source code.
+
+### configuration.html
+
+This is the template for a page that describes the configuration options for this
+middleware. It is unlikely that you will want to override this template.
+
+### description.html
+
+This template allows the middleware to be self-documenting. It is unlikely that you 
+will want to override this template.
+
+### redirect.html
+
+This template is used for redirections from the secure to the non-secure pages where
+a cookie must be set before redirecting to the other domain. It is unlikely that you 
+will want to override this template.

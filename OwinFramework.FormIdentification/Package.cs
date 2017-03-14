@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using Ioc.Modules;
+using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Facilities;
 
 namespace OwinFramework.FormIdentification
@@ -15,7 +16,9 @@ namespace OwinFramework.FormIdentification
             {
                 return new List<IocRegistration>
                 {
-                    new IocRegistration().Init<IIdentityStore>()
+                    new IocRegistration().Init<IIdentityStore>(),
+                    new IocRegistration().Init<IHostingEnvironment>(),
+                    new IocRegistration().Init<ITokenStore>()
                 };
             }
         }
