@@ -28,6 +28,8 @@ namespace OwinFramework.AnalysisReporter
 
         public string Name { get; set; }
 
+        private DateTime _nextUpdate;
+
         public AnalysisReporterMiddleware()
         {
             this.RunAfter<IAuthorization>(null, false);
@@ -300,20 +302,24 @@ namespace OwinFramework.AnalysisReporter
 
         private IList<AnalysableInfo> GetAnalysisData(IOwinContext context)
         {
-            if (_stats != null) return _stats;
+            if (_stats != null &&  DateTime.UtcNow < _nextUpdate) 
+                return _stats;
+
+            _nextUpdate = DateTime.UtcNow.AddMinutes(1);
 
             var router = context.Get<IRouter>("OwinFramework.Router");
             if (router == null)
                 throw new Exception("The analysis reporter can only be used if you used OwinFramework to build your OWIN pipeline.");
 
             var stats = new List<AnalysableInfo>();
-            AddStats(stats, router);
+            var analysedMiddleware = new List<IMiddleware>();
+            AddStats(stats, router, analysedMiddleware);
 
             _stats = stats;
             return stats;
         }
 
-        private void AddStats(IList<AnalysableInfo> stats, IRouter router)
+        private void AddStats(IList<AnalysableInfo> stats, IRouter router, IList<IMiddleware> analysedMiddleware)
         {
             if (router.Segments != null)
             {
@@ -323,14 +329,18 @@ namespace OwinFramework.AnalysisReporter
                     {
                         foreach (var middleware in segment.Middleware)
                         {
-                            AddStats(stats, middleware);
+                            if (!analysedMiddleware.Contains(middleware))
+                            {
+                                analysedMiddleware.Add(middleware);
+                                AddStats(stats, middleware, analysedMiddleware);
+                            }
                         }
                     }
                 }
             }
         }
 
-        private void AddStats(IList<AnalysableInfo> stats, IMiddleware middleware)
+        private void AddStats(IList<AnalysableInfo> stats, IMiddleware middleware, IList<IMiddleware> analysedMiddleware)
         {
             var analysable = middleware as IAnalysable;
             if (analysable != null)
@@ -382,7 +392,7 @@ namespace OwinFramework.AnalysisReporter
             }
 
             var router = middleware as IRouter;
-            if (router != null) AddStats(stats, router);
+            if (router != null) AddStats(stats, router, analysedMiddleware);
         }
 
         private class AnalysableInfo
