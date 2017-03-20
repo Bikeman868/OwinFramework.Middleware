@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
+using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Facilities;
 using OwinFramework.InterfacesV1.Middleware;
@@ -25,7 +26,7 @@ namespace OwinFramework.FormIdentification
         ISelfDocumenting,
         IAnalysable
     {
-        private const string _anonymousUserIdentity = "urn:form.identity.anonymous:";
+        private const string _anonymousUserIdentity = "urn:form.identity:anonymous:";
 
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
@@ -34,6 +35,7 @@ namespace OwinFramework.FormIdentification
 
         private readonly IIdentityStore _identityStore;
         private readonly ITokenStore _tokenStore;
+        private readonly IHostingEnvironment _hostingEnvironment;
 
         private volatile int _signupSuccessCount;
         private volatile int _signupFailCount;
@@ -85,10 +87,12 @@ namespace OwinFramework.FormIdentification
 
         public FormIdentificationMiddleware(
             IIdentityStore identityStore, 
-            ITokenStore tokenStore)
+            ITokenStore tokenStore,
+            IHostingEnvironment hostingEnvironment)
         {
             _identityStore = identityStore;
             _tokenStore = tokenStore;
+            _hostingEnvironment = hostingEnvironment;
 
             ConfigurationChanged(new FormIdentificationConfiguration());
             this.RunAfter<ISession>();
@@ -1208,6 +1212,15 @@ namespace OwinFramework.FormIdentification
 
         private string GetEmbeddedResource(string filename)
         {
+            var filePath = _hostingEnvironment.MapPath(filename);
+            if (File.Exists(filePath))
+            {
+                using (var reader = File.OpenText(filePath))
+                {
+                    return reader.ReadToEnd();
+                }
+            }
+
             var scriptResourceName = Assembly.GetExecutingAssembly()
                 .GetManifestResourceNames()
                 .FirstOrDefault(n => n.Contains(filename));
