@@ -12,9 +12,11 @@
 
 * Indented trace output
 
-## Medium term
+* Forms identification email verification and change email address
 
-* Forms identification middleware
+* Identification middleware exposes claims to downstream middleware
+
+## Medium term
 
 * Certificate based identification middleware
 
