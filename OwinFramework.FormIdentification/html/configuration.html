@@ -20,25 +20,25 @@
             border-collapse: collapse;
         }
 
-            table.properties th {
-                border-width: 1px;
-                padding: 8px;
-                border-style: solid;
-                border-color: #666666;
-                background-color: #dedede;
-            }
+        table.properties th {
+            border-width: 1px;
+            padding: 8px;
+            border-style: solid;
+            border-color: #666666;
+            background-color: #dedede;
+        }
 
-            table.properties td {
-                border-width: 1px;
-                padding: 8px;
-                border-style: solid;
-                border-color: #666666;
-                background-color: #ffffff;
-            }
+        table.properties td {
+            border-width: 1px;
+            padding: 8px;
+            border-style: solid;
+            border-color: #666666;
+            background-color: #ffffff;
+        }
 
-                table.properties td.property {
-                    font-weight: bold;
-                }
+        table.properties td.property {
+            font-weight: bold;
+        }
 
         span.property {
             font-weight: bold;
@@ -55,6 +55,7 @@
         <li>Create an account with an email address and a password</li>
         <li>Remember me by storing a cookie on my browser so I don't have to log in again</li>
         <li>Log in, log out and change password</li>
+        <li>Change my email address</li>
         <li>Request a password reset email to be sent and use this email to reset the password</li>
     </ul>
     <p>The Form Identification middleware in the Owin Framework supports the following configuration options:</p>
@@ -232,6 +233,12 @@
             <td>The name of the form field that contains the users email address.</td>
         </tr>
         <tr>
+            <td class="property">newEmailFormField</td>
+            <td>{newEmailFormField.default}</td>
+            <td>{newEmailFormField}</td>
+            <td>The name of the form field that contains the users new email address when the user POSTs a request to change their email address.</td>
+        </tr>
+        <tr>
             <td class="property">passwordFormField</td>
             <td>{passwordFormField.default}</td>
             <td>{passwordFormField}</td>
@@ -241,7 +248,7 @@
             <td class="property">newPasswordFormField</td>
             <td>{newPasswordFormField.default}</td>
             <td>{newPasswordFormField}</td>
-            <td>The name of the form field that contains the users new password.</td>
+            <td>The name of the form field that contains the users new password when the user POSTs a request to change their password.</td>
         </tr>
         <tr>
             <td class="property">rememberMeFormField</td>
@@ -309,6 +316,13 @@
             <td><span class="property">signoutPage</span><br />{signoutPage.default}<br />{signoutPage}</td>
             <td><span class="property">signoutSuccessPage</span><br />{signoutSuccessPage.default}<br />{signoutSuccessPage}</td>
             <td><i>Log out can not fail</i></td>
+        </tr>
+
+        <tr>
+            <td>Change email</td>
+            <td><span class="property">changeEmailPage</span><br />{changeEmailPage.default}<br />{changeEmailPage}</td>
+            <td><span class="property">changeEmailSuccessPage</span><br />{changeEmailSuccessPage.default}<br />{changeEmailSuccessPage}</td>
+            <td><span class="property">changeEmailFailPage</span><br />{changeEmailFailPage.default}<br />{changeEmailFailPage}</td>
         </tr>
 
         <tr>

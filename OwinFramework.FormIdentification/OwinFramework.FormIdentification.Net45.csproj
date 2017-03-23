@@ -82,6 +82,12 @@
     <EmbeddedResource Include="html\PasswordResetEmail.html" />
     <EmbeddedResource Include="html\PasswordResetEmail.txt" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="html\EmailChangeEmail.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="html\EmailChangeEmail.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

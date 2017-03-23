@@ -71,9 +71,27 @@
                 </td>
             </tr>
             <tr>
+                <td><a href="/FormId/changeEmail.html">/FormId/changeEmail.html</a></td>
+                <td>A form that you can use to change your email address</td>
+                <td>
+                    The Form Identification middleware is configured to handle POSTs to this
+                    URL. The page is static HTML containing a form with a submit button.
+                </td>
+            </tr>
+            <tr>
                 <td><a href="/owin/pipeline">/owin/pipeline</a></td>
                 <td>Visual representation of the OWIN pipeline</td>
                 <td>The RouteVisualizer middleware is configured <a href="/owin/pipeline/docs/configuration">here</a> to display this visualization at this URL.</td>
+            </tr>
+            <tr>
+                <td><a href="/owin/analytics">/owin/analytics</a></td>
+                <td>Analytic information from configured middleware</td>
+                <td>
+                    The AnalysisReporter middleware is configured
+                    <a href="/owin/analytics/docs/configuration">here</a> to return analysis reports at this URL.
+                    The reporter gathers analtyics from any middleware that implements the
+                    <span class="code">IAnalysable</span> interface.
+                </td>
             </tr>
             <tr>
                 <td><a href="/owin/endpoints">/owin/endpoints</a></td>
@@ -110,16 +128,6 @@
                 <td>
                     The Versioning middleware will strip the version number out of the request before
                     the Dart middleware sees it, so this will work identically to /ui/favicon.ico.
-                </td>
-            </tr>
-            <tr>
-                <td><a href="/owin/analytics">/owin/analytics</a></td>
-                <td>Analytic information from configured middleware</td>
-                <td>
-                    The AnalysisReporter middleware is configured
-                    <a href="/owin/analytics/docs/configuration">here</a> to return analysis reports at this URL.
-                    The reporter gathers analtyics from any middleware that implements the 
-                    <span class="code">IAnalysable</span> interface.
                 </td>
             </tr>
             <tr>

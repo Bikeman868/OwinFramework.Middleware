@@ -74,6 +74,10 @@ namespace OwinFramework.FormIdentification
         private PathString _changePasswordSuccessPage;
         private PathString _changePasswordFailPage;
 
+        private PathString _changeEmailPage;
+        private PathString _changeEmailSuccessPage;
+        private PathString _changeEmailFailPage;
+
         private PathString _sendPasswordResetPage;
         private PathString _sendPasswordResetSuccessPage;
         private PathString _sendPasswordResetFailPage;
@@ -116,6 +120,8 @@ namespace OwinFramework.FormIdentification
                     return HandleSendPasswordReset(context);
                 if (context.Request.Path == _resetPasswordPage)
                     return HandleResetPassword(context);
+                if (context.Request.Path == _changeEmailPage)
+                    return HandleChangeEmail(context);
                 if (context.Request.Path == _signupPage)
                     return HandleSignup(context);
                 if (context.Request.Path == _changePasswordPage)
@@ -505,6 +511,58 @@ namespace OwinFramework.FormIdentification
         }
 
         /// <summary>
+        /// This request is handled in the main site domain when the user POSTs
+        /// the change email address form.
+        /// </summary>
+        private Task HandleChangeEmail(IOwinContext context)
+        {
+            var form = context.Request.ReadFormAsync().Result;
+            var email = form[_configuration.EmailFormField];
+            var password = form[_configuration.PasswordFormField];
+            var newEmail = form[_configuration.NewEmailFormField];
+
+            var thisUrl = GetThisUrl(context);
+
+            var authenticationResult = _identityStore.AuthenticateWithCredentials(email, password);
+            if (authenticationResult == null || 
+                authenticationResult.Status != AuthenticationStatus.Authenticated ||
+                (authenticationResult.Purposes != null && authenticationResult.Purposes.Count > 0))
+                return Redirect(context, _changeEmailFailPage.HasValue ? _changeEmailFailPage.Value : thisUrl);
+
+            if (!_identityStore.AddCredentials(authenticationResult.Identity, newEmail, password))
+                return Redirect(context, _changeEmailFailPage.HasValue ? _changeEmailFailPage.Value : thisUrl);
+
+            var emailHtml = GetEmbeddedResource("EmailChangeEmail.html");
+            var emailText = GetEmbeddedResource("EmailChangeEmail.txt");
+
+            emailHtml = emailHtml
+                .Replace("{old-email}", email)
+                .Replace("{new-email}", newEmail);
+
+            emailText = emailText
+                .Replace("{old-email}", email)
+                .Replace("{new-email}", newEmail);
+
+            var fromEmail = _configuration.EmailChangeEmailFrom;
+            if (string.IsNullOrWhiteSpace(fromEmail))
+                fromEmail = "email-change@" + context.Request.Host;
+
+            var mailMessage1 = new MailMessage(fromEmail, email, _configuration.EmailChangeEmailSubject, emailText);
+            mailMessage1.Subject = _configuration.EmailChangeEmailSubject;
+            mailMessage1.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(emailHtml, new ContentType("text/html")));
+
+            var mailMessage2 = new MailMessage(fromEmail, newEmail, _configuration.EmailChangeEmailSubject, emailText);
+            mailMessage1.Subject = _configuration.EmailChangeEmailSubject;
+            mailMessage1.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(emailHtml, new ContentType("text/html")));
+
+            var emailClient = new SmtpClient();
+            emailClient.Send(mailMessage1);
+            emailClient.Send(mailMessage2);
+
+            return Redirect(context, _changeEmailSuccessPage.HasValue ? _changeEmailSuccessPage.Value : thisUrl);
+        }
+
+        /// <summary>
         /// This request is handled in the secure sub-domain when the users session expires.
         /// It tries to log the user in again using the remember me cookie.
         /// </summary>
@@ -708,6 +766,10 @@ namespace OwinFramework.FormIdentification
             _changePasswordSuccessPage = cleanUrl(configuration.ChangePasswordSuccessPage);
             _changePasswordFailPage = cleanUrl(configuration.ChangePasswordFailPage);
 
+            _changeEmailPage = cleanUrl(configuration.ChangeEmailPage);
+            _changeEmailSuccessPage = cleanUrl(configuration.ChangeEmailSuccessPage);
+            _changeEmailFailPage = cleanUrl(configuration.ChangeEmailFailPage);
+
             _resetPasswordPage = cleanUrl(configuration.ResetPasswordPage);
             _resetPasswordSuccessPage = cleanUrl(configuration.ResetPasswordSuccessPage);
             _resetPasswordFailPage = cleanUrl(configuration.ResetPasswordFailPage);
@@ -758,6 +820,10 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{changePasswordSuccessPage}", _changePasswordSuccessPage.ToString());
             document = document.Replace("{changePasswordFailPage}", _changePasswordFailPage.ToString());
 
+            document = document.Replace("{changeEmailPage}", _changeEmailPage.ToString());
+            document = document.Replace("{changeEmailSuccessPage}", _changeEmailSuccessPage.ToString());
+            document = document.Replace("{changeEmailFailPage}", _changeEmailFailPage.ToString());
+
             document = document.Replace("{renewSessionPage}", _renewSessionPage.ToString());
             document = document.Replace("{updateIdentityPage}", _updateIdentityPage.ToString());
 
@@ -767,12 +833,13 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{sessionIdentityName}", _sessionIdentityName);
             document = document.Replace("{sessionPurposeName}", _sessionPurposeName);
             document = document.Replace("{sessionStatusName}", _sessionStatusName);
-            document = document.Replace("{SessionRememberMeName}", _sessionRememberMeName);
-            document = document.Replace("{SessionEmailName}", _sessionEmailName);
+            document = document.Replace("{sessionRememberMeName}", _sessionRememberMeName);
+            document = document.Replace("{sessionEmailName}", _sessionEmailName);
 
             document = document.Replace("{rememberMeFor}", _configuration.RememberMeFor.ToString());
 
             document = document.Replace("{emailFormField}", _configuration.EmailFormField);
+            document = document.Replace("{newEmailFormField}", _configuration.NewEmailFormField);
             document = document.Replace("{passwordFormField}", _configuration.PasswordFormField);
             document = document.Replace("{newPasswordFormField}", _configuration.NewPasswordFormField);
             document = document.Replace("{rememberMeFormField}", _configuration.RememberMeFormField);
@@ -804,6 +871,10 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{changePasswordSuccessPage.default}", defaultConfiguration.ChangePasswordSuccessPage);
             document = document.Replace("{changePasswordFailPage.default}", defaultConfiguration.ChangePasswordFailPage);
 
+            document = document.Replace("{changeEmailPage.default}", defaultConfiguration.ChangeEmailPage);
+            document = document.Replace("{changeEmailSuccessPage.default}", defaultConfiguration.ChangeEmailSuccessPage);
+            document = document.Replace("{changeEmailFailPage.default}", defaultConfiguration.ChangeEmailFailPage);
+
             document = document.Replace("{renewSessionPage.default}", defaultConfiguration.RenewSessionPage);
             document = document.Replace("{updateIdentityPage.default}", defaultConfiguration.UpdateIdentityPage);
 
@@ -813,12 +884,13 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{sessionIdentityName.default}", defaultConfiguration.SessionIdentityName);
             document = document.Replace("{sessionPurposeName.default}", defaultConfiguration.SessionPurposeName);
             document = document.Replace("{sessionStatusName.default}", defaultConfiguration.SessionStatusName);
-            document = document.Replace("{SessionRememberMeName.default}", defaultConfiguration.SessionRememberMeName);
-            document = document.Replace("{SessionEmailName.default}", defaultConfiguration.SessionEmailName);
+            document = document.Replace("{sessionRememberMeName.default}", defaultConfiguration.SessionRememberMeName);
+            document = document.Replace("{sessionEmailName.default}", defaultConfiguration.SessionEmailName);
 
             document = document.Replace("{rememberMeFor.default}", defaultConfiguration.RememberMeFor.ToString());
 
             document = document.Replace("{emailFormField.default}", defaultConfiguration.EmailFormField);
+            document = document.Replace("{newEmailFormField.default}", defaultConfiguration.NewEmailFormField);
             document = document.Replace("{passwordFormField.default}", defaultConfiguration.PasswordFormField);
             document = document.Replace("{newPasswordFormField.default}", defaultConfiguration.NewPasswordFormField);
             document = document.Replace("{rememberMeFormField.default}", defaultConfiguration.RememberMeFormField);
@@ -896,19 +968,19 @@ namespace OwinFramework.FormIdentification
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Form Variable",
-                                        Name = "email",
+                                        Name = _configuration.EmailFormField,
                                         Description = "The email address of the user wanting to create an account"
                                     },
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Form Variable",
-                                        Name = "password",
+                                        Name = _configuration.PasswordFormField,
                                         Description = "The password of the user trying to create an account"
                                     },
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Form Variable",
-                                        Name = "rememberMe",
+                                        Name = _configuration.RememberMeFormField,
                                         Description = "A boolean flag indicating if a cookie should be stored on the browser to keep the user logged in"
                                     }
                                 }
@@ -931,19 +1003,19 @@ namespace OwinFramework.FormIdentification
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Form Variable",
-                                        Name = "email",
+                                        Name = _configuration.EmailFormField,
                                         Description = "The email address of the user trying to login"
                                     },
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Form Variable",
-                                        Name = "password",
+                                        Name = _configuration.PasswordFormField,
                                         Description = "The password of the user trying to login"
                                     },
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Form Variable",
-                                        Name = "rememberMe",
+                                        Name = _configuration.RememberMeFormField,
                                         Description = "A boolean flag indicating if a cookie should be stored on the browser to keep the user logged in"
                                     }
                                 }
@@ -966,7 +1038,7 @@ namespace OwinFramework.FormIdentification
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Form Variable",
-                                        Name = "email",
+                                        Name = _configuration.EmailFormField,
                                         Description = "The email address of the user who wants to reset their password"
                                     }
                                 }
@@ -1006,20 +1078,90 @@ namespace OwinFramework.FormIdentification
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Form Variable",
-                                        Name = "email",
+                                        Name = _configuration.EmailFormField,
                                         Description = "The email address of the user who wants to reset their password"
                                     },
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Form Variable",
-                                        Name = "token",
+                                        Name = _configuration.TokenFormField,
                                         Description = "The password reset token that was included in the password reset email"
                                     },
                                     new EndpointAttributeDocumentation
                                     {
                                         Type = "Form Variable",
-                                        Name = "password",
+                                        Name = _configuration.PasswordFormField,
                                         Description = "The new password to set for this user"
+                                    }
+                                }
+                        });
+
+                if (_changePasswordPage.HasValue)
+                    documentation.Add(
+                        new EndpointDocumentation
+                        {
+                            RelativePath = _changePasswordPage.Value,
+                            Description = "Changes a user's password. The user must know their current password. Always POST to this endpoint over HTTPS",
+                            Attributes = new List<IEndpointAttributeDocumentation>
+                                {
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Method",
+                                        Name = "POST",
+                                        Description = "Changes the user's password"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = _configuration.EmailFormField,
+                                        Description = "The email address of the user who wants to reset their password"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = _configuration.PasswordFormField,
+                                        Description = "The user's current password"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = _configuration.NewPasswordFormField,
+                                        Description = "The new password to set for this user"
+                                    }
+                                }
+                        });
+
+                if (_changeEmailPage.HasValue)
+                    documentation.Add(
+                        new EndpointDocumentation
+                        {
+                            RelativePath = _changeEmailPage.Value,
+                            Description = "Changes a user's email address. The user must know their current password. Always POST to this endpoint over HTTPS",
+                            Attributes = new List<IEndpointAttributeDocumentation>
+                                {
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Method",
+                                        Name = "POST",
+                                        Description = "Changes the user's email address"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = _configuration.EmailFormField,
+                                        Description = "The current email address of the user who wants to change their email address"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = _configuration.PasswordFormField,
+                                        Description = "The password for this user"
+                                    },
+                                    new EndpointAttributeDocumentation
+                                    {
+                                        Type = "Form Variable",
+                                        Name = _configuration.NewEmailFormField,
+                                        Description = "The new email address to set for this user"
                                     }
                                 }
                         });

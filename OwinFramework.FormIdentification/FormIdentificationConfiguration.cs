@@ -25,6 +25,10 @@ namespace OwinFramework.FormIdentification
         public string ChangePasswordSuccessPage { get; set; }
         public string ChangePasswordFailPage { get; set; }
 
+        public string ChangeEmailPage { get; set; }
+        public string ChangeEmailSuccessPage { get; set; }
+        public string ChangeEmailFailPage { get; set; }
+
         public string SendPasswordResetPage { get; set; }
         public string SendPasswordResetSuccessPage { get; set; }
         public string SendPasswordResetFailPage { get; set; }
@@ -50,10 +54,14 @@ namespace OwinFramework.FormIdentification
         public string NewPasswordFormField { get; set; }
         public string RememberMeFormField { get; set; }
         public string TokenFormField { get; set; }
+        public string NewEmailFormField { get; set; }
 
         public string PasswordResetTokenType { get; set; }
         public string PasswordResetEmailFrom { get; set; }
         public string PasswordResetEmailSubject { get; set; }
+
+        public string EmailChangeEmailFrom { get; set; }
+        public string EmailChangeEmailSubject { get; set; }
         
         public FormIdentificationConfiguration()
         {
@@ -82,6 +90,10 @@ namespace OwinFramework.FormIdentification
             SignoutPage = "/formId/signout";
             SignoutSuccessPage = "/";
 
+            ChangeEmailPage = "/formId/changeEmail";
+            ChangeEmailSuccessPage = "/";
+            ChangeEmailFailPage = "/formId/changeEmail";
+
             ChangePasswordPage = "/formId/changePassword";
             ChangePasswordSuccessPage = "/";
             ChangePasswordFailPage = "/formId/changePassword";
@@ -102,10 +114,14 @@ namespace OwinFramework.FormIdentification
             NewPasswordFormField = "newPassword";
             RememberMeFormField = "rememberMe";
             TokenFormField = "token";
+            NewEmailFormField = "newEmail";
 
             PasswordResetTokenType = "PasswordResetl";
             PasswordResetEmailFrom = "";
             PasswordResetEmailSubject = "Reset your password";
+
+            EmailChangeEmailFrom = "";
+            EmailChangeEmailSubject = "Email address updated";
         }
     }
 }
