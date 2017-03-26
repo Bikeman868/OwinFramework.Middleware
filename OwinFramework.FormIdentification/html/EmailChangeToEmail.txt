@@ -1,0 +1,6 @@
+﻿Your registered email address changed
+
+This is to let you know that the email address associated with your
+account was changed from {old-email} to {new-email}.
+
+Thank you.

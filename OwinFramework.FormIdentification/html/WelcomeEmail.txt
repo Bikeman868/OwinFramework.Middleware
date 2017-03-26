@@ -1,0 +1,6 @@
+﻿This email was sent to you because someone registered for an account on our web site using the email address {email}.
+Please click on the link below to verify that you want this account on our website.
+
+          {page}?token={token}
+
+Thank you, and I hope you enjoy our website.

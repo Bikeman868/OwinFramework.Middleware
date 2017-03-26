@@ -67,6 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.OwinFramework.FormIdentification.Net45.config" />
+    <None Include="Test-flows.md" />
     <None Include="readme.md" />
   </ItemGroup>
   <ItemGroup>
@@ -83,10 +84,22 @@
     <EmbeddedResource Include="html\PasswordResetEmail.txt" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="html\EmailChangeEmail.html" />
+    <EmbeddedResource Include="html\EmailChangeFromEmail.html" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="html\EmailChangeEmail.txt" />
+    <EmbeddedResource Include="html\EmailChangeFromEmail.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="html\EmailChangeToEmail.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="html\EmailChangeToEmail.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="html\WelcomeEmail.html" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="html\WelcomeEmail.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

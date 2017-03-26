@@ -532,14 +532,25 @@ namespace OwinFramework.FormIdentification
             if (!_identityStore.AddCredentials(authenticationResult.Identity, newEmail, password))
                 return Redirect(context, _changeEmailFailPage.HasValue ? _changeEmailFailPage.Value : thisUrl);
 
-            var emailHtml = GetEmbeddedResource("EmailChangeEmail.html");
-            var emailText = GetEmbeddedResource("EmailChangeEmail.txt");
+            var fromEmailHtml = GetEmbeddedResource("EmailChangeFromEmail.html");
+            var fromEmailText = GetEmbeddedResource("EmailChangeFromEmail.txt");
 
-            emailHtml = emailHtml
+            fromEmailHtml = fromEmailHtml
                 .Replace("{old-email}", email)
                 .Replace("{new-email}", newEmail);
 
-            emailText = emailText
+            fromEmailText = fromEmailText
+                .Replace("{old-email}", email)
+                .Replace("{new-email}", newEmail);
+
+            var toEmailHtml = GetEmbeddedResource("EmailChangeToEmail.html");
+            var toEmailText = GetEmbeddedResource("EmailChangeToEmail.txt");
+
+            toEmailHtml = toEmailHtml
+                .Replace("{old-email}", email)
+                .Replace("{new-email}", newEmail);
+
+            toEmailText = toEmailText
                 .Replace("{old-email}", email)
                 .Replace("{new-email}", newEmail);
 
@@ -547,13 +558,13 @@ namespace OwinFramework.FormIdentification
             if (string.IsNullOrWhiteSpace(fromEmail))
                 fromEmail = "email-change@" + context.Request.Host;
 
-            var mailMessage1 = new MailMessage(fromEmail, email, _configuration.EmailChangeEmailSubject, emailText);
+            var mailMessage1 = new MailMessage(fromEmail, email, _configuration.EmailChangeEmailSubject, fromEmailText);
             mailMessage1.Subject = _configuration.EmailChangeEmailSubject;
-            mailMessage1.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(emailHtml, new ContentType("text/html")));
+            mailMessage1.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(fromEmailHtml, new ContentType("text/html")));
 
-            var mailMessage2 = new MailMessage(fromEmail, newEmail, _configuration.EmailChangeEmailSubject, emailText);
+            var mailMessage2 = new MailMessage(fromEmail, newEmail, _configuration.EmailChangeEmailSubject, toEmailText);
             mailMessage1.Subject = _configuration.EmailChangeEmailSubject;
-            mailMessage1.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(emailHtml, new ContentType("text/html")));
+            mailMessage1.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(toEmailHtml, new ContentType("text/html")));
 
             var emailClient = new SmtpClient();
             emailClient.Send(mailMessage1);

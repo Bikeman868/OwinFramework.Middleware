@@ -9,15 +9,22 @@ On failure redirects the user to a failed/retry page whose URL you can configure
 (defaults to `/formId/signup`). Your application is responsible for delivering the UI, this
 middleware just accepts the POST, creates the account or not, and performs a redriection.
 
+* Ask for a remember me cookie to be stored on their browser so that they don't have to
+log in again each time they visit the web site.
+
 * Log into an existing account using the email address and password used to create the
 account. The email and password must be sent in an HTTPS POST to a URL that you can
 configure (defaults to `/formId/signin`). The POST will result in a redirect response. The URLs 
 for the success and fail cases can both be configured. Your application is responsible for 
 handling the HTTP(S) GET requests for these URLs.
 
+* Verify their email address by clicking a one-time activiation link in the welcome email.
+
 * Change their password by providing their current password and a new one.
 
-* Logout, securing their account.
+* Change their email address by providing their current email and password.
+
+* Logout, securing their account and deleting the remember me cookie.
 
 * Request a time-limited password reset email to be sent.
 
@@ -32,7 +39,7 @@ successfully identifies the user will supply the user identity to the reast of t
 pipeline and other identification middleware will not make any additional user
 identification attempts after the user is identified.
 
-Note that this middleware will store a cookie on the browser to indicate who the user
+Note that this middleware can store a cookie on the browser to indicate who the user
 is logged in as. The lifetime of the cookie is configurable and defaults to 90 days.
 To keep this cookie secure this middleware performs a few extra redirections that mean
 that the cookie can be stored on the browser in a different domain than the non secure 
@@ -101,10 +108,13 @@ With the OWIN Framework the application developer chooses where in the configura
 each middleware will read its configuration from (this is so that you can have more than one
 of the same middleware in your pipeline with different configurations).
 
-This middleware has very few configuration options. See the `FormIdentificationConfiguration.cs`
-for details.
+This middleware has very many configuration options. See the `FormIdentificationConfiguration.cs`
+for details. You don't have to configure anything to make it work, the default settings will
+already produce a working web site, however everything that can be configured is configurable
+in cse you want to change any aspect of how this middleware works.
 
-This is an example of adding the form identification middleware to the OWIN Framework pipeline builder.
+To add form identification middleware to the OWIN Framework pipeline builder you need code
+similar to this (note that there are many possible variations, this is just an example):
 
 ```
 builder.Register(ninject.Get<OwinFramework.FormIdentification.FormIdentificationMiddleware>())
@@ -139,6 +149,12 @@ configuration management then your configuration file can be set up like this:
 
 ```
 
+Take a look at the documentation page for a complete description of the configuration
+options available. After you add this middleware to your solution, your application
+will produce documentation at the URL configured in the `documentationPage` option. The
+example above configures the documentation page to `/formId/config`. You can turn off
+the documentation in a production environment by setting this option to an empty string.
+
 ## Templates
 
 This middleware contains templates embedded into the DLL. These templates are described
@@ -156,12 +172,44 @@ request a password reset. You should customize this template to make it more spe
 your website. When customizing this template, start from the built in one which is in the
 `html` folder in the source code.
 
-### PasswordResetEmail.txt
+### PasswordResetEmail.html
 
 This is a template for the html version of the email that gets sent out when users 
 request a password reset. You should customize this template to make it more specific to 
 your website. When customizing this template, start from the built in one which is in the
 `html` folder in the source code.
+
+### EmailChangeFromEmail.txt
+
+This is a template for the plain text version of the email that gets sent out when users 
+request to change their email address. This email is sent to the old email address. 
+You should customize this template to make it more specific to your website. When 
+customizing this template, start from the built in one which is in the `html` folder in 
+the source code.
+
+### EmailChangeToEmail.txt
+
+This is a template for the plain text version of the email that gets sent out when users 
+request to change their email address. This email is sent to the new email address. 
+You should customize this template to make it more specific to your website. When 
+customizing this template, start from the built in one which is in the `html` folder in 
+the source code.
+
+### EmailChangeFromEmail.html
+
+This is a template for the HTML version of the email that gets sent out when users 
+request to change their email address. This email is sent to the old email address. 
+You should customize this template to make it more specific to your website. When 
+customizing this template, start from the built in one which is in the `html` folder in 
+the source code.
+
+### EmailChangeToEmail.html
+
+This is a template for the HTML version of the email that gets sent out when users 
+request to change their email address. This email is sent to the new email address. 
+You should customize this template to make it more specific to your website. When 
+customizing this template, start from the built in one which is in the `html` folder in 
+the source code.
 
 ### configuration.html
 
