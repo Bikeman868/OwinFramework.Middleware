@@ -35,9 +35,17 @@ Note that there are other middleware packages that provide user identification f
 social media, shared secrets and certificates. These middleware packages will all work 
 togther because each one will look to see if the user is already identified before
 trying to perform its own identification. The first middleware in the pipeline that
-successfully identifies the user will supply the user identity to the reast of the
+successfully identifies the user will supply the user identity to the rest of the
 pipeline and other identification middleware will not make any additional user
 identification attempts after the user is identified.
+
+Note that their are other types of middleware designed to be an additional identification
+factor. These multi-factor identification middleware will perform the secondary identification
+after another middleware has succesfully identified the caller. These multi-factor
+identification middlewares should run after the primary identification because they generally
+need an identified user to work. For example a secondary identification based on IP address
+will look at the user identified by the earlier middleware, look up the last known IP address
+for this user, and verrify that the current resquest is from the same IP address.
 
 Note that this middleware can store a cookie on the browser to indicate who the user
 is logged in as. The lifetime of the cookie is configurable and defaults to 90 days.
@@ -123,7 +131,7 @@ builder.Register(ninject.Get<OwinFramework.FormIdentification.FormIdentification
 ```
 
 If you use the above code, and you use [Urchin](https://github.com/Bikeman868/Urchin) for 
-configuration management then your configuration file can be set up like this:
+configuration management then your configuration file can be set up like this example:
 
 ```
 {

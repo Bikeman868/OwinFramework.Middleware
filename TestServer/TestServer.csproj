@@ -76,8 +76,8 @@
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OwinFramework, Version=2.3.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.2.3.0\lib\net45\OwinFramework.dll</HintPath>
+    <Reference Include="OwinFramework, Version=2.4.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.2.4.0\lib\net45\OwinFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="OwinFramework.Configuration.Urchin, Version=2.3.0.0, Culture=neutral, processorArchitecture=MSIL">
@@ -88,8 +88,8 @@
       <HintPath>..\packages\Owin.Framework.Facilities.Cache.Local.2.2.4\lib\net45\OwinFramework.Facilities.Cache.Local.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OwinFramework.Facilities.IdentityStore.Prius, Version=2.2.6.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.Facilities.IdentityStore.Prius.2.2.6\lib\net45\OwinFramework.Facilities.IdentityStore.Prius.dll</HintPath>
+    <Reference Include="OwinFramework.Facilities.IdentityStore.Prius, Version=2.2.7.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.Facilities.IdentityStore.Prius.2.2.7\lib\net45\OwinFramework.Facilities.IdentityStore.Prius.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="OwinFramework.Facilities.TokenStore.Cache, Version=2.2.4.0, Culture=neutral, processorArchitecture=MSIL">
