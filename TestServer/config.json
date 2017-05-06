@@ -118,7 +118,13 @@
             "sendPasswordResetSuccessPage": "/formId/sendPasswordResetSuccess.html",
             "sendPasswordResetFailPage": "/formId/sendPasswordResetFail.html",
             "resetPasswordPage": "/formId/resetPassword.html",
-            "resetPasswordFailPage": "/formId/resetPasswordFail.html"
+            "resetPasswordFailPage": "/formId/resetPasswordFail.html",
+            "verifyEmailPage": "/formId/verifyEmail",
+            "verifyEmailSuccessPage": "/formId/verifyEmailSuccess.html",
+            "verifyEmailFailPage": "/formId/verifyEmailFail.html",
+            "welcomeEmailFrom":  "test@testserver",
+            "emailChangeEmailFrom":  "test@testserver",
+            "passwordResetEmailFrom":  "test@testserver"
         }
     },
     "OwinFramework": {

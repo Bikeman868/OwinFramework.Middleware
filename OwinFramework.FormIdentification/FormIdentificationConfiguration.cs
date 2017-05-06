@@ -37,6 +37,10 @@ namespace OwinFramework.FormIdentification
         public string ResetPasswordSuccessPage { get; set; }
         public string ResetPasswordFailPage { get; set; }
 
+        public string VerifyEmailPage { get; set; }
+        public string VerifyEmailSuccessPage { get; set; }
+        public string VerifyEmailFailPage { get; set; }
+
         public string RenewSessionPage { get; set; }
         public string UpdateIdentityPage { get; set; }
 
@@ -62,7 +66,12 @@ namespace OwinFramework.FormIdentification
 
         public string EmailChangeEmailFrom { get; set; }
         public string EmailChangeEmailSubject { get; set; }
+
+        public string VerifyEmailTokenType { get; set; }
         
+        public string WelcomeEmailFrom { get; set; }
+        public string WelcomeEmailSubject { get; set; }
+
         public FormIdentificationConfiguration()
         {
             SecureDomain = string.Empty;
@@ -106,6 +115,10 @@ namespace OwinFramework.FormIdentification
             ResetPasswordSuccessPage = "/";
             ResetPasswordFailPage = "/formId/resetPassword";
 
+            VerifyEmailPage = "/formId/verifyEmail";
+            VerifyEmailSuccessPage = "/emailVerified";
+            VerifyEmailFailPage = "/emailNotVerified";
+
             RenewSessionPage = "/formId/renew";
             UpdateIdentityPage = "/formId/update";
 
@@ -122,6 +135,11 @@ namespace OwinFramework.FormIdentification
 
             EmailChangeEmailFrom = "";
             EmailChangeEmailSubject = "Email address updated";
+
+            VerifyEmailTokenType = "VerifyEmail";
+
+            WelcomeEmailFrom = "";
+            WelcomeEmailSubject = "Thank you for creating an account";
         }
     }
 }

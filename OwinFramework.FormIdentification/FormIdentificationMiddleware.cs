@@ -87,6 +87,10 @@ namespace OwinFramework.FormIdentification
         private PathString _resetPasswordSuccessPage;
         private PathString _resetPasswordFailPage;
 
+        private PathString _verifyEmailPage;
+        private PathString _verifyEmailSuccessPage;
+        private PathString _verifyEmailFailPage;
+        
         private PathString _renewSessionPage;
         private PathString _updateIdentityPage;
 
@@ -241,6 +245,36 @@ namespace OwinFramework.FormIdentification
             if (success)
             {
                 _signupSuccessCount++;
+
+                if (_verifyEmailPage.HasValue)
+                {
+                    var pageUrl = GetNonSecurePrefix(context) + _verifyEmailPage;
+                    var tokenString = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, "VerifyEmail", email);
+                    var emailHtml = GetEmbeddedResource("WelcomeEmail.html");
+                    var emailText = GetEmbeddedResource("WelcomeEmail.txt");
+
+
+                    emailHtml = emailHtml
+                        .Replace("{email}", email)
+                        .Replace("{page}", pageUrl)
+                        .Replace("{token}", tokenString);
+
+                    emailText = emailText
+                        .Replace("{email}", email)
+                        .Replace("{page}", pageUrl)
+                        .Replace("{token}", tokenString);
+
+                    var fromEmail = _configuration.WelcomeEmailFrom;
+                    if (string.IsNullOrWhiteSpace(fromEmail))
+                        fromEmail = "welcome@" + context.Request.Host;
+
+                    var mailMessage = new MailMessage(fromEmail, email, _configuration.WelcomeEmailSubject, emailText);
+                    mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(emailHtml,
+                        new ContentType("text/html")));
+
+                    var emailClient = new SmtpClient();
+                    emailClient.Send(mailMessage);
+                }
 
                 var session = context.GetFeature<ISession>();
                 var upstreamSession = context.GetFeature<IUpstreamSession>();
@@ -784,6 +818,10 @@ namespace OwinFramework.FormIdentification
             _resetPasswordSuccessPage = cleanUrl(configuration.ResetPasswordSuccessPage);
             _resetPasswordFailPage = cleanUrl(configuration.ResetPasswordFailPage);
 
+            _verifyEmailPage = cleanUrl(configuration.VerifyEmailPage);
+            _verifyEmailSuccessPage = cleanUrl(configuration.VerifyEmailSuccessPage);
+            _verifyEmailFailPage = cleanUrl(configuration.VerifyEmailFailPage);
+            
             _renewSessionPage = cleanUrl(configuration.RenewSessionPage);
             _updateIdentityPage = cleanUrl(configuration.UpdateIdentityPage);
 
