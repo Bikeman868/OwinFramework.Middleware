@@ -26,7 +26,6 @@ namespace OwinFramework.Middleware.TestServer
                 {
                     Console.WriteLine("Test server listening on " + url + " and " + secureUrl);
                     Console.WriteLine("Press any key to stop");
-                    Console.ReadLine();
                 }
             }
             catch (Exception ex)
@@ -36,8 +35,8 @@ namespace OwinFramework.Middleware.TestServer
                     Console.WriteLine(ex.Message);
                     ex = ex.InnerException;
                 }
-                Console.ReadLine();
             }
+            Console.ReadLine();
         }
     }
 }

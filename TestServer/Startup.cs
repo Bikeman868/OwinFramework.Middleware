@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Net.Mail;
 using System.Reflection;
 using Ioc.Modules;
 using Ninject;
@@ -27,6 +28,8 @@ namespace OwinFramework.Middleware.TestServer
         {
             // By explicitly adding this assembly to the package locator, any IoC mappings
             // in this assembly will take priority over assemblies found through probing.
+            // Also when the package locator probes for assemblies it only looks for DLLs
+            // and not executables.
             var packageLocator = new PackageLocator()
                 .ProbeBinFolderAssemblies()
                 .Add(Assembly.GetExecutingAssembly());
@@ -45,21 +48,22 @@ namespace OwinFramework.Middleware.TestServer
             var configFile = new FileInfo(hostingEnvironment.MapPath("config.json"));
             _configurationFileSource = ninject.Get<FileSource>().Initialize(configFile, TimeSpan.FromSeconds(5));
 
-            // Construct the configuration implementation that is registered with IoC (Urchin)
+            // Construct the configuration mechanism that is registered with IoC (Urchin)
             var config = ninject.Get<IConfiguration>();
 
             // Get the Owin Framework builder registered with IoC
             var builder = ninject.Get<IBuilder>();
 
             // Output caching just makes the web site more efficient by capturing the output from
-            // downstream middleware and reusing it for the next request
+            // downstream middleware and reusing it for the next request. Note that the Dart middleware
+            // produces different results for the same URL and therefore can not use output caching
             builder.Register(ninject.Get<OutputCache.OutputCacheMiddleware>())
                 .As("Output cache")
                 .ConfigureWith(config, "/middleware/outputCache")
                 .RunAfter("Dart");
 
-            // The Versioning middleware will add version numbers to static assets and cache them
-            // in the browser
+            // The Versioning middleware will add version numbers to static assets and
+            // instruct the browser to cache them
             builder.Register(ninject.Get<Versioning.VersioningMiddleware>())
                 .As("Versioning")
                 .ConfigureWith(config, "/middleware/versioning")
@@ -77,7 +81,7 @@ namespace OwinFramework.Middleware.TestServer
                 .ConfigureWith(config, "/middleware/less")
                 .RunAfter("Dart");
                 
-            // The static files middleware will allow remote clients to retrieve files of certian types
+            // The static files middleware will allow requests to retrieve files of certian types
             // Configuration options limit the files that can be retrieved this way. The ConfigureWith
             // fluid method below specifies the location of this configuration in the config.json file
             builder.Register(ninject.Get<StaticFiles.StaticFilesMiddleware>())
@@ -118,14 +122,17 @@ namespace OwinFramework.Middleware.TestServer
 
             // The analysis reporter middleware will format analytics from middleware that supports
             // this feature. The middleware can produce reports in various formats including
-            // HTML, plain text and JSON
+            // HTML, plain text and JSON. Analytics are things like the number of requests processed
+            // per second and the average time taken to handle a request.
             builder.Register(ninject.Get<AnalysisReporter.AnalysisReporterMiddleware>())
                 .As("Analysis reporter")
                 .ConfigureWith(config, "/middleware/analysis")
                 .RunAfter<IIdentification>();
 
             // The documenter middleware will extract documentation from middleware that is 
-            // self documenting
+            // self documenting. If your web site is an API this is a more convenient way of
+            // documenting the API than maintaining separate documentation, and the documentation
+            // is always applicable to the specific version you are calling.
             builder.Register(ninject.Get<Documenter.DocumenterMiddleware>())
                 .As("Documenter")
                 .ConfigureWith(config, "/middleware/documenter")
@@ -142,7 +149,7 @@ namespace OwinFramework.Middleware.TestServer
                 .As("Exception generator")
                 .RunLast();
 
-            // Tell Owin to add our Owin Framework middleware to the Owin pipeline
+            // Use the Owin Framework builder to add middleware to the Owin pipeline
             app.UseBuilder(builder);
         }
     }

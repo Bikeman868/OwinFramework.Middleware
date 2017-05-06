@@ -1,6 +1,6 @@
 ﻿# OWIN Framework Form Identification Middleware Test Flows
 
-This solution inclides a very primative self-hosted web site that can be 
+This solution includes a very primative self-hosted web site that can be 
 used to try out the various features of the middleware in this solution.
 This test server was used to verify the following user flows though the
 forms identification middleware:
@@ -22,7 +22,7 @@ forms identification middleware:
 | The user logs out from the website | The user's session is flagged as logged out and the remember me cookie is deleted from their browser |
 | The user's session expires | Nothing happens here |
 | The user returns to the site with an expired session | The user is treated as an anonymous visitor to the site |
-| The user attempts to log into the website with a valid email address but the wrong password | The login attempt is denied and the user is still anaonymous |
+| The user attempts to log into the website with a valid email address but the wrong password | The login attempt is denied and the user is still anonymous |
 | The user attempts to log in several more times with the wrong password | The user's account is locked for a period of time |
 | The user tries to log in with their email address and valid password | The users account is locked and the login attempt fails |
 | The user waits fot the account lock to expire | Nothing happens when the lock expires |
