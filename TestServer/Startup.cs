@@ -9,6 +9,7 @@ using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.Middleware.TestServer.Middleware;
 using OwinFramework.Middleware.TestServer.Prius;
 using Urchin.Client.Sources;
 
@@ -95,6 +96,11 @@ namespace OwinFramework.Middleware.TestServer
                 .As("Form Identification")
                 .ConfigureWith(config, "/middleware/formIdentification")
                 .RunAfter("Static files");
+
+            // This middleware prints information about the logged on user to the console
+            // for testing and debugging purposes
+            builder.Register(ninject.Get<LogUserInfoMiddleware>())
+                .As("Log user info");
 
             // The cache session middleware provides session management using the cache facility
             builder.Register(ninject.Get<Session.CacheSessionMiddleware>())

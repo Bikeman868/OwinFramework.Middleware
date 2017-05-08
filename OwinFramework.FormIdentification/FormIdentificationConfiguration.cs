@@ -129,7 +129,7 @@ namespace OwinFramework.FormIdentification
             TokenFormField = "token";
             NewEmailFormField = "newEmail";
 
-            PasswordResetTokenType = "PasswordResetl";
+            PasswordResetTokenType = "PasswordReset";
             PasswordResetEmailFrom = "";
             PasswordResetEmailSubject = "Reset your password";
 

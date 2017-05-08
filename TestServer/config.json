@@ -23,6 +23,9 @@
             "emailAddress": null,
             "subject": "Test server unhandled exception"
         },
+        "session": { 
+            "sessionDuration": "00:01:00"
+        },
         "staticFiles": {
             "staticFilesRootUrl": "/",
             "documentationRootUrl": "/owin/staticFiles",
@@ -105,6 +108,7 @@
         "formIdentification": {
             "secureProtocol": "http",
             "secureDomain": "localhost:54321",
+
             "signupPage": "/formId/signup.html",
             "signupSuccessPage": "/welcome.html",
             "signupFailPage": "/formId/signupFail.html",
@@ -114,6 +118,9 @@
             "changePasswordPage": "/formId/changePassword.html",
             "changePasswordSuccessPage": "/formId/changePasswordSuccess.html",
             "changePasswordFailPage": "/formId/changePasswordFail.html",
+            "changeEmailPage": "/formId/changeEmail.html",
+            "changeEmailSuccessPage": "/formId/changeEmailSuccess.html",
+            "changeEmailFailPage": "/formId/changeEmailFail.html",
             "sendPasswordResetPage": "/formId/sendPasswordReset.html",
             "sendPasswordResetSuccessPage": "/formId/sendPasswordResetSuccess.html",
             "sendPasswordResetFailPage": "/formId/sendPasswordResetFail.html",
@@ -122,9 +129,10 @@
             "verifyEmailPage": "/formId/verifyEmail",
             "verifyEmailSuccessPage": "/formId/verifyEmailSuccess.html",
             "verifyEmailFailPage": "/formId/verifyEmailFail.html",
-            "welcomeEmailFrom":  "test@testserver",
-            "emailChangeEmailFrom":  "test@testserver",
-            "passwordResetEmailFrom":  "test@testserver"
+
+            "welcomeEmailFrom": "test@testserver",
+            "emailChangeEmailFrom": "test@testserver",
+            "passwordResetEmailFrom": "test@testserver"
         }
     },
     "OwinFramework": {

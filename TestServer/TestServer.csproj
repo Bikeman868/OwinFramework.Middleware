@@ -88,8 +88,8 @@
       <HintPath>..\packages\Owin.Framework.Facilities.Cache.Local.2.2.4\lib\net45\OwinFramework.Facilities.Cache.Local.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OwinFramework.Facilities.IdentityStore.Prius, Version=2.2.7.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.Facilities.IdentityStore.Prius.2.2.7\lib\net45\OwinFramework.Facilities.IdentityStore.Prius.dll</HintPath>
+    <Reference Include="OwinFramework.Facilities.IdentityStore.Prius, Version=2.2.8.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.Facilities.IdentityStore.Prius.2.2.8\lib\net45\OwinFramework.Facilities.IdentityStore.Prius.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="OwinFramework.Facilities.TokenStore.Cache, Version=2.2.4.0, Culture=neutral, processorArchitecture=MSIL">
@@ -122,6 +122,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="HostingEnvironment.cs" />
+    <Compile Include="Middleware\LogUserInfoMiddleware.cs" />
     <Compile Include="Package.cs" />
     <Compile Include="Prius\PriusErrorReporter.cs" />
     <Compile Include="Prius\PriusFactory.cs" />

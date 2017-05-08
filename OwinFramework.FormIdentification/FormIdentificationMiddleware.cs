@@ -21,7 +21,7 @@ using OwinFramework.MiddlewareHelpers.Identification;
 namespace OwinFramework.FormIdentification
 {
     public class FormIdentificationMiddleware:
-        IMiddleware<IResponseProducer>,
+        IMiddleware<IIdentification>,
         IUpstreamCommunicator<IUpstreamSession>,
         IConfigurable,
         ISelfDocumenting,
@@ -146,6 +146,7 @@ namespace OwinFramework.FormIdentification
 
             if (identification != null && identification.IsAnonymous && string.IsNullOrEmpty(identification.Identity))
             {
+                // We get here when we don't know anything about the user because their session expired
                 var upstreamIdentification = context.GetFeature<IUpstreamIdentification>();
                 return RenewSession(context, upstreamIdentification);
             }
@@ -178,7 +179,7 @@ namespace OwinFramework.FormIdentification
 
             var identity = session.Get<string>(_sessionIdentityName);
             var claims = session.Get<List<IdentityClaim>>(_sessionClaimsName);
-            var identification = new Identification(identity ?? string.Empty);
+            var identification = new Identification(identity ?? string.Empty, claims);
             context.SetFeature<IIdentification>(identification);
 
             identification.AllowAnonymous = true;
@@ -621,15 +622,21 @@ namespace OwinFramework.FormIdentification
             var rememberMeToken = context.Request.Cookies[_cookieName];
             if (string.IsNullOrEmpty(rememberMeToken))
             {
-                SetSession(session, _anonymousUserIdentity, null, AuthenticationStatus.NotFound, null, null);
+                SetSession(
+                    session, 
+                    _anonymousUserIdentity, 
+                    null, 
+                    AuthenticationStatus.NotFound, 
+                    null, 
+                    null);
                 return Redirect(context, failUrl);
             }
 
             var authenticationResult = _identityStore.RememberMe(rememberMeToken);
             var claims = _identityStore.GetClaims(authenticationResult.Identity);
             SetSession(
-                session, 
-                authenticationResult.Identity, 
+                session,
+                authenticationResult.Identity ?? _anonymousUserIdentity, 
                 authenticationResult.Purposes, 
                 authenticationResult.Status, 
                 authenticationResult.RememberMeToken,
@@ -682,7 +689,7 @@ namespace OwinFramework.FormIdentification
                     new CookieOptions
                     {
                         HttpOnly = true,
-                        Secure = true,
+                        Secure = context.Request.IsSecure,
                         Expires = DateTime.UtcNow + _configuration.RememberMeFor
                     });
 
