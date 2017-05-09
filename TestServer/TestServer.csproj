@@ -203,6 +203,8 @@
     <Content Include="FormId\signinFail.html" />
     <Content Include="FormId\signupFail.html" />
     <Content Include="FormId\signup.html" />
+    <Content Include="FormId\verifyEmailFail.html" />
+    <Content Include="FormId\verifyEmailSuccess.html" />
     <Content Include="welcome.html" />
     <Content Include="ui\web\favicon.ico" />
     <Content Include="ui\web\index.html" />
