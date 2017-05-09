@@ -3,4 +3,8 @@
 This is to let you know that the email address associated with your
 account was changed from {old-email} to {new-email}.
 
+To confirm this change please copy the address below into your browser.
+	
+	{page}?token={token}&id={id}
+
 Thank you.

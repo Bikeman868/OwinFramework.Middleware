@@ -54,7 +54,7 @@ forms identification middleware:
 |  Action  |  Expected result  |
 |----------|-------------------|
 | User logs out from the website | The user's session is flagged as logged out and the remember me cookie is deleted from their browser |
-! User provides their email address and requests a password reset email | An email is sent to the user's registered email address |
+| User provides their email address and requests a password reset email | An email is sent to the user's registered email address |
 | User clicks the link in the password reset email | The user lands on a page where they can choose a new password |
 | User submits the form with a new password and the remember me check box checked | The user's password is updated and they are logged into the website |
 | User browses pages of the site | The user's session identifies them as they browse the site |

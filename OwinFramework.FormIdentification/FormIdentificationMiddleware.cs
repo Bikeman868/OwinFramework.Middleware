@@ -138,6 +138,8 @@ namespace OwinFramework.FormIdentification
                     return HandleRenewSession(context);
                 if (context.Request.Path == _updateIdentityPage)
                     return HandleRememberMe(context);
+                if (context.Request.Path == _verifyEmailPage)
+                    return HandleVerifyEmail(context);
                 if (context.Request.Path == _documentationPage)
                     return DocumentConfiguration(context);
             }
@@ -250,20 +252,21 @@ namespace OwinFramework.FormIdentification
                 if (_verifyEmailPage.HasValue)
                 {
                     var pageUrl = GetNonSecurePrefix(context) + _verifyEmailPage;
-                    var tokenString = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, "VerifyEmail", email);
+                    var tokenString = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, "VerifyEmail", identity);
                     var emailHtml = GetEmbeddedResource("WelcomeEmail.html");
                     var emailText = GetEmbeddedResource("WelcomeEmail.txt");
-
 
                     emailHtml = emailHtml
                         .Replace("{email}", email)
                         .Replace("{page}", pageUrl)
-                        .Replace("{token}", tokenString);
+                        .Replace("{token}", tokenString)
+                        .Replace("{id}", identity);
 
                     emailText = emailText
                         .Replace("{email}", email)
                         .Replace("{page}", pageUrl)
-                        .Replace("{token}", tokenString);
+                        .Replace("{token}", tokenString)
+                        .Replace("{id}", identity);
 
                     var fromEmail = _configuration.WelcomeEmailFrom;
                     if (string.IsNullOrWhiteSpace(fromEmail))
@@ -559,27 +562,45 @@ namespace OwinFramework.FormIdentification
             if (!_identityStore.AddCredentials(authenticationResult.Identity, newEmail, password))
                 return Redirect(context, _changeEmailFailPage.HasValue ? _changeEmailFailPage.Value : thisUrl);
 
+            _identityStore.UpdateClaim(
+                authenticationResult.Identity, 
+                new IdentityClaim { Name = ClaimNames.Email, Value = newEmail, Status = ClaimStatus.Unverified});
+
+            _identityStore.UpdateClaim(
+                authenticationResult.Identity,
+                new IdentityClaim { Name = ClaimNames.Username, Value = newEmail, Status = ClaimStatus.Verified });
+
             var fromEmailHtml = GetEmbeddedResource("EmailChangeFromEmail.html");
             var fromEmailText = GetEmbeddedResource("EmailChangeFromEmail.txt");
 
+            var token = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, "VerifyEmail", authenticationResult.Identity);
+
             fromEmailHtml = fromEmailHtml
                 .Replace("{old-email}", email)
-                .Replace("{new-email}", newEmail);
+                .Replace("{new-email}", newEmail)
+                .Replace("{token}", token)
+                .Replace("{id}", authenticationResult.Identity);
 
             fromEmailText = fromEmailText
                 .Replace("{old-email}", email)
-                .Replace("{new-email}", newEmail);
+                .Replace("{new-email}", newEmail)
+                .Replace("{token}", token)
+                .Replace("{id}", authenticationResult.Identity);
 
             var toEmailHtml = GetEmbeddedResource("EmailChangeToEmail.html");
             var toEmailText = GetEmbeddedResource("EmailChangeToEmail.txt");
 
             toEmailHtml = toEmailHtml
                 .Replace("{old-email}", email)
-                .Replace("{new-email}", newEmail);
+                .Replace("{new-email}", newEmail)
+                .Replace("{token}", token)
+                .Replace("{id}", authenticationResult.Identity);
 
             toEmailText = toEmailText
                 .Replace("{old-email}", email)
-                .Replace("{new-email}", newEmail);
+                .Replace("{new-email}", newEmail)
+                .Replace("{token}", token)
+                .Replace("{id}", authenticationResult.Identity);
 
             var fromEmail = _configuration.EmailChangeEmailFrom;
             if (string.IsNullOrWhiteSpace(fromEmail))
@@ -598,6 +619,51 @@ namespace OwinFramework.FormIdentification
             emailClient.Send(mailMessage2);
 
             return Redirect(context, _changeEmailSuccessPage.HasValue ? _changeEmailSuccessPage.Value : thisUrl);
+        }
+
+        /// <summary>
+        /// This request is handled in the main site domain when the user clicks
+        /// the link in the welcome message to verify their email address
+        /// </summary>
+        private Task HandleVerifyEmail(IOwinContext context)
+        {
+            var success = false;
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+
+            var tokenString = context.Request.Query["token"];
+            var identity = context.Request.Query["id"];
+
+            if (string.IsNullOrEmpty(tokenString) || string.IsNullOrEmpty(identity))
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " email verification URL must include a token and identity in the query string");
+            }
+            else
+            {
+                var token = _tokenStore.GetToken(_configuration.VerifyEmailTokenType, tokenString, "VerifyEmail", identity);
+                if (token.Status == TokenStatus.Allowed)
+                {
+                    var emailClaim = _identityStore.GetClaims(identity).FirstOrDefault(c => string.Equals(c.Name, ClaimNames.Email, StringComparison.InvariantCultureIgnoreCase));
+                    if (emailClaim == null)
+                    {
+                        if (trace != null) trace.WriteLine(GetType().Name + " the identity does not have an email claim");
+                    }
+                    else
+                    {
+                        _identityStore.UpdateClaim(
+                            identity,
+                            new IdentityClaim { Name = ClaimNames.Email, Value = emailClaim.Value, Status = ClaimStatus.Verified });
+                        success = true;
+                    }
+                }
+            }
+
+            var nextPage = success ? _verifyEmailSuccessPage : _verifyEmailFailPage;
+            if (!nextPage.HasValue)
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " must have email verification success and fail pages defined");
+                nextPage = _documentationPage;
+            }
+            return Redirect(context, nextPage.Value);
         }
 
         /// <summary>

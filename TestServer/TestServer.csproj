@@ -195,6 +195,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="exception.html" />
+    <Content Include="favicon.ico" />
     <Content Include="FormId\changeEmail.html" />
     <Content Include="FormId\changePassword.html" />
     <Content Include="FormId\signout.html" />
