@@ -610,21 +610,17 @@ namespace OwinFramework.FormIdentification
             if (string.IsNullOrEmpty(tokenString) || string.IsNullOrEmpty(identity))
             {
                 if (trace != null)
-                    trace.WriteLine(GetType().Name +
-                                    " email verification URL must include a token and identity in the query string");
+                    trace.WriteLine(GetType().Name + " email verification URL must include a token and identity in the query string");
             }
             else
             {
-                var token = _tokenStore.GetToken(_configuration.VerifyEmailTokenType, tokenString, "VerifyEmail",
-                    identity);
+                // TODO: Check that the email claim being verified is the one that the email was sent to
+                var token = _tokenStore.GetToken(_configuration.VerifyEmailTokenType, tokenString, "VerifyEmail", identity);
                 if (token.Status == TokenStatus.Allowed)
                 {
                     var emailClaim =
                         _identityStore.GetClaims(identity)
-                            .FirstOrDefault(
-                                c =>
-                                    string.Equals(c.Name, ClaimNames.Email,
-                                        StringComparison.InvariantCultureIgnoreCase));
+                            .FirstOrDefault(c => string.Equals(c.Name, ClaimNames.Email, StringComparison.InvariantCultureIgnoreCase));
                     if (emailClaim == null)
                     {
                         if (trace != null)
@@ -640,6 +636,7 @@ namespace OwinFramework.FormIdentification
                                 Value = emailClaim.Value,
                                 Status = ClaimStatus.Verified
                             });
+                        _tokenStore.DeleteToken(tokenString);
                         success = true;
                     }
                 }
