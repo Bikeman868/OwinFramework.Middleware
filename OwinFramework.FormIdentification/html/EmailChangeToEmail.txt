@@ -5,6 +5,6 @@ account was changed from {old-email} to {new-email}.
 
 To confirm this change please copy the address below into your browser.
 	
-	{page}?token={token}&id={id}
+	{page}?token={token}&id={id}&id={id}&email={new-email}
 
 Thank you.

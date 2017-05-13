@@ -1,0 +1,40 @@
+﻿<html>
+<head>
+    <title>Revert Email Address</title>
+    <link rel="stylesheet" href="/main.css">
+    <script>
+        function getParameterByName(name, url) {
+            if (!url) url = window.location.href;
+            name = name.replace(/[\[\]]/g, "\\$&");
+            var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                results = regex.exec(url);
+            if (!results) return null;
+            if (!results[2]) return '';
+            return decodeURIComponent(results[2].replace(/\+/g, " "));
+        }
+        
+        window.onload = function() {
+            document.getElementById("oldEmailSpan").value = getParameterByName("email");
+            document.getElementById("tokenField").value = getParameterByName("token");
+            document.getElementById("emailField").value = getParameterByName("email");
+            document.getElementById("idField").value = getParameterByName("id");
+        }
+    </script>
+</head>
+<body>
+    <h1>Revert Email Address</h1>
+    <p>Use this page to revert your email address back to <span id="oldEmailSpan"></span> and reset your password</p>
+
+    <form method="POST">
+        <input type="hidden" name="token" id="tokenField" />
+        <input type="hidden" name="email" id="emailField" />
+        <input type="hidden" name="id" id="idField" />
+        <div>
+            <label>New password <input type="password" name="newPassword" /></label>
+        </div>
+        <div>
+            <input type="submit" value="Revert email and reset password">
+        </div>
+    </form>
+</body>
+</html>

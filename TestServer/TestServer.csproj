@@ -196,14 +196,20 @@
   <ItemGroup>
     <Content Include="exception.html" />
     <Content Include="favicon.ico" />
+    <Content Include="FormId\revertEmailSuccess.html" />
+    <Content Include="FormId\revertEmailFail.html" />
+    <Content Include="FormId\revertEmail.html" />
     <Content Include="FormId\changeEmail.html" />
     <Content Include="FormId\changePassword.html" />
+    <Content Include="FormId\changeEmailSuccess.html" />
     <Content Include="FormId\signout.html" />
     <Content Include="FormId\signin.html" />
     <Content Include="FormId\signinFail.html" />
     <Content Include="FormId\signupFail.html" />
     <Content Include="FormId\signup.html" />
+    <Content Include="FormId\changeEmailFail.html" />
     <Content Include="FormId\verifyEmailFail.html" />
+    <Content Include="FormId\changePasswordSuccess.html" />
     <Content Include="FormId\verifyEmailSuccess.html" />
     <Content Include="welcome.html" />
     <Content Include="ui\web\favicon.ico" />

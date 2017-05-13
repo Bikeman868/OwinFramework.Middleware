@@ -129,6 +129,9 @@
             "verifyEmailPage": "/formId/verifyEmail",
             "verifyEmailSuccessPage": "/formId/verifyEmailSuccess.html",
             "verifyEmailFailPage": "/formId/verifyEmailFail.html",
+            "revertEmailPage": "/formId/revertEmail.html",
+            "revertEmailSuccessPage": "/formId/revertEmailSuccess.html",
+            "revertEmailFailPage": "/formId/revertEmailFail.html",
 
             "welcomeEmailFrom": "test@testserver",
             "emailChangeEmailFrom": "test@testserver",

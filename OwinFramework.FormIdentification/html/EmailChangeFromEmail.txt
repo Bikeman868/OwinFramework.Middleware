@@ -7,7 +7,7 @@ If you did not request this change, please copy and paste the cancellation link
 below into your browser and the email address for you account will be reset back 
 to {old-email}.
 
-{page}?token={token}&email={old-email}
+{page}?token={token}&email={old-email}&id={id}
 
 
 Thank you.

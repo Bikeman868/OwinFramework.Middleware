@@ -24,6 +24,11 @@ handling the HTTP(S) GET requests for these URLs.
 
 * Change their email address by providing their current email and password.
 
+* Confirm their new email address by clicking a link in the confirmation email.
+
+* Revert the email address change by clicking a link in an email that is sent to
+the original email address.
+
 * Logout, securing their account and deleting the remember me cookie.
 
 * Request a time-limited password reset email to be sent.

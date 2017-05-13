@@ -90,7 +90,11 @@ namespace OwinFramework.FormIdentification
         private PathString _verifyEmailPage;
         private PathString _verifyEmailSuccessPage;
         private PathString _verifyEmailFailPage;
-        
+
+        private PathString _revertEmailPage;
+        private PathString _revertEmailSuccessPage;
+        private PathString _revertEmailFailPage;
+
         private PathString _renewSessionPage;
         private PathString _updateIdentityPage;
 
@@ -133,6 +137,8 @@ namespace OwinFramework.FormIdentification
                     return HandleChangePassword(context);
                 if (context.Request.Path == _verifyEmailPage)
                     return HandleRequestVerifyEmail(context);
+                if (context.Request.Path == _revertEmailPage)
+                    return HandleRevertEmail(context);
             }
             else if (context.Request.Method == "GET")
             {
@@ -543,53 +549,69 @@ namespace OwinFramework.FormIdentification
                 authenticationResult.Identity,
                 new IdentityClaim { Name = ClaimNames.Username, Value = newEmail, Status = ClaimStatus.Verified });
 
-            var fromEmailHtml = GetEmbeddedResource("EmailChangeFromEmail.html");
-            var fromEmailText = GetEmbeddedResource("EmailChangeFromEmail.txt");
-
-            var token = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, "VerifyEmail", authenticationResult.Identity);
-
-            fromEmailHtml = fromEmailHtml
-                .Replace("{old-email}", email)
-                .Replace("{new-email}", newEmail)
-                .Replace("{token}", token)
-                .Replace("{id}", authenticationResult.Identity);
-
-            fromEmailText = fromEmailText
-                .Replace("{old-email}", email)
-                .Replace("{new-email}", newEmail)
-                .Replace("{token}", token)
-                .Replace("{id}", authenticationResult.Identity);
-
-            var toEmailHtml = GetEmbeddedResource("EmailChangeToEmail.html");
-            var toEmailText = GetEmbeddedResource("EmailChangeToEmail.txt");
-
-            toEmailHtml = toEmailHtml
-                .Replace("{old-email}", email)
-                .Replace("{new-email}", newEmail)
-                .Replace("{token}", token)
-                .Replace("{id}", authenticationResult.Identity);
-
-            toEmailText = toEmailText
-                .Replace("{old-email}", email)
-                .Replace("{new-email}", newEmail)
-                .Replace("{token}", token)
-                .Replace("{id}", authenticationResult.Identity);
-
             var fromEmail = _configuration.EmailChangeEmailFrom;
             if (string.IsNullOrWhiteSpace(fromEmail))
                 fromEmail = "email-change@" + context.Request.Host;
 
-            var mailMessage1 = new MailMessage(fromEmail, email, _configuration.EmailChangeEmailSubject, fromEmailText);
-            mailMessage1.Subject = _configuration.EmailChangeEmailSubject;
-            mailMessage1.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(fromEmailHtml, new ContentType("text/html")));
-
-            var mailMessage2 = new MailMessage(fromEmail, newEmail, _configuration.EmailChangeEmailSubject, toEmailText);
-            mailMessage1.Subject = _configuration.EmailChangeEmailSubject;
-            mailMessage1.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(toEmailHtml, new ContentType("text/html")));
-
             var emailClient = new SmtpClient();
-            emailClient.Send(mailMessage1);
-            emailClient.Send(mailMessage2);
+
+            if (_revertEmailPage.HasValue)
+            {
+                var fromEmailHtml = GetEmbeddedResource("EmailChangeFromEmail.html");
+                var fromEmailText = GetEmbeddedResource("EmailChangeFromEmail.txt");
+
+                var revertTtoken = _tokenStore.CreateToken(_configuration.RevertEmailTokenType, email, authenticationResult.Identity);
+                var pageUrl = GetNonSecurePrefix(context) + _revertEmailPage;
+
+                fromEmailHtml = fromEmailHtml
+                    .Replace("{page}", pageUrl)
+                    .Replace("{old-email}", email)
+                    .Replace("{new-email}", newEmail)
+                    .Replace("{token}", revertTtoken)
+                    .Replace("{id}", authenticationResult.Identity);
+
+                fromEmailText = fromEmailText
+                    .Replace("{page}", pageUrl)
+                    .Replace("{old-email}", email)
+                    .Replace("{new-email}", newEmail)
+                    .Replace("{token}", revertTtoken)
+                    .Replace("{id}", authenticationResult.Identity);
+            
+                var mailMessage = new MailMessage(fromEmail, email, _configuration.EmailChangeEmailSubject, fromEmailText);
+                mailMessage.Subject = _configuration.EmailChangeEmailSubject;
+                mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(fromEmailHtml, new ContentType("text/html")));
+
+                emailClient.Send(mailMessage);
+            }
+
+            if (_verifyEmailPage.HasValue)
+            {
+                var toEmailHtml = GetEmbeddedResource("EmailChangeToEmail.html");
+                var toEmailText = GetEmbeddedResource("EmailChangeToEmail.txt");
+
+                var verifyTtoken = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, newEmail, authenticationResult.Identity);
+                var pageUrl = GetNonSecurePrefix(context) + _verifyEmailPage;
+
+                toEmailHtml = toEmailHtml
+                    .Replace("{page}", pageUrl)
+                    .Replace("{old-email}", email)
+                    .Replace("{new-email}", newEmail)
+                    .Replace("{token}", verifyTtoken)
+                    .Replace("{id}", authenticationResult.Identity);
+
+                toEmailText = toEmailText
+                    .Replace("{page}", pageUrl)
+                    .Replace("{old-email}", email)
+                    .Replace("{new-email}", newEmail)
+                    .Replace("{token}", verifyTtoken)
+                    .Replace("{id}", authenticationResult.Identity);
+
+                var mailMessage = new MailMessage(fromEmail, newEmail, _configuration.EmailChangeEmailSubject, toEmailText);
+                mailMessage.Subject = _configuration.EmailChangeEmailSubject;
+                mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(toEmailHtml, new ContentType("text/html")));
+
+                emailClient.Send(mailMessage);
+            }
 
             return Redirect(context, _changeEmailSuccessPage.HasValue ? _changeEmailSuccessPage.Value : thisUrl);
         }
@@ -606,39 +628,30 @@ namespace OwinFramework.FormIdentification
 
             var tokenString = context.Request.Query["token"];
             var identity = context.Request.Query["id"];
+            var email = context.Request.Query["email"];
 
-            if (string.IsNullOrEmpty(tokenString) || string.IsNullOrEmpty(identity))
+            if (string.IsNullOrEmpty(tokenString) || 
+                string.IsNullOrEmpty(identity) ||
+                string.IsNullOrEmpty(email))
             {
                 if (trace != null)
-                    trace.WriteLine(GetType().Name + " email verification URL must include a token and identity in the query string");
+                    trace.WriteLine(GetType().Name + " email verification URL does not include all required query string parameters");
             }
             else
             {
-                // TODO: Check that the email claim being verified is the one that the email was sent to
-                var token = _tokenStore.GetToken(_configuration.VerifyEmailTokenType, tokenString, "VerifyEmail", identity);
+                var token = _tokenStore.GetToken(_configuration.VerifyEmailTokenType, tokenString, email, identity);
                 if (token.Status == TokenStatus.Allowed)
                 {
-                    var emailClaim =
-                        _identityStore.GetClaims(identity)
-                            .FirstOrDefault(c => string.Equals(c.Name, ClaimNames.Email, StringComparison.InvariantCultureIgnoreCase));
-                    if (emailClaim == null)
-                    {
-                        if (trace != null)
-                            trace.WriteLine(GetType().Name + " the identity does not have an email claim");
-                    }
-                    else
-                    {
-                        _identityStore.UpdateClaim(
-                            identity,
-                            new IdentityClaim
-                            {
-                                Name = ClaimNames.Email,
-                                Value = emailClaim.Value,
-                                Status = ClaimStatus.Verified
-                            });
-                        _tokenStore.DeleteToken(tokenString);
-                        success = true;
-                    }
+                    _identityStore.UpdateClaim(
+                        identity,
+                        new IdentityClaim
+                        {
+                            Name = ClaimNames.Email,
+                            Value = email,
+                            Status = ClaimStatus.Verified
+                        });
+                    _tokenStore.DeleteToken(tokenString);
+                    success = true;
                 }
             }
 
@@ -646,6 +659,73 @@ namespace OwinFramework.FormIdentification
             if (!nextPage.HasValue)
             {
                 if (trace != null) trace.WriteLine(GetType().Name + " must have email verification success and fail pages defined");
+                nextPage = _documentationPage;
+            }
+            return Redirect(context, nextPage.Value);
+        }
+
+        /// <summary>
+        /// This request is handled in the main site domain when the user chooses
+        /// not to proceed with their email address change. This method resets the
+        /// email back to the original and also resets the password. This can be used
+        /// in the situation where the user accidentally changed their email address to
+        /// one that they don't own and cannot verify.
+        /// </summary>
+        private Task HandleRevertEmail(IOwinContext context)
+        {
+            var success = false;
+            var trace = (TextWriter)context.Environment["host.TraceOutput"];
+
+            var form = context.Request.ReadFormAsync().Result;
+            var tokenString = form[_configuration.TokenFormField];
+            var identity = form[_configuration.IdentityFormField];
+            var oldEmail = form[_configuration.EmailFormField];
+            var password = form[_configuration.NewPasswordFormField];
+
+            if (string.IsNullOrEmpty(tokenString) ||
+                string.IsNullOrEmpty(identity) ||
+                string.IsNullOrEmpty(oldEmail) ||
+                string.IsNullOrEmpty(password))
+            {
+                if (trace != null)
+                    trace.WriteLine(GetType().Name + " email revert page does not include all required form variables");
+            }
+            else
+            {
+                var token = _tokenStore.GetToken(_configuration.RevertEmailTokenType, tokenString, oldEmail, identity);
+                if (token.Status == TokenStatus.Allowed)
+                {
+                    if (_identityStore.AddCredentials(identity, oldEmail, password))
+                    {
+                        _identityStore.UpdateClaim(
+                            identity,
+                            new IdentityClaim
+                            {
+                                Name = ClaimNames.Email,
+                                Value = oldEmail,
+                                Status = ClaimStatus.Unverified
+                            });
+
+                        _identityStore.UpdateClaim(
+                            identity,
+                            new IdentityClaim
+                            {
+                                Name = ClaimNames.Username,
+                                Value = oldEmail,
+                                Status = ClaimStatus.Verified
+                            });
+
+                        _tokenStore.DeleteToken(tokenString);
+
+                        success = true;
+                    }
+                }
+            }
+
+            var nextPage = success ? _revertEmailSuccessPage : _revertEmailFailPage;
+            if (!nextPage.HasValue)
+            {
+                if (trace != null) trace.WriteLine(GetType().Name + " must have revert email success and fail pages defined");
                 nextPage = _documentationPage;
             }
             return Redirect(context, nextPage.Value);
@@ -864,7 +944,7 @@ namespace OwinFramework.FormIdentification
             if (_verifyEmailPage.HasValue)
             {
                 var pageUrl = GetNonSecurePrefix(context) + _verifyEmailPage;
-                var tokenString = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, "VerifyEmail", identity);
+                var tokenString = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, email, identity);
                 var emailHtml = GetEmbeddedResource("WelcomeEmail.html");
                 var emailText = GetEmbeddedResource("WelcomeEmail.txt");
 
@@ -945,7 +1025,11 @@ namespace OwinFramework.FormIdentification
             _verifyEmailPage = cleanUrl(configuration.VerifyEmailPage);
             _verifyEmailSuccessPage = cleanUrl(configuration.VerifyEmailSuccessPage);
             _verifyEmailFailPage = cleanUrl(configuration.VerifyEmailFailPage);
-            
+
+            _revertEmailPage = cleanUrl(configuration.RevertEmailPage);
+            _revertEmailSuccessPage = cleanUrl(configuration.RevertEmailSuccessPage);
+            _revertEmailFailPage = cleanUrl(configuration.RevertEmailFailPage);
+
             _renewSessionPage = cleanUrl(configuration.RenewSessionPage);
             _updateIdentityPage = cleanUrl(configuration.UpdateIdentityPage);
 

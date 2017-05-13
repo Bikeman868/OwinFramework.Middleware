@@ -41,6 +41,10 @@ namespace OwinFramework.FormIdentification
         public string VerifyEmailSuccessPage { get; set; }
         public string VerifyEmailFailPage { get; set; }
 
+        public string RevertEmailPage { get; set; }
+        public string RevertEmailSuccessPage { get; set; }
+        public string RevertEmailFailPage { get; set; }
+
         public string RenewSessionPage { get; set; }
         public string UpdateIdentityPage { get; set; }
 
@@ -59,6 +63,7 @@ namespace OwinFramework.FormIdentification
         public string RememberMeFormField { get; set; }
         public string TokenFormField { get; set; }
         public string NewEmailFormField { get; set; }
+        public string IdentityFormField { get; set; }
 
         public string PasswordResetTokenType { get; set; }
         public string PasswordResetEmailFrom { get; set; }
@@ -68,6 +73,7 @@ namespace OwinFramework.FormIdentification
         public string EmailChangeEmailSubject { get; set; }
 
         public string VerifyEmailTokenType { get; set; }
+        public string RevertEmailTokenType { get; set; }
         
         public string WelcomeEmailFrom { get; set; }
         public string WelcomeEmailSubject { get; set; }
@@ -119,6 +125,10 @@ namespace OwinFramework.FormIdentification
             VerifyEmailSuccessPage = "/emailVerified";
             VerifyEmailFailPage = "/emailNotVerified";
 
+            RevertEmailPage = "/formId/revertEmail";
+            RevertEmailSuccessPage = "/emailReverted";
+            RevertEmailFailPage = "/emailNotReverted";
+
             RenewSessionPage = "/formId/renew";
             UpdateIdentityPage = "/formId/update";
 
@@ -128,6 +138,7 @@ namespace OwinFramework.FormIdentification
             RememberMeFormField = "rememberMe";
             TokenFormField = "token";
             NewEmailFormField = "newEmail";
+            IdentityFormField = "id";
 
             PasswordResetTokenType = "PasswordReset";
             PasswordResetEmailFrom = "";
@@ -137,6 +148,7 @@ namespace OwinFramework.FormIdentification
             EmailChangeEmailSubject = "Email address updated";
 
             VerifyEmailTokenType = "VerifyEmail";
+            RevertEmailTokenType = "RevertEmail";
 
             WelcomeEmailFrom = "";
             WelcomeEmailSubject = "Thank you for creating an account";
