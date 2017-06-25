@@ -54,6 +54,7 @@ namespace OwinFramework.FormIdentification
         public string SessionStatusName { get; set; }
         public string SessionRememberMeName { get; set; }
         public string SessionClaimsName { get; set; }
+        public string SessionIsAnonymousName { get; set;}
 
         public TimeSpan RememberMeFor { get; set; }
 
@@ -89,6 +90,7 @@ namespace OwinFramework.FormIdentification
             SessionStatusName = "form-identification-status";
             SessionRememberMeName = "form-identification-rememberme";
             SessionClaimsName = "form-identification-claims";
+            SessionIsAnonymousName = "form-dentification-anonymous";
 
             RememberMeFor = TimeSpan.FromDays(90);
 

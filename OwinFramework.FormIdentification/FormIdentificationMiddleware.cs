@@ -57,6 +57,7 @@ namespace OwinFramework.FormIdentification
         private string _sessionStatusName;
         private string _sessionRememberMeName;
         private string _sessionClaimsName;
+        private string _sessionIsAnonymousName;
 
         private PathString _documentationPage;
 
@@ -189,7 +190,9 @@ namespace OwinFramework.FormIdentification
 
             var identity = session.Get<string>(_sessionIdentityName);
             var claims = session.Get<List<IdentityClaim>>(_sessionClaimsName);
-            var identification = new Identification(identity ?? string.Empty, claims);
+            var purposes = session.Get<List<string>>(_sessionPurposeName);
+            var isAnonymous = session.Get<bool>(_sessionIsAnonymousName);
+            var identification = new Identification(identity ?? string.Empty, claims, isAnonymous, purposes);
             context.SetFeature<IIdentification>(identification);
 
             identification.AllowAnonymous = true;
@@ -269,7 +272,7 @@ namespace OwinFramework.FormIdentification
                 if (authenticationResult.Status != AuthenticationStatus.Authenticated)
                     throw new Exception("Login failed on newly created account");
 
-                _identityStore.UpdateClaim(identity, new IdentityClaim { Name = ClaimNames.Email, Value = email, Status = ClaimStatus.Unverified });
+                _identityStore.UpdateClaim(identity, new IdentityClaim(ClaimNames.Email, email, ClaimStatus.Unverified ));
                 var claims = _identityStore.GetClaims(authenticationResult.Identity);
 
                 SetSession(
@@ -278,7 +281,8 @@ namespace OwinFramework.FormIdentification
                     authenticationResult.Purposes, 
                     authenticationResult.Status, 
                     rememberMe ? authenticationResult.RememberMeToken : null,
-                    claims);
+                    claims,
+                    false);
 
                 if (string.IsNullOrEmpty(_secureDomain))
                 {
@@ -348,7 +352,8 @@ namespace OwinFramework.FormIdentification
                     authenticationResult.Purposes,
                     authenticationResult.Status,
                     rememberMe ? authenticationResult.RememberMeToken : null,
-                    claims);
+                    claims,
+                    false);
 
                 if (string.IsNullOrEmpty(_secureDomain))
                 {
@@ -389,7 +394,7 @@ namespace OwinFramework.FormIdentification
 
             _signoutCount++;
 
-            SetSession(session, null, null, AuthenticationStatus.NotFound, null, null);
+            SetSession(session, null, null, AuthenticationStatus.NotFound, null, null, true);
 
             if (string.IsNullOrEmpty(_secureDomain))
             {
@@ -543,11 +548,11 @@ namespace OwinFramework.FormIdentification
 
             _identityStore.UpdateClaim(
                 authenticationResult.Identity, 
-                new IdentityClaim { Name = ClaimNames.Email, Value = newEmail, Status = ClaimStatus.Unverified});
+                new IdentityClaim(ClaimNames.Email, newEmail, ClaimStatus.Unverified));
 
             _identityStore.UpdateClaim(
                 authenticationResult.Identity,
-                new IdentityClaim { Name = ClaimNames.Username, Value = newEmail, Status = ClaimStatus.Verified });
+                new IdentityClaim(ClaimNames.Username, newEmail, ClaimStatus.Verified));
 
             var fromEmail = _configuration.EmailChangeEmailFrom;
             if (string.IsNullOrWhiteSpace(fromEmail))
@@ -644,12 +649,7 @@ namespace OwinFramework.FormIdentification
                 {
                     _identityStore.UpdateClaim(
                         identity,
-                        new IdentityClaim
-                        {
-                            Name = ClaimNames.Email,
-                            Value = email,
-                            Status = ClaimStatus.Verified
-                        });
+                        new IdentityClaim(ClaimNames.Email, email, ClaimStatus.Verified));
                     _tokenStore.DeleteToken(tokenString);
                     success = true;
                 }
@@ -699,21 +699,11 @@ namespace OwinFramework.FormIdentification
                     {
                         _identityStore.UpdateClaim(
                             identity,
-                            new IdentityClaim
-                            {
-                                Name = ClaimNames.Email,
-                                Value = oldEmail,
-                                Status = ClaimStatus.Unverified
-                            });
+                            new IdentityClaim(ClaimNames.Email, oldEmail, ClaimStatus.Unverified));
 
                         _identityStore.UpdateClaim(
                             identity,
-                            new IdentityClaim
-                            {
-                                Name = ClaimNames.Username,
-                                Value = oldEmail,
-                                Status = ClaimStatus.Verified
-                            });
+                            new IdentityClaim(ClaimNames.Username, oldEmail, ClaimStatus.Verified));
 
                         _tokenStore.DeleteToken(tokenString);
 
@@ -791,7 +781,8 @@ namespace OwinFramework.FormIdentification
                     null, 
                     AuthenticationStatus.NotFound, 
                     null, 
-                    null);
+                    null,
+                    true);
                 return Redirect(context, failUrl);
             }
 
@@ -803,7 +794,8 @@ namespace OwinFramework.FormIdentification
                 authenticationResult.Purposes, 
                 authenticationResult.Status, 
                 authenticationResult.RememberMeToken,
-                claims);
+                claims,
+                authenticationResult.Status == AuthenticationStatus.Anonymous);
 
             return Redirect(
                 context, 
@@ -841,7 +833,8 @@ namespace OwinFramework.FormIdentification
             AuthenticationStatus status;
             string rememberMeToken;
             List<IdentityClaim> claims;
-            GetSession(session, out identity, out purpose, out status, out rememberMeToken, out claims);
+            bool isAnonymous;
+            GetSession(session, out identity, out purpose, out status, out rememberMeToken, out claims, out isAnonymous);
 
             if (string.IsNullOrEmpty(rememberMeToken))
                 context.Response.Cookies.Delete(_cookieName);
@@ -878,22 +871,15 @@ namespace OwinFramework.FormIdentification
             IEnumerable<string> purposes,
             AuthenticationStatus status,
             string rememberMeToken,
-            IEnumerable<IIdentityClaim> claims)
+            IEnumerable<IIdentityClaim> claims,
+            bool isAnonymous)
         {
             session.Set(_sessionIdentityName, identity ?? string.Empty);
-            session.Set(_sessionPurposeName,
-                purposes == null
-                ? new List<string>()
-                : purposes.ToList());
+            session.Set(_sessionPurposeName, purposes == null ? new List<string>() : purposes.ToList());
             session.Set(_sessionStatusName, status);
             session.Set(_sessionRememberMeName, rememberMeToken);
-            session.Set<List<IdentityClaim>>(
-                _sessionClaimsName, 
-                claims == null 
-                    ? null 
-                    : claims
-                        .Select(c => new IdentityClaim { Name = c.Name, Value = c.Value, Status = c.Status })
-                        .ToList());
+            session.Set(_sessionClaimsName, claims == null ? null : claims.Select(c => new IdentityClaim(c)).ToList());
+            session.Set(_sessionIsAnonymousName, isAnonymous);
         }
 
         private void GetSession(
@@ -902,13 +888,15 @@ namespace OwinFramework.FormIdentification
             out IList<string> purposes,
             out AuthenticationStatus status,
             out string rememberMeToken,
-            out List<IdentityClaim> claims)
+            out List<IdentityClaim> claims,
+            out bool isAnonymous)
         {
             identity = session.Get<string>(_sessionIdentityName) ?? string.Empty;
             purposes = session.Get<List<string>>(_sessionPurposeName) ?? new List<string>();
             status = session.Get<AuthenticationStatus>(_sessionStatusName);
             rememberMeToken = session.Get<string>(_sessionRememberMeName);
             claims = session.Get<List<IdentityClaim>>(_sessionClaimsName);
+            isAnonymous = session.Get<bool>(_sessionIsAnonymousName);
         }
 
         private string GetThisUrl(IOwinContext context)
@@ -1041,6 +1029,7 @@ namespace OwinFramework.FormIdentification
             _sessionStatusName = (configuration.SessionStatusName ?? string.Empty).ToLower().Replace(' ', '-');
             _sessionRememberMeName = (configuration.SessionRememberMeName ?? string.Empty).ToLower().Replace(' ', '-');
             _sessionClaimsName = (configuration.SessionClaimsName ?? string.Empty).ToLower().Replace(' ', '-');
+            _sessionIsAnonymousName = (configuration.SessionIsAnonymousName ?? string.Empty).ToLower().Replace(' ', '-');
         }
 
         #endregion
@@ -1091,6 +1080,7 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{sessionStatusName}", _sessionStatusName);
             document = document.Replace("{sessionRememberMeName}", _sessionRememberMeName);
             document = document.Replace("{sessionClaimsName}", _sessionClaimsName);
+            document = document.Replace("{sessionAnonymousName}", _sessionIsAnonymousName);
 
             document = document.Replace("{rememberMeFor}", _configuration.RememberMeFor.ToString());
 
@@ -1142,6 +1132,7 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{sessionStatusName.default}", defaultConfiguration.SessionStatusName);
             document = document.Replace("{sessionRememberMeName.default}", defaultConfiguration.SessionRememberMeName);
             document = document.Replace("{sessionClaimsName.default}", defaultConfiguration.SessionClaimsName);
+            document = document.Replace("{sessionAnonymousName.default}", defaultConfiguration.SessionIsAnonymousName);
 
             document = document.Replace("{rememberMeFor.default}", defaultConfiguration.RememberMeFor.ToString());
 

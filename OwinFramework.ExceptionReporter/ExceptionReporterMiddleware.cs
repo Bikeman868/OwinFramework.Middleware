@@ -119,7 +119,7 @@ namespace OwinFramework.ExceptionReporter
             if(!string.IsNullOrEmpty(permission))
             {
                 var authorization = context.GetFeature<IAuthorization>();
-                if (authorization != null && authorization.HasPermission(permission))
+                if (authorization != null && authorization.HasPermission(permission, null))
                     return true;
             }
             return false;
