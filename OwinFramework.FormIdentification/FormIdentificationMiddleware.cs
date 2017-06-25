@@ -155,7 +155,7 @@ namespace OwinFramework.FormIdentification
 
             var identification = context.GetFeature<IIdentification>();
 
-            if (identification != null && identification.IsAnonymous && string.IsNullOrEmpty(identification.Identity))
+            if (identification != null && !identification.IsAnonymous && string.IsNullOrEmpty(identification.Identity))
             {
                 // We get here when we don't know anything about the user because their session expired
                 var upstreamIdentification = context.GetFeature<IUpstreamIdentification>();
@@ -188,10 +188,14 @@ namespace OwinFramework.FormIdentification
             if (session == null)
                 throw new Exception("Session middleware is required for Form Identification to work");
 
-            var identity = session.Get<string>(_sessionIdentityName);
-            var claims = session.Get<List<IdentityClaim>>(_sessionClaimsName);
-            var purposes = session.Get<List<string>>(_sessionPurposeName);
-            var isAnonymous = session.Get<bool>(_sessionIsAnonymousName);
+            string identity;
+            List<string> purposes;
+            AuthenticationStatus status;
+            string rememberMe;
+            List<IdentityClaim> claims;
+            bool isAnonymous;
+            GetSession(session, out identity, out purposes, out status, out rememberMe, out claims, out isAnonymous);
+
             var identification = new Identification(identity ?? string.Empty, claims, isAnonymous, purposes);
             context.SetFeature<IIdentification>(identification);
 
@@ -829,7 +833,7 @@ namespace OwinFramework.FormIdentification
             var session = context.GetFeature<ISession>();
 
             string identity;
-            IList<string> purpose;
+            List<string> purpose;
             AuthenticationStatus status;
             string rememberMeToken;
             List<IdentityClaim> claims;
@@ -885,7 +889,7 @@ namespace OwinFramework.FormIdentification
         private void GetSession(
             ISession session,
             out string identity,
-            out IList<string> purposes,
+            out List<string> purposes,
             out AuthenticationStatus status,
             out string rememberMeToken,
             out List<IdentityClaim> claims,

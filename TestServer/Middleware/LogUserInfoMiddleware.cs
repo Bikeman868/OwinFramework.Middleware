@@ -30,14 +30,21 @@ namespace OwinFramework.Middleware.TestServer.Middleware
             if (identification != null)
             {
                 if (identification.IsAnonymous)
-                    output += " Anonymous user";
+                    output += " Anonymous user.";
                 else
-                    output += " User " + identification.Identity;
+                    output += " User " + identification.Identity + ".";
+
+                if (identification.Purposes != null && identification.Purposes.Count > 0)
+                {
+                    output += " limited to " + string.Join(" and ", identification.Purposes) + ".";
+                }
+
                 if (identification.Claims != null && identification.Claims.Count > 0)
                 {
                     output += " claiming";
                     foreach (var claim in identification.Claims)
                         output += " " + claim.Name + "=" + claim.Value + "(" + claim.Status + ")";
+                    output += ".";
                 }
             }
 
