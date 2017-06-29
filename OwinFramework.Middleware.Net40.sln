@@ -6,6 +6,26 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.RouteVisualizer.Net40", "OwinFramework.RouteVisualizer\OwinFramework.RouteVisualizer.Net40.csproj", "{A8A9E53E-AEF1-4597-9D19-2C790BBD1DDB}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7E4DEB16-BBB8-46A5-84BC-FCAED244E99D}"
+	ProjectSection(SolutionItems) = preProject
+		.gitattributes = .gitattributes
+		.gitignore = .gitignore
+		NuGet\Owin.Framework.AnalysisReporter.nuspec = NuGet\Owin.Framework.AnalysisReporter.nuspec
+		NuGet\Owin.Framework.Dart.nuspec = NuGet\Owin.Framework.Dart.nuspec
+		NuGet\Owin.Framework.DefaultDocument.nuspec = NuGet\Owin.Framework.DefaultDocument.nuspec
+		NuGet\Owin.Framework.Documenter.nuspec = NuGet\Owin.Framework.Documenter.nuspec
+		NuGet\Owin.Framework.ExceptionReporter.nuspec = NuGet\Owin.Framework.ExceptionReporter.nuspec
+		NuGet\Owin.Framework.FormIdentification.nuspec = NuGet\Owin.Framework.FormIdentification.nuspec
+		NuGet\Owin.Framework.Less.nuspec = NuGet\Owin.Framework.Less.nuspec
+		NuGet\Owin.Framework.NotFound.nuspec = NuGet\Owin.Framework.NotFound.nuspec
+		NuGet\Owin.Framework.OutputCache.nuspec = NuGet\Owin.Framework.OutputCache.nuspec
+		NuGet\Owin.Framework.RouteVisualizer.nuspec = NuGet\Owin.Framework.RouteVisualizer.nuspec
+		NuGet\Owin.Framework.Session.nuspec = NuGet\Owin.Framework.Session.nuspec
+		NuGet\Owin.Framework.StaticFiles.nuspec = NuGet\Owin.Framework.StaticFiles.nuspec
+		NuGet\Owin.Framework.Versioning.nuspec = NuGet\Owin.Framework.Versioning.nuspec
+		NuGet\Package.cmd = NuGet\Package.cmd
+		readme.md = readme.md
+		todo.md = todo.md
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OwinFramework.AnalysisReporter.Net40", "OwinFramework.AnalysisReporter\OwinFramework.AnalysisReporter.Net40.csproj", "{A5787AA0-8C7C-4570-AD4D-E8F093E77434}"
 EndProject
