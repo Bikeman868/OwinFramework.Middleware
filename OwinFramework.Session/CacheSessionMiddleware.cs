@@ -74,11 +74,6 @@ namespace OwinFramework.Session
         private class CacheEntry
         {
             public string Name { get; set; }
-            public string Json { get; set; }
-        }
-
-        private class DeserializedCacheEntry : CacheEntry
-        {
             public object Value { get; set; }
         }
 
@@ -88,8 +83,8 @@ namespace OwinFramework.Session
             private readonly IOwinContext _context;
             private readonly SessionConfiguration _configuration;
 
-            private List<CacheEntry> _cacheEntries;
-            private IDictionary<string, DeserializedCacheEntry> _sessionVariables;
+            private Dictionary<string, string> _cacheEntries;
+            private IDictionary<string, CacheEntry> _sessionVariables;
             private HashSet<string> _modifiedKeys;
 
             public string SessionId { get; private set; }
@@ -120,30 +115,11 @@ namespace OwinFramework.Session
             {
                 if (HasSession && _modifiedKeys.Count > 0)
                 {
-                    if (_cacheEntries == null)
-                    {
-                        _cacheEntries = new List<CacheEntry>();
-                    }
-                    else
-                    {
-                        for (var i = 0; i < _cacheEntries.Count;)
-                        {
-                            if (_modifiedKeys.Contains(_cacheEntries[i].Name))
-                                _cacheEntries.RemoveAt(i);
-                            else
-                                i++;
-                        }
-                    }
-
+                    _cacheEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     foreach (var key in _modifiedKeys)
                     {
                         var modifiedEntry = _sessionVariables[key];
-                        _cacheEntries.Add(
-                            new CacheEntry
-                            {
-                                Name = modifiedEntry.Name,
-                                Json = JsonConvert.SerializeObject(modifiedEntry.Value)
-                            });
+                        _cacheEntries[modifiedEntry.Name] = JsonConvert.SerializeObject(modifiedEntry.Value);
                     }
 
                     _sessionVariables = null;
@@ -156,10 +132,10 @@ namespace OwinFramework.Session
                 if (!HasSession || sessionId != null)
                 {
                     SessionId = sessionId ?? _context.Request.Cookies[_configuration.CookieName];
+                    _cacheEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     if (string.IsNullOrWhiteSpace(SessionId))
                     {
                         SessionId = Guid.NewGuid().ToShortString();
-                        _cacheEntries = new List<CacheEntry>();
                         var cookieOptions = new CookieOptions
                             { 
                                 Expires = DateTime.UtcNow.AddDays(1)
@@ -170,11 +146,15 @@ namespace OwinFramework.Session
                     }
                     else
                     {
-                        _cacheEntries = _cache.Get<List<CacheEntry>>(SessionId, null, null, _configuration.CacheCategory) 
-                            ?? new List<CacheEntry>();
+                        var cacheEntries = _cache.Get<Dictionary<string, string>>(SessionId, null, null, _configuration.CacheCategory);
+                        if (cacheEntries != null)
+                        {
+                            foreach (var entry in cacheEntries)
+                                _cacheEntries[entry.Key] = entry.Value;
+                        }
                     }
                     _modifiedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                    _sessionVariables = new Dictionary<string, DeserializedCacheEntry>(StringComparer.OrdinalIgnoreCase);
+                    _sessionVariables = new Dictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
                 }
                 return true;
             }
@@ -183,44 +163,38 @@ namespace OwinFramework.Session
             {
                 if (!HasSession) return default(T);
 
-                DeserializedCacheEntry deserializedCacheEntry;
-                if (!_sessionVariables.TryGetValue(name, out deserializedCacheEntry))
+                CacheEntry cacheEntry;
+                if (!_sessionVariables.TryGetValue(name, out cacheEntry))
                 {
-                    deserializedCacheEntry = new DeserializedCacheEntry { Name = name };
+                    cacheEntry = new CacheEntry { Name = name };
 
-                    var cacheEntry = _cacheEntries.FirstOrDefault(e => string.Equals(e.Name, name, StringComparison.OrdinalIgnoreCase));
-                    if (cacheEntry != null)
-                    {
-                        deserializedCacheEntry.Json = cacheEntry.Json;
-                        deserializedCacheEntry.Value = JsonConvert.DeserializeObject<T>(cacheEntry.Json);
-                    }
-                    else
-                    {
-                        deserializedCacheEntry.Value = default(T);
-                    }
+                    string json;
+                    cacheEntry.Value = _cacheEntries.TryGetValue(name, out json) 
+                        ? JsonConvert.DeserializeObject<T>(json)
+                        : default(T);
 
-                    _sessionVariables[name] = deserializedCacheEntry;
+                    _sessionVariables[name] = cacheEntry;
                 }
-                return (T)deserializedCacheEntry.Value;
+                return (T)cacheEntry.Value;
             }
 
             public void Set<T>(string name, T value)
             {
                 if (HasSession)
                 {
-                    DeserializedCacheEntry deserializedCacheEntry;
-                    if (_sessionVariables.TryGetValue(name, out deserializedCacheEntry))
+                    CacheEntry cacheEntry;
+                    if (_sessionVariables.TryGetValue(name, out cacheEntry))
                     {
-                        deserializedCacheEntry.Value = value;
+                        cacheEntry.Value = value;
                     }
                     else
                     {
-                        deserializedCacheEntry = new DeserializedCacheEntry
+                        cacheEntry = new CacheEntry
                             {
                                 Name = name,
                                 Value = value
                             };
-                        _sessionVariables[name] = deserializedCacheEntry;
+                        _sessionVariables[name] = cacheEntry;
                     }
                     if (!_modifiedKeys.Contains(name)) _modifiedKeys.Add(name);
                 }
