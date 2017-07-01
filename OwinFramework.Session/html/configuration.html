@@ -42,8 +42,8 @@
         </style>    
     </head>
     <body>
-        <h1>Owin Framework not found middleware configuration</h1>
-        <p>The not found middleware in the Owin  Framework supports the following configuration options:</p>
+        <h1>Owin Framework session middleware configuration</h1>
+        <p>The session middleware in the Owin  Framework supports the following configuration options:</p>
         <table class="properties">
             <tr>
                 <th>Property</th>
@@ -53,13 +53,46 @@
             </tr>
             <tr>
                 <td class="property">Template</td>
-                <td>{template.default}</td>
-                <td>{template}</td>
+                <td>{cacheCategory.default}</td>
+                <td>{cacheCategory}</td>
                 <td>
                     <p>
-                        The relative path to an html file that contains the template for your not found page.
-                        If you set this to an empty string (the default) then the middleware will use a default
-                        template embedded in the middleware DLL.
+                        The session object will be stored in the ICache facility using this category
+                        name. The cache facility can be configured with different behaviours for each
+                        category of information stored in it.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">Template</td>
+                <td>{sessionDuration.default}</td>
+                <td>{sessionDuration}</td>
+                <td>
+                    <p>
+                        The amount of time that the session is valid for. After this time expires the
+                        session will be deleted and re-created empty. Downstream middleware treats the
+                        session as a cache and rebuilds missing information from backing store when the
+                        session expires.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">Template</td>
+                <td>{cookieName.default}</td>
+                <td>{cookieName}</td>
+                <td>
+                    <p>
+                        The name of the cookie to store on the browser that holds the session ID.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">Template</td>
+                <td>{cookieDomainName.default}</td>
+                <td>{cookieDomainName}</td>
+                <td>
+                    <p>
+                        The domain name to store the cookie under on the browser.
                     </p>
                 </td>
             </tr>

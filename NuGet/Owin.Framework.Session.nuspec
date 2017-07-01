@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>Owin.Framework.NotFound</id>
-    <version>2.5.0</version>
-    <title>Owin.Framework.NotFound</title>
+    <id>Owin.Framework.Session</id>
+    <version>2.5.1</version>
+    <title>Owin.Framework.Session</title>
     <authors>Martin Halliday</authors>
     <owners>Martin Halliday</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Owin middleware to return 404 responses</description>
-    <copyright>Copyright Martin Halliday 2016</copyright>
-    <releaseNotes>Updated to Owin Framework 2.2.8</releaseNotes>
-    <summary>This middleware always returns a 404 response when no other middleware handled the request</summary>
-    <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.NotFound</projectUrl>
+    <description>Owin middleware to maintain sessions using cookies</description>
+    <copyright>Copyright Martin Halliday 2017</copyright>
+    <releaseNotes>First released version</releaseNotes>
+    <summary>This middleware provides a persistent session per user for other middleware to use</summary>
+    <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Session</projectUrl>
     <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
-    <tags>OWIN framework 404 not-found</tags>
+    <tags>OWIN framework session</tags>
     <dependencies>
       <dependency id="Owin.Framework" version="2.5.1" />
       <dependency id="Ioc.Modules" version="1.1.4" />
@@ -22,8 +22,8 @@
     </references>
   </metadata>
   <files>
-    <file src="..\OwinFramework.NotFound\bin\Net40\Release\OwinFramework.NotFound.dll" target="lib\net40"/>
-    <file src="..\OwinFramework.NotFound\bin\Net45\Release\OwinFramework.NotFound.dll" target="lib\net45"/>
+    <file src="..\OwinFramework.Session\bin\Net40\Release\OwinFramework.Session.dll" target="lib\net40"/>
+    <file src="..\OwinFramework.Session\bin\Net45\Release\OwinFramework.Session.dll" target="lib\net45"/>
     <file src="..\*.md" target=""/>
   </files>
 </package>

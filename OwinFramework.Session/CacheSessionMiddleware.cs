@@ -160,13 +160,13 @@ namespace OwinFramework.Session
                     {
                         SessionId = Guid.NewGuid().ToShortString();
                         _cacheEntries = new List<CacheEntry>();
-                        _context.Response.Cookies.Append(
-                            _configuration.CookieName, 
-                            SessionId, 
-                            new CookieOptions 
+                        var cookieOptions = new CookieOptions
                             { 
                                 Expires = DateTime.UtcNow.AddDays(1)
-                            });
+                            };
+                        if (!string.IsNullOrEmpty(_configuration.CookieDomainName))
+                            cookieOptions.Domain = _configuration.CookieDomainName;
+                        _context.Response.Cookies.Append(_configuration.CookieName, SessionId, cookieOptions);
                     }
                     else
                     {
