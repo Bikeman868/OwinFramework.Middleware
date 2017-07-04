@@ -10,6 +10,8 @@ namespace OwinFramework.Less
         public string RootDirectory { get; set; }
         public bool Enabled { get; set; }
         public bool AnalyticsEnabled { get; set; }
+        public bool Minify { get; set; }
+        public bool TraceLog { get; set; }
 
         public LessConfiguration()
         {
@@ -18,6 +20,8 @@ namespace OwinFramework.Less
             RootDirectory = "~\\styles";
             Enabled = true;
             AnalyticsEnabled = true;
+            Minify = false;
+            TraceLog = false;
         }
     }
 }

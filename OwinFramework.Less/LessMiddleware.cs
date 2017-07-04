@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using dotless.Core.configuration;
 using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
@@ -134,9 +135,28 @@ namespace OwinFramework.Less
 #if DEBUG
                         if (trace != null) trace.WriteLine(GetType().Name + " compiling Less file to CSS");
 #endif
-                        var css = dotless.Core.Less.Parse(fileContent);
-                        context.Response.Write(css);
-                        _filesCompiledCount++;
+                        try
+                        {
+                            var css = dotless.Core.Less.Parse(
+                                fileContent, 
+                                new DotlessConfiguration 
+                                {
+                                    Logger = _configuration.TraceLog ? typeof(DotLessCustomLogger) : typeof(dotless.Core.Loggers.NullLogger),
+                                    MinifyOutput = _configuration.Minify
+                                });
+                            context.Response.Write(css);
+                            _filesCompiledCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            context.Response.Write("/* Compilation error in LESS file " + cssFileContext.PhysicalFile + Environment.NewLine);
+                            while (ex != null)
+                            {
+                                context.Response.Write(ex.GetType().FullName + " " + ex.Message + Environment.NewLine);
+                                ex = ex.InnerException;
+                            }
+                            context.Response.Write("*/" + Environment.NewLine);
+                        }
                     }
                     else
                     {
@@ -435,5 +455,62 @@ namespace OwinFramework.Less
         }
 
         #endregion
+
+        private class DotLessCustomLogger: dotless.Core.Loggers.ILogger
+        {
+            public void Debug(string message, params object[] args)
+            {
+                WriteLine(message, args);
+            }
+
+            public void Debug(string message)
+            {
+                WriteLine(message);
+            }
+
+            public void Error(string message, params object[] args)
+            {
+                WriteLine(message, args);
+            }
+
+            public void Error(string message)
+            {
+                WriteLine(message);
+            }
+
+            public void Info(string message, params object[] args)
+            {
+                WriteLine(message, args);
+            }
+
+            public void Info(string message)
+            {
+                WriteLine(message);
+            }
+
+            public void Log(dotless.Core.Loggers.LogLevel level, string message)
+            {
+                WriteLine(message);
+            }
+
+            public void Warn(string message, params object[] args)
+            {
+                WriteLine(message, args);
+            }
+
+            public void Warn(string message)
+            {
+                WriteLine(message);
+            }
+
+            private void WriteLine(string message, params object[] args)
+            {
+                message = message.Replace("\r", "").Replace("\n", "\nLESS: ");
+                if (args == null || args.Length == 0)
+                    System.Diagnostics.Trace.WriteLine("LESS: " + message);
+                else
+                    System.Diagnostics.Trace.WriteLine(string.Format("LESS: " + message, args));
+            }
+        }
     }
 }
