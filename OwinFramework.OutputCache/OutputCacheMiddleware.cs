@@ -23,13 +23,15 @@ namespace OwinFramework.OutputCache
         IUpstreamCommunicator<IUpstreamOutputCache>,
         IConfigurable,
         ISelfDocumenting,
-        IAnalysable
+        IAnalysable,
+        ITraceable
     {
         private readonly ICache _cache;
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
+        public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         private int _cacheHitCount;
         private int _cacheMissCount;
@@ -66,16 +68,11 @@ namespace OwinFramework.OutputCache
             if (!string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
                 return next();
 
-#if DEBUG
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-#endif
 
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
-#endif
+                Trace(context, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
             
@@ -88,9 +85,7 @@ namespace OwinFramework.OutputCache
             if (outputCache.CachedContentIsAvailable
                 && outputCache.UseCachedContent)
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " returning cached response");
-#endif
+                Trace(context, () => GetType().Name + " returning cached response");
                 _useCachedContentCount++;
                 return outputCache.SendCachedResponse();
             }
@@ -100,14 +95,10 @@ namespace OwinFramework.OutputCache
 
             return next().ContinueWith(t =>
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " flushing captured response to actual response stream");
-#endif
+                Trace(context, () => GetType().Name + " flushing captured response to actual response stream");
                 outputCache.SendCapturedOutput();
 
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " saving response to cache");
-#endif
+                Trace(context, () => GetType().Name + " saving response to cache");
                 if (outputCache.SaveToCache())
                     _addedToCacheCount++;
             });

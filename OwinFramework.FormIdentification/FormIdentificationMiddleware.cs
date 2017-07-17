@@ -25,7 +25,8 @@ namespace OwinFramework.FormIdentification
         IUpstreamCommunicator<IUpstreamSession>,
         IConfigurable,
         ISelfDocumenting,
-        IAnalysable
+        IAnalysable,
+        ITraceable
     {
         private const string _anonymousUserIdentity = "urn:form.identity:anonymous:";
 
@@ -33,6 +34,7 @@ namespace OwinFramework.FormIdentification
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
+        public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         private readonly IIdentityStore _identityStore;
         private readonly ITokenStore _tokenStore;
@@ -172,10 +174,13 @@ namespace OwinFramework.FormIdentification
             // If identification middleware further up the pipeline already 
             // identified the user then do nothing here
             var priorIdentification = context.GetFeature<IIdentification>();
-            if (priorIdentification != null && 
-                !string.IsNullOrEmpty(priorIdentification.Identity) && 
+            if (priorIdentification != null &&
+                !string.IsNullOrEmpty(priorIdentification.Identity) &&
                 !priorIdentification.IsAnonymous)
+            {
+                Trace(context, () => "The user was already identified by prior middleware");
                 return;
+            }
 
             var upstreamSession = context.GetFeature<IUpstreamSession>();
             if (upstreamSession == null)
@@ -207,6 +212,8 @@ namespace OwinFramework.FormIdentification
             IOwinContext context, 
             IUpstreamIdentification upstreamIdentification)
         {
+            Trace(context, () => GetType().Name + " renewing session");
+
             var session = context.GetFeature<ISession>();
             var upstreamSession = context.GetFeature<IUpstreamSession>();
             if (session == null || upstreamSession == null)
@@ -227,6 +234,8 @@ namespace OwinFramework.FormIdentification
             else
                 renewSessionUrl += "&fail=" + Uri.EscapeDataString(signinUrl);
 
+            Trace(context, () => GetType().Name + " redirecting to " + renewSessionUrl);
+            
             context.Response.Redirect(renewSessionUrl);
             return context.Response.WriteAsync(string.Empty);
         }
@@ -241,6 +250,8 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleSignup(IOwinContext context)
         {
+            Trace(context, () => GetType().Name + " handling sign up request");
+
             var form = context.Request.ReadFormAsync().Result;
 
             var email = form[_configuration.EmailFormField];
@@ -320,6 +331,8 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleSignin(IOwinContext context)
         {
+            Trace(context, () => GetType().Name + " handling sign in request");
+
             var form = context.Request.ReadFormAsync().Result;
 
             var email = form[_configuration.EmailFormField];
@@ -391,6 +404,8 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleSignout(IOwinContext context)
         {
+            Trace(context, () => GetType().Name + " handling sign out request");
+
             var upstreamSession = context.GetFeature<IUpstreamSession>();
             var session = context.GetFeature<ISession>();
             if (upstreamSession == null || session == null)
@@ -425,6 +440,8 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleChangePassword(IOwinContext context)
         {
+            Trace(context, () => GetType().Name + " handling change password request");
+
             var form = context.Request.ReadFormAsync().Result;
 
             var email = form[_configuration.EmailFormField];
@@ -450,6 +467,8 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleSendPasswordReset(IOwinContext context)
         {
+            Trace(context, () => GetType().Name + " handling send password reset request");
+
             var form = context.Request.ReadFormAsync().Result;
             var email = form[_configuration.EmailFormField];
 
@@ -496,6 +515,8 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleResetPassword(IOwinContext context)
         {
+            Trace(context, () => GetType().Name + " handling reset password request");
+
             var form = context.Request.ReadFormAsync().Result;
 
             var tokenString = form[_configuration.TokenFormField];
@@ -534,6 +555,8 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleChangeEmail(IOwinContext context)
         {
+            Trace(context, () => GetType().Name + " handling change email request");
+
             var form = context.Request.ReadFormAsync().Result;
             var email = form[_configuration.EmailFormField];
             var password = form[_configuration.PasswordFormField];
@@ -632,6 +655,8 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleVerifyEmail(IOwinContext context)
         {
+            Trace(context, () => GetType().Name + " handling verify email address request");
+
             var success = false;
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
 
@@ -677,6 +702,8 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleRevertEmail(IOwinContext context)
         {
+            Trace(context, () => GetType().Name + " handling revert email change request");
+
             var success = false;
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
 
@@ -731,6 +758,8 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleRequestVerifyEmail(IOwinContext context)
         {
+            Trace(context, () => GetType().Name + " handling request for new email verification email");
+            
             var success = false;
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
 
@@ -763,6 +792,8 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleRenewSession(IOwinContext context)
         {
+            Trace(context, () => GetType().Name + " handling session renewal request");
+
             var sessionId = context.Request.Query["sid"];
             var successUrl = context.Request.Query["success"];
             var failUrl = context.Request.Query["fail"];
@@ -814,6 +845,8 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleRememberMe(IOwinContext context)
         {
+            Trace(context, () => GetType().Name + " handling remember me request");
+
             var session = context.GetFeature<ISession>();
             var upstreamSession = context.GetFeature<IUpstreamSession>();
             if (upstreamSession == null || session == null)

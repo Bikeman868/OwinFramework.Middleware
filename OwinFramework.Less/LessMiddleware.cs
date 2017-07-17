@@ -14,6 +14,7 @@ using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.MiddlewareHelpers.Analysable;
+using OwinFramework.MiddlewareHelpers.SelfDocumenting;
 
 namespace OwinFramework.Less
 {
@@ -22,13 +23,15 @@ namespace OwinFramework.Less
         IConfigurable,
         ISelfDocumenting,
         IRoutingProcessor,
-        IAnalysable
+        IAnalysable,
+        ITraceable
     {
         private readonly IHostingEnvironment _hostingEnvironment;
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
+        public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         private int _filesServedCount;
         private int _fileModificationCount;
@@ -44,10 +47,6 @@ namespace OwinFramework.Less
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
-#if DEBUG
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-#endif
-
             CssFileContext cssFileContext;
             if (!ShouldServeThisFile(context, out cssFileContext))
             {
@@ -65,48 +64,38 @@ namespace OwinFramework.Less
                     var timeSinceFileChanged = DateTime.UtcNow - cssFileContext.PhysicalFile.LastWriteTimeUtc;
                     if (outputCache.TimeInCache.Value > timeSinceFileChanged)
                     {
-#if DEBUG
-                        if (trace != null) trace.WriteLine(GetType().Name + " file has changed since output was cached. Output cache will not be used");
-#endif
+                        Trace(context, () => GetType().Name + " file has changed since output was cached. Output cache will not be used");
                         outputCache.UseCachedContent = false;
                         _fileModificationCount++;
                     }
                     else
                     {
-#if DEBUG
-                        if (trace != null) trace.WriteLine(GetType().Name + " instructing output cache to use cached output");
-#endif
+                        Trace(context, () => GetType().Name + " instructing output cache to use cached output");
                         outputCache.UseCachedContent = true;
                     }
                 }
             }
 
-#if DEBUG
-            if (trace != null) trace.WriteLine(GetType().Name + " this is a css file request" 
-                + (cssFileContext.NeedsCompiling ? " that needs compiling" : ""));
-#endif
+            Trace(context, () => 
+                GetType().Name + " this is a css file request" +
+                (cssFileContext.NeedsCompiling ? " that needs compiling" : ""));
             return null;
         }
         
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
-#if DEBUG
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-#endif
-
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl,
                     StringComparison.OrdinalIgnoreCase))
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
-#endif
+                Trace(context, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 
             var cssFileContext = context.GetFeature<CssFileContext>();
             if (cssFileContext == null || cssFileContext.PhysicalFile == null)
             {
+                Trace(context, () => GetType().Name + " not handling this request");
                 return next();
             }
 
@@ -114,9 +103,7 @@ namespace OwinFramework.Less
             if (outputCache != null)
             {
                 outputCache.Priority = cssFileContext.NeedsCompiling ? CachePriority.High : CachePriority.Medium;
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " setting output cache priority " + outputCache.Priority);
-#endif
+                Trace(context, () => GetType().Name + " setting output cache priority " + outputCache.Priority);
             }
 
             return Task.Factory.StartNew(() =>
@@ -132,9 +119,7 @@ namespace OwinFramework.Less
                     context.Response.ContentType = "text/css";
                     if (cssFileContext.NeedsCompiling)
                     {
-#if DEBUG
-                        if (trace != null) trace.WriteLine(GetType().Name + " compiling Less file to CSS");
-#endif
+                        Trace(context, () => GetType().Name + " compiling Less file to CSS");
                         try
                         {
                             var css = dotless.Core.Less.Parse(
@@ -160,9 +145,7 @@ namespace OwinFramework.Less
                     }
                     else
                     {
-#if DEBUG
-                        if (trace != null) trace.WriteLine(GetType().Name + " returning CSS from file system");
-#endif
+                        Trace(context, () => GetType().Name + " returning CSS from file system");
                         context.Response.Write(fileContent);
                     }
                 });
@@ -238,15 +221,15 @@ namespace OwinFramework.Less
             return context.Response.WriteAsync(document);
         }
 
-        public Uri GetDocumentation(InterfacesV1.Capability.DocumentationTypes documentationType)
+        public Uri GetDocumentation(DocumentationTypes documentationType)
         {
             switch (documentationType)
             {
-                case InterfacesV1.Capability.DocumentationTypes.Configuration:
+                case DocumentationTypes.Configuration:
                     return new Uri(_configuration.DocumentationRootUrl, UriKind.Relative);
-                case InterfacesV1.Capability.DocumentationTypes.Overview:
+                case DocumentationTypes.Overview:
                     return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
-                case InterfacesV1.Capability.DocumentationTypes.SourceCode:
+                case DocumentationTypes.SourceCode:
                     return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Less", UriKind.Absolute);
             }
             return null;
@@ -311,21 +294,6 @@ namespace OwinFramework.Less
                 }
                 return documentation; 
             } 
-        }
-
-        private class EndpointDocumentation : IEndpointDocumentation
-        {
-            public string RelativePath { get; set; }
-            public string Description { get; set; }
-            public string Examples { get; set; }
-            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
-        }
-
-        private class EndpointAttributeDocumentation : IEndpointAttributeDocumentation
-        {
-            public string Type { get; set; }
-            public string Name { get; set; }
-            public string Description { get; set; }
         }
 
         #endregion
@@ -417,31 +385,57 @@ namespace OwinFramework.Less
             cssFileContext = new CssFileContext();
 
             if (!string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+            {
+                Trace(context, () => GetType().Name + " only supports GET requests");
                 return false;
+            }
+
+            if (!_configuration.Enabled)
+            {
+                Trace(context, () => GetType().Name + " is turned off in configuration");
+                return false;
+            }
+
+            if (!_rootUrl.HasValue)
+            {
+                Trace(context, () => GetType().Name + " has no root URL configured");
+                return false;
+            }
 
             var path = context.Request.Path;
 
-            if (!_configuration.Enabled || 
-                !path.HasValue || 
-                !_rootUrl.HasValue ||
+            if (!path.HasValue ||
                 !path.Value.EndsWith(".css", StringComparison.OrdinalIgnoreCase))
+            {
+                Trace(context, () => GetType().Name + " requested path does not end with '.css'");
                 return false;
+            }
 
             if (_rootUrl.Value != "/" && !path.StartsWithSegments(_rootUrl))
+            {
+                Trace(context, () => GetType().Name + " requested path is not below the configured root path '" + _rootUrl + "'");
                 return false;
+            }
 
             var relativePath = path.Value.Substring(_rootUrl.Value.Length).Replace('/', '\\');
             var cssFileName = Path.Combine(_rootFolder, relativePath);
             var lessFileName = cssFileName.Substring(0, cssFileName.Length - 4) + ".less";
 
+            Trace(context, () => "Path to LESS file is '" + lessFileName + "'");
+
             cssFileContext.PhysicalFile = new FileInfo(cssFileName);
             if (!cssFileContext.PhysicalFile.Exists)
             {
+                Trace(context, () => "CSS file does not exist, LESS file will be compiled");
                 cssFileContext.PhysicalFile = new FileInfo(lessFileName);
                 cssFileContext.NeedsCompiling = true;
             }
 
-            return cssFileContext.PhysicalFile.Exists;
+            var exists = cssFileContext.PhysicalFile.Exists;
+
+            Trace(context, () => GetType().Name + (exists ? " file exists on disk" : " file does not exist on disk"));
+
+            return exists;
         }
 
         #endregion
@@ -512,5 +506,6 @@ namespace OwinFramework.Less
                     System.Diagnostics.Trace.WriteLine(string.Format("LESS: " + message, args));
             }
         }
+
     }
 }

@@ -16,12 +16,14 @@ namespace OwinFramework.DefaultDocument
     public class DefaultDocumentMiddleware:
         IMiddleware<IRequestRewriter>,
         IRoutingProcessor,
-        InterfacesV1.Capability.IConfigurable
+        InterfacesV1.Capability.IConfigurable,
+        InterfacesV1.Capability.ITraceable
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
+        public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         public DefaultDocumentMiddleware()
         {
@@ -33,12 +35,13 @@ namespace OwinFramework.DefaultDocument
         {
             if (!context.Request.Path.HasValue || context.Request.Path.Value == "/" || context.Request.Path.Value == "")
             {
-#if DEBUG
-                var trace = (TextWriter)context.Environment["host.TraceOutput"];
-                if (trace != null) trace.WriteLine(GetType().Name + " modifying request path to " + _defaultPage);
-#endif
+                Trace(context, () => GetType().Name + " modifying request path to " + _defaultPage);
                 context.Request.Path = _defaultPage;
                 context.SetFeature<IRequestRewriter>(new DefaultDocumentContext());
+            }
+            else
+            {
+                Trace(context, () => GetType().Name + " is not handling this request");
             }
 
             return next();
@@ -48,10 +51,7 @@ namespace OwinFramework.DefaultDocument
         {
             if (context.Request.Path == _configPage)
             {
-#if DEBUG
-                var trace = (TextWriter)context.Environment["host.TraceOutput"];
-                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
-#endif
+                Trace(context, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 
@@ -139,5 +139,6 @@ namespace OwinFramework.DefaultDocument
         private class DefaultDocumentContext: IRequestRewriter
         {
         }
+
     }
 }

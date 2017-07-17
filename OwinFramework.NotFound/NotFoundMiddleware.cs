@@ -19,13 +19,15 @@ namespace OwinFramework.NotFound
         IMiddleware<IResponseProducer>,
         IConfigurable,
         ISelfDocumenting,
-        IAnalysable
+        IAnalysable,
+        ITraceable
     {
         private readonly IHostingEnvironment _hostingEnvironment;
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
+        public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         private int _notFoundCount;
 
@@ -43,23 +45,16 @@ namespace OwinFramework.NotFound
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
-#if DEBUG
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-#endif
             if (context.Request.Path == _configPage)
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
-#endif
+                Trace(context, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 
             string template;
             if (_pageTemplateFile != null && _pageTemplateFile.Exists)
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " returning template file");
-#endif
+                Trace(context, () => GetType().Name + " returning template file");
                 using (var stream = _pageTemplateFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     var reader = new StreamReader(stream, true);
@@ -70,16 +65,12 @@ namespace OwinFramework.NotFound
                 if (outputCache != null)
                 {
                     outputCache.Priority = CachePriority.Low;
-#if DEBUG
-                    if (trace != null) trace.WriteLine(GetType().Name + " setting output cache priority " + outputCache.Priority);
-#endif
+                    Trace(context, () => GetType().Name + " setting output cache priority " + outputCache.Priority);
                 }
             }
             else
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " returning embedded template response");
-#endif
+                Trace(context, () => GetType().Name + " returning embedded template response");
                 template = GetEmbeddedResource("template.html");
             }
 

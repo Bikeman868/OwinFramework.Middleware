@@ -21,12 +21,14 @@ namespace OwinFramework.StaticFiles
         IConfigurable,
         ISelfDocumenting,
         IRoutingProcessor,
-        IAnalysable
+        IAnalysable,
+        ITraceable
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
+        public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         private readonly IHostingEnvironment _hostingEnvironment;
 
@@ -47,9 +49,6 @@ namespace OwinFramework.StaticFiles
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
-#if DEBUG
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-#endif
             StaticFileContext fileContext;
             if (!ShouldServeThisFile(context, out fileContext))
             {
@@ -65,9 +64,7 @@ namespace OwinFramework.StaticFiles
                 {
                     if (outputCache.TimeInCache > fileContext.Configuration.MaximumCacheTime)
                     {
-#if DEBUG
-                        if (trace != null) trace.WriteLine(GetType().Name + " cached output is too old and will not be used");
-#endif
+                        Trace(context, () => GetType().Name + " cached output is too old and will not be used");
                         _cachedContentExpiredCount++;
                         outputCache.UseCachedContent = false;
                     }
@@ -76,9 +73,7 @@ namespace OwinFramework.StaticFiles
                         var timeSinceLastUpdate = DateTime.UtcNow - fileContext.PhysicalFile.LastWriteTimeUtc;
                         if (outputCache.TimeInCache > timeSinceLastUpdate)
                         {
-#if DEBUG
-                            if (trace != null) trace.WriteLine(GetType().Name + " file was modified since it was added to the output cache");
-#endif
+                            Trace(context, () => GetType().Name + " file was modified since it was added to the output cache");
                             _fileModificationCount++;
                             outputCache.UseCachedContent = false;
                         }
@@ -91,31 +86,21 @@ namespace OwinFramework.StaticFiles
                 var authorization = context.GetFeature<InterfacesV1.Upstream.IUpstreamAuthorization>();
                 if (authorization != null)
                 {
-#if DEBUG
-                    if (trace != null) trace.WriteLine(GetType().Name + " file access requires " + fileContext.Configuration.RequiredPermission + " permission");
-#endif
+                    Trace(context, () => GetType().Name + " file access requires " + fileContext.Configuration.RequiredPermission + " permission");
                     authorization.AddRequiredPermission(fileContext.Configuration.RequiredPermission);
                 }
             }
 
-#if DEBUG
-            if (trace != null) trace.WriteLine(GetType().Name + " this is a static file request");
-#endif
+            Trace(context, () => GetType().Name + " this is a static file request");
             return null;
         }
 
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
-#if DEBUG
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-#endif
-
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
-#endif
+                Trace(context, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 
@@ -131,9 +116,7 @@ namespace OwinFramework.StaticFiles
 
             if (configuration == null || physicalFile == null || extentionConfiguration == null)
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " required data is missing, file can not be served");
-#endif
+                Trace(context, () => GetType().Name + " required data is missing, file can not be served");
                 return next();
             }
 
@@ -144,47 +127,38 @@ namespace OwinFramework.StaticFiles
                 outputCache.Category = largeFile ? "LargeStaticFile" : "SmallStaticFile";
                 outputCache.MaximumCacheTime = configuration.MaximumCacheTime;
                 outputCache.Priority = largeFile ? CachePriority.Never : CachePriority.High;
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " configured output cache " + outputCache.Category + " " + outputCache.Priority + " " + outputCache.MaximumCacheTime);
-#endif
+                Trace(context, () => GetType().Name + " configured output cache " + outputCache.Category + " " + outputCache.Priority + " " + outputCache.MaximumCacheTime);
             }
 
-            return Task.Factory.StartNew(() =>
-            {
                 context.Response.ContentType = extentionConfiguration.MimeType;
+
                 if (extentionConfiguration.MimeType.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
                 {
-#if DEBUG
-                    if (trace != null) trace.WriteLine(GetType().Name + " responding with a text file");
-#endif
-                    // Text files are handled differently because they can contain preamble bytes
+                    Trace(context, () => GetType().Name + " responding with a text file");
+                    _textFilesServedCount++;
+
                     string text;
                     using (var streamReader = physicalFile.OpenText())
                     {
                         text = streamReader.ReadToEnd();
                     }
-                    context.Response.Write(text);
-                    _textFilesServedCount++;
+                    return context.Response.WriteAsync(text);
                 }
-                else
+
+            Trace(context, () => GetType().Name + " responding with a binary file");
+            _binaryFilesServedCount++;
+
+            var buffer = new byte[physicalFile.Length];
+            using (var stream = physicalFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
+            {
+                var offset = 0;
+                while (true)
                 {
-#if DEBUG
-                    if (trace != null) trace.WriteLine(GetType().Name + " responding with a binary file");
-#endif
-                    var buffer = new byte[32 * 1024];
-                    using (var stream = physicalFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
-                    {
-                        while (true)
-                        {
-                            var length = stream.Read(buffer, 0, buffer.Length);
-                            if (length == 0) break;
-                            context.Response.Write(buffer, 0, length);
-                            if (length < buffer.Length) break;
-                        }
-                    }
-                    _binaryFilesServedCount++;
+                    var bytesRead = stream.Read(buffer, offset, buffer.Length - offset);
+                    if (bytesRead == 0) return context.Response.WriteAsync(buffer);
+                    offset += bytesRead;
                 }
-            });
+            }
         }
 
         #region IConfigurable

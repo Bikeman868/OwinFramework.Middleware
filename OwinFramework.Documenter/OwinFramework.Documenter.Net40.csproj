@@ -48,8 +48,8 @@
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OwinFramework, Version=2.5.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.2.5.2\lib\net40\OwinFramework.dll</HintPath>
+    <Reference Include="OwinFramework, Version=2.5.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.2.5.6\lib\net40\OwinFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="System" />

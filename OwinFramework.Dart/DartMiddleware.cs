@@ -20,12 +20,14 @@ namespace OwinFramework.Dart
         IConfigurable,
         ISelfDocumenting,
         IAnalysable,
-        IRoutingProcessor
+        IRoutingProcessor,
+        ITraceable
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
+        public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         private int _supportedBrowserRequestCount;
         private int _unsupportedBrowserRequestCount;
@@ -36,14 +38,9 @@ namespace OwinFramework.Dart
             PathString relativePath;
             if (_rootUrl.HasValue && context.Request.Path.StartsWithSegments(_rootUrl, out relativePath))
             {
-#if DEBUG
-                var trace = (TextWriter)context.Environment["host.TraceOutput"];
-#endif
                 if (!relativePath.HasValue || relativePath.Value == "/")
                 {
-#if DEBUG
-                    if (trace != null) trace.WriteLine(GetType().Name + " selecting the default document " + _defaultDocument);
-#endif
+                    Trace(context, () => GetType().Name + " selecting the default document " + _defaultDocument);
                     relativePath = _defaultDocument;
                 }
 
@@ -57,17 +54,13 @@ namespace OwinFramework.Dart
 
                 if (dartContext.IsDartSupported)
                 {
-#if DEBUG
-                    if (trace != null) trace.WriteLine(GetType().Name + " the browser supports Dart");
-#endif
+                    Trace(context, () => GetType().Name + " the browser supports Dart");
                     context.Request.Path = _rootDartFolder + relativePath;
                     _supportedBrowserRequestCount++;
                 }
                 else
                 {
-#if DEBUG
-                    if (trace != null) trace.WriteLine(GetType().Name + " the browser does not support Dart");
-#endif
+                    Trace(context, () => GetType().Name + " the browser does not support Dart");
                     context.Request.Path = _rootBuildFolder + relativePath;
                     _unsupportedBrowserRequestCount++;
                 }
@@ -75,9 +68,7 @@ namespace OwinFramework.Dart
                 var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
                 if (outputCache != null)
                 {
-#if DEBUG
-                    if (trace != null) trace.WriteLine(GetType().Name + " disabling output caching");
-#endif
+                    Trace(context, () => GetType().Name + " disabling output caching");
                     outputCache.UseCachedContent = false;
                 }
             }
@@ -91,10 +82,7 @@ namespace OwinFramework.Dart
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl,
                     StringComparison.OrdinalIgnoreCase))
             {
-#if DEBUG
-                var trace = (TextWriter)context.Environment["host.TraceOutput"];
-                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
-#endif
+                Trace(context, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 

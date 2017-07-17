@@ -17,7 +17,8 @@ namespace OwinFramework.Documenter
     public class DocumenterMiddleware:
         IMiddleware<IResponseProducer>, 
         IConfigurable, 
-        ISelfDocumenting
+        ISelfDocumenting,
+        ITraceable
     {
         private const string ConfigDocsPath = "/docs/configuration";
 
@@ -25,6 +26,7 @@ namespace OwinFramework.Documenter
         public IList<IDependency> Dependencies { get { return _dependencies; } }
 
         public string Name { get; set; }
+        public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         public DocumenterMiddleware()
         {
@@ -41,22 +43,15 @@ namespace OwinFramework.Documenter
                 return next();
             }
 
-#if DEBUG
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-#endif
             if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " returning middleware documentation");
-#endif
+                Trace(context, () => GetType().Name + " returning middleware documentation");
                 return GenerateDocumentation(context);
             }
 
             if (context.Request.Path.Value.Equals(path + ConfigDocsPath, StringComparison.OrdinalIgnoreCase))
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " returning configuration documentation");
-#endif
+                Trace(context, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 

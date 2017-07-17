@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Owin;
 using Newtonsoft.Json;
@@ -16,7 +15,8 @@ namespace OwinFramework.Session
     public class CacheSessionMiddleware:
         IMiddleware<ISession>,
         IUpstreamCommunicator<IUpstreamSession>,
-        IConfigurable
+        IConfigurable,
+        ITraceable
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
@@ -24,6 +24,7 @@ namespace OwinFramework.Session
         private readonly ICache _cache;
 
         string IMiddleware.Name { get; set; }
+        public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         private IDisposable _configurationRegistration;
         private SessionConfiguration _configuration;

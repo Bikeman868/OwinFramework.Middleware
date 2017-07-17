@@ -19,7 +19,8 @@ namespace OwinFramework.AnalysisReporter
     public class AnalysisReporterMiddleware:
         IMiddleware<IResponseProducer>, 
         IConfigurable, 
-        ISelfDocumenting
+        ISelfDocumenting,
+        ITraceable
     {
         private const string ConfigDocsPath = "/docs/configuration";
 
@@ -27,6 +28,7 @@ namespace OwinFramework.AnalysisReporter
         public IList<IDependency> Dependencies { get { return _dependencies; } }
 
         public string Name { get; set; }
+        public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         private DateTime _nextUpdate;
 
@@ -42,24 +44,18 @@ namespace OwinFramework.AnalysisReporter
             string path;
             if (!IsForThisMiddleware(context, out path))
                 return next();
-#if DEBUG
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " handling this request");
-#endif
+
+            Trace(context, () => GetType().Name + " handling this request");
 
             if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " returning analysis report");
-#endif
+                Trace(context, () => GetType().Name + " returning analysis report");
                 return ReportAnalysis(context);
             }
 
             if (context.Request.Path.Value.Equals(path + ConfigDocsPath, StringComparison.OrdinalIgnoreCase))
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " returning configurartion documentation");
-#endif
+                Trace(context, () => GetType().Name + " returning configurartion documentation");
                 return DocumentConfiguration(context);
             }
 

@@ -21,12 +21,14 @@ namespace OwinFramework.ExceptionReporter
         IMiddleware<object>, 
         IConfigurable, 
         ISelfDocumenting,
-        IRoutingProcessor
+        IRoutingProcessor,
+        ITraceable
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         public IList<IDependency> Dependencies { get { return _dependencies; } }
 
         public string Name { get; set; }
+        public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
@@ -35,32 +37,23 @@ namespace OwinFramework.ExceptionReporter
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
-#if DEBUG
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-            if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() starting " + context.Request.Uri);
-#endif
+            Trace(context, () => GetType().Name + " RouteRequest() starting " + context.Request.Uri);
             try
             {
                 var result = next();
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " RouteRequest() finished");
-#endif
+                Trace(context, () => GetType().Name + " RouteRequest() finished");
                 return result;
             }
             catch(HttpException httpException)
             {
                 context.Response.StatusCode = httpException.GetHttpCode();
                 context.Response.ReasonPhrase = httpException.GetHtmlErrorMessage();
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " HttpException caught with status code " + context.Response.StatusCode);
-#endif
+                Trace(context, () => GetType().Name + " HttpException caught with status code " + context.Response.StatusCode);
                 return context.Response.WriteAsync("");
             }
             catch (Exception ex)
             {
-#if DEBUG
-                if (trace != null) trace.WriteLine(GetType().Name + " Exception caught: " + ex.Message);
-#endif
+                Trace(context, () => GetType().Name + " Exception caught: " + ex.Message);
                 var isPrivate = false;
                 try
                 {
@@ -73,10 +66,8 @@ namespace OwinFramework.ExceptionReporter
                     }
                     catch (Exception mailException)
                     {
-#if DEBUG
-                        if (trace != null) trace.WriteLine(GetType().Name + " failed to send email: " + mailException.Message);
-#endif
-                        Trace.WriteLine(GetType().Name + " failed to send email: " + mailException.Message);
+                        Trace(context, () => GetType().Name + " failed to send email: " + mailException.Message);
+                        System.Diagnostics.Trace.WriteLine(GetType().Name + " failed to send email: " + mailException.Message);
                     }
 
                     isPrivate = IsPrivate(context);

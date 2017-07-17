@@ -12,7 +12,6 @@ using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
-using OwinFramework.MiddlewareHelpers;
 using OwinFramework.MiddlewareHelpers.Analysable;
 using OwinFramework.MiddlewareHelpers.ResponseRewriter;
 
@@ -23,12 +22,14 @@ namespace OwinFramework.Versioning
         IConfigurable, 
         ISelfDocumenting, 
         IRoutingProcessor,
-        IAnalysable
+        IAnalysable,
+        ITraceable
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
 
         string IMiddleware.Name { get; set; }
+        public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         private int _versionedAssetCount;
         private int _versionReplacedCount;
@@ -44,11 +45,7 @@ namespace OwinFramework.Versioning
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
-#if DEBUG
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-#endif
-
-            var versionContext = new VersioningContext(_configuration);
+            var versionContext = new VersioningContext(_configuration, this);
             context.SetFeature(versionContext);
 
             versionContext.RemoveVersionNumber(context);
@@ -60,10 +57,6 @@ namespace OwinFramework.Versioning
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
-#if DEBUG
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
-#endif
-
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
             {
@@ -72,16 +65,17 @@ namespace OwinFramework.Versioning
             
             var versioningContext = context.GetFeature<VersioningContext>();
             if (versioningContext == null)
+            {
+                Trace(context, () => GetType().Name + " not hadling this request");
                 return next();
+            }
 
             versioningContext.CaptureResponse(context);
 
             return next()
                 .ContinueWith(t =>
                 {
-#if DEBUG
-                    if (trace != null) trace.WriteLine(GetType().Name + " sending captured output");
-#endif
+                    Trace(context, () => GetType().Name + " sending captured output");
                     versioningContext.Send(context);
                     if (versioningContext.VersionUrlsReplaced)
                         _versionReplacedCount++;
@@ -254,21 +248,21 @@ namespace OwinFramework.Versioning
             public bool VersionUrlsReplaced;
 
             private ResponseCapture _response;
+            private ITraceable _traceable;
 
             private const string _versionPrefix = "_v";
             private const string _versionMarker = "{_v_}";
 
             public VersioningContext(
-                VersioningConfiguration configuration)
+                VersioningConfiguration configuration,
+                ITraceable traceable)
             {
                 _configuration = configuration;
+                _traceable = traceable;
             }
 
             public void RemoveVersionNumber(IOwinContext context)
             {
-#if DEBUG
-                var trace = (TextWriter)context.Environment["host.TraceOutput"];
-#endif
                 var path = context.Request.Path.Value;
 
                 var fileNameIndex = path.LastIndexOf('/') + 1;
@@ -285,18 +279,15 @@ namespace OwinFramework.Versioning
                     ? string.Empty 
                     : path.Substring(lastPeriodIndex);
 
-#if DEBUG
-                if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " base file name: " + baseFileName + " Ext: " + extension);
-#endif
+                _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " base file name: " + baseFileName + " Ext: " + extension);
+      
                 var allExtensions = _configuration.FileExtensions == null || _configuration.FileExtensions.Length == 0;
                 if (extension.Length > 0)
                 {
                     if (!allExtensions &&
                         !_configuration.FileExtensions.Any(e => string.Equals(e, extension, StringComparison.OrdinalIgnoreCase)))
                     {
-#if DEBUG
-                        if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " the " + extension + " extension is not configured for versioning");
-#endif
+                        _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " the " + extension + " extension is not configured for versioning");
                         return;
                     }
                 }
@@ -304,16 +295,12 @@ namespace OwinFramework.Versioning
                 {
                     if (!allExtensions)
                     {
-#if DEBUG
-                        if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " not configured to version extensionless paths");
-#endif
+                        _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " not configured to version extensionless paths");
                         return;
                     }
                 }
 
-#if DEBUG
-                if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " stripping version number from " + baseFileName);
-#endif
+                _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " stripping version number from " + baseFileName);
 
                 IsVersioned = true;
 
@@ -332,16 +319,17 @@ namespace OwinFramework.Versioning
 
             public void CaptureResponse(IOwinContext context)
             {
+                _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " capturing output so that version numbers can be replaced");
                 _response = new ResponseCapture(context);                
             }
 
             public void Send(IOwinContext context)
             {
-#if DEBUG
-                var trace = (TextWriter)context.Environment["host.TraceOutput"];
-#endif
                 if (_response == null)
+                {
+                    _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " no captured response to send");
                     return;
+                }
 
                 var contentType = context.Response.ContentType;
 
@@ -364,17 +352,13 @@ namespace OwinFramework.Versioning
                     }
                 }
 
-#if DEBUG
-                if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " mime type " + mimeType + " with " + encoding.EncodingName + " encoding");
-#endif
+                _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " mime type " + mimeType + " with " + encoding.EncodingName + " encoding");
 
                 if (IsVersioned)
                 {
                     if (_configuration.BrowserCacheTime.HasValue)
                     {
-#if DEBUG
-                        if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " adding headers to cache versioned asset for " + _configuration.BrowserCacheTime.Value);
-#endif
+                        _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " adding headers to cache versioned asset for " + _configuration.BrowserCacheTime.Value);
                         context.Response.Expires = DateTime.UtcNow + _configuration.BrowserCacheTime.Value;
                         context.Response.Headers.Set(
                             "Cache-Control",
@@ -382,11 +366,13 @@ namespace OwinFramework.Versioning
                     }
                     else
                     {
-#if DEBUG
-                        if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " adding headers to disable browser caching");
-#endif
+                        _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " adding headers to disable browser caching");
                         context.Response.Headers.Set("Cache-Control", "no-cache");
                     }
+                }
+                else
+                {
+                    _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " request is not for a versioned asset");
                 }
 
                 if (_configuration.MimeTypes != null && 
@@ -397,26 +383,24 @@ namespace OwinFramework.Versioning
 
                     if (_configuration.Version.HasValue)
                     {
-#if DEBUG
-                        if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " replacing version markers with " + _versionPrefix + _configuration.Version.Value);
-#endif
+                        _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " replacing version markers with " + _versionPrefix + _configuration.Version.Value);
                         text = text.Replace(_versionMarker, _versionPrefix + _configuration.Version.Value);
                     }
                     else
                     {
-#if DEBUG
-                        if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " removing version markers");
-#endif
+                        _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " removing version markers");
                         text = text.Replace(_versionMarker, string.Empty);
                     }
 
                     _response.OutputBuffer = encoding.GetBytes(text);
                     VersionUrlsReplaced = true;
                 }
+                else
+                {
+                    _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " is not configured to replace version numbers in " + mimeType + " responses");
+                }
 
-#if DEBUG
-                if (trace != null) trace.WriteLine(typeof(VersioningMiddleware).Name + " sending buffered response to actual response stream");
-#endif
+                _traceable.Trace(context, () => typeof(VersioningMiddleware).Name + " sending buffered response to actual response stream");
                 _response.Send();
             }
         }

@@ -53,7 +53,7 @@ namespace OwinFramework.Middleware.TestServer
             var config = ninject.Get<IConfiguration>();
 
             // Get the Owin Framework builder registered with IoC
-            var builder = ninject.Get<IBuilder>();
+            var builder = ninject.Get<IBuilder>().EnableTracing();
 
             // Output caching just makes the web site more efficient by capturing the output from
             // downstream middleware and reusing it for the next request. Note that the Dart middleware
