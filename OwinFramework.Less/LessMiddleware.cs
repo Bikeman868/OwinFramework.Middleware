@@ -418,10 +418,13 @@ namespace OwinFramework.Less
             }
 
             var relativePath = path.Value.Substring(_rootUrl.Value.Length).Replace('/', '\\');
+            if (relativePath.StartsWith("\\")) relativePath = relativePath.Substring(1);
             var cssFileName = Path.Combine(_rootFolder, relativePath);
             var lessFileName = cssFileName.Substring(0, cssFileName.Length - 4) + ".less";
 
-            Trace(context, () => "Path to LESS file is '" + lessFileName + "'");
+            Trace(context, () => GetType().Name + " root folder is '" + _rootFolder + "'");
+            Trace(context, () => GetType().Name + " path to CSS file is '" + cssFileName + "'");
+            Trace(context, () => GetType().Name + " path to LESS file is '" + lessFileName + "'");
 
             cssFileContext.PhysicalFile = new FileInfo(cssFileName);
             if (!cssFileContext.PhysicalFile.Exists)
