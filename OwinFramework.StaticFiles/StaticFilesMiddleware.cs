@@ -58,6 +58,7 @@ namespace OwinFramework.StaticFiles
             var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
             if (outputCache != null && outputCache.CachedContentIsAvailable)
             {
+                Trace(context, () => GetType().Name + " output cache has cached content available");
                 if (outputCache.TimeInCache.HasValue)
                 {
                     if (outputCache.TimeInCache > fileContext.Configuration.MaximumCacheTime)
