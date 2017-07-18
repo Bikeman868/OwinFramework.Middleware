@@ -45,25 +45,25 @@ returned is a user profile or a product because they must be handled differently
 code below shows how you might do that:
 
 ```
-	private void ReturnUserProfile(IOwinContext context)
-	{
-	  var outputCache = context.GetFeature<IOutputCache>();
-	  if (outputCache != null)
-	  {
-	    outputCache.Category = "UserProfile";
-	    outputCache.Priority = CachePriority.High;
-	  }
-	}
+private void ReturnUserProfile(IOwinContext context)
+{
+  var outputCache = context.GetFeature<IOutputCache>();
+  if (outputCache != null)
+  {
+    outputCache.Category = "UserProfile";
+    outputCache.Priority = CachePriority.High;
+  }
+}
 
-	private void ReturnProduct(IOwinContext context, bool isOnPromotion)
-	{
-	  var outputCache = context.GetFeature<IOutputCache>();
-	  if (outputCache != null)
-	  {
-	    outputCache.Category = "Product";
-	    outputCache.Priority = isOnPromotion ? CachePriority.Always : CachePriority.Medium;
-	  }
-	}
+private void ReturnProduct(IOwinContext context, bool isOnPromotion)
+{
+  var outputCache = context.GetFeature<IOutputCache>();
+  if (outputCache != null)
+  {
+    outputCache.Category = "Product";
+    outputCache.Priority = isOnPromotion ? CachePriority.Always : CachePriority.Medium;
+  }
+}
 ```
 
 In this example the application uses different output cache categories for user profiles and
@@ -72,33 +72,33 @@ demosstrates setting different priorities, in this cases products that are on pr
 always cached and products that are not on promotion are cached with medium prity. In this 
 example the output cache rules might be configured like this:
 
-    ```
-    "outputCache": {
-        "rules": [
-            {
-                "category": "UserProfile",
-                "priority": "High",
-                "cacheCategory": "Shared",
-                "serverCacheTime": "00:30:00",
-                "browserCacheTime": "00:10:00"
-            },
-            {
-                "category": "Product",
-                "priority": "Always",
-                "cacheCategory": "Local",
-                "serverCacheTime": "01:00:00",
-                "browserCacheTime": "00:30:00"
-            },
-            {
-                "category": "Product",
-                "priority": "Medium",
-                "cacheCategory": "Local",
-                "serverCacheTime": "00:10:00",
-                "browserCacheTime": "2"
-            }
-        ],
-        "documentationRootUrl": "/owin/outputCache"
-    }
+```
+"outputCache": {
+    "rules": [
+        {
+            "category": "UserProfile",
+            "priority": "High",
+            "cacheCategory": "Shared",
+            "serverCacheTime": "00:30:00",
+            "browserCacheTime": "00:10:00"
+        },
+        {
+            "category": "Product",
+            "priority": "Always",
+            "cacheCategory": "Local",
+            "serverCacheTime": "01:00:00",
+            "browserCacheTime": "00:30:00"
+        },
+        {
+            "category": "Product",
+            "priority": "Medium",
+            "cacheCategory": "Local",
+            "serverCacheTime": "00:10:00",
+            "browserCacheTime": "2"
+        }
+    ],
+    "documentationRootUrl": "/owin/outputCache"
+}
 ```
 
 This output cache configuration says that: 
