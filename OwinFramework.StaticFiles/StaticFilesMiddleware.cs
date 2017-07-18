@@ -93,7 +93,7 @@ namespace OwinFramework.StaticFiles
                 }
             }
 
-            Trace(context, () => GetType().Name + " can handle this request");
+            Trace(context, () => GetType().Name + " ending the routing phase, this is a static file");
             return null;
         }
 
@@ -522,10 +522,11 @@ namespace OwinFramework.StaticFiles
 
             fileContext.PhysicalFile = new FileInfo(Path.Combine(fileContext.RootFolder, fileName));
 
-            // Only serve files that exist on disk
             var file = fileContext.PhysicalFile;
             var exists = file.Exists;
-            Trace(context, () => GetType().Name + " handling request with file " + file);
+            Trace(context, () => GetType().Name + " this is a request for static file " + file);
+
+            // Only serve files that exist on disk
             return exists;
         }
 
