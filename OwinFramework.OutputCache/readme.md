@@ -1,4 +1,4 @@
-﻿# OWIN Framework No Found Middleware
+﻿# OWIN Framework Output Cache Middleware
 
 This middleware will improve the performance of your web site by capturing the output from
 downstream middleware and saving it in the Cache facility, then using the cached response
