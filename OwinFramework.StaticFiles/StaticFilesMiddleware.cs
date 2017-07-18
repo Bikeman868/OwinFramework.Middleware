@@ -51,9 +51,7 @@ namespace OwinFramework.StaticFiles
         {
             StaticFileContext fileContext;
             if (!ShouldServeThisFile(context, out fileContext))
-            {
                 return next();
-            }
 
             context.SetFeature(fileContext);
 
@@ -84,14 +82,18 @@ namespace OwinFramework.StaticFiles
             if (!string.IsNullOrEmpty(fileContext.Configuration.RequiredPermission))
             {
                 var authorization = context.GetFeature<InterfacesV1.Upstream.IUpstreamAuthorization>();
-                if (authorization != null)
+                if (authorization == null)
+                {
+                    Trace(context, () => GetType().Name + " required permission will not be enforced because there is no upstream authorization middleware");
+                }
+                else
                 {
                     Trace(context, () => GetType().Name + " file access requires " + fileContext.Configuration.RequiredPermission + " permission");
                     authorization.AddRequiredPermission(fileContext.Configuration.RequiredPermission);
                 }
             }
 
-            Trace(context, () => GetType().Name + " this is a static file request");
+            Trace(context, () => GetType().Name + " can handle this request");
             return null;
         }
 
@@ -107,6 +109,7 @@ namespace OwinFramework.StaticFiles
             var staticFileContext = context.GetFeature<StaticFileContext>();
             if (staticFileContext == null)
             {
+                Trace(context, () => GetType().Name + " this is not a request for a static file");
                 return next();
             }
 
@@ -450,18 +453,37 @@ namespace OwinFramework.StaticFiles
                 RootUrl = _rootUrl
             };
 
-            if (!string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase)) 
+            if (!string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
+            {
+                Trace(context, () => GetType().Name + " only handles GET requests");
                 return false;
+            }
 
             var request = context.Request;
 
-            if (!_configuration.Enabled 
-                || !request.Path.HasValue
-                || !fileContext.RootUrl.HasValue) 
+            if (!_configuration.Enabled)
+            {
+                Trace(context, () => GetType().Name + " is disabled and will not serve this request");
                 return false;
+            }
 
-            if (!(fileContext.RootUrl.Value == "/" || request.Path.StartsWithSegments(fileContext.RootUrl)))
+            if (!request.Path.HasValue)
+            {
+                Trace(context, () => GetType().Name + " can not serve this request because the request path is empty");
                 return false;
+            }
+
+            if (!fileContext.RootUrl.HasValue)
+            {
+                Trace(context, () => GetType().Name + " will not handle this request because the configured root URL is empty");
+                return false;
+            }
+
+            if (!(fileContext.RootUrl.Value == "/" || request.Path.StartsWithSegments(fileContext.RootUrl))) 
+            {
+                Trace(context, () => GetType().Name + " will not handle this request because the file is not in a sub-directory of the configured root");
+                return false;
+            }
 
             // Extract the path relative to the root UI
             var relativePath = request.Path.Value.Substring(fileContext.RootUrl.Value.Length);
@@ -469,13 +491,19 @@ namespace OwinFramework.StaticFiles
 
             // No filename case can't be handled by this middleware
             if (string.IsNullOrWhiteSpace(fileName) || fileName == "\\")
+            {
+                Trace(context, () => GetType().Name + " will not handle this request because the file name is blank");
                 return false;
+            }
 
             if (fileName.StartsWith("\\"))
                 fileName = fileName.Substring(1);
 
             if (!fileContext.Configuration.IncludeSubFolders && fileName.Contains("\\"))
+            {
+                Trace(context, () => GetType().Name + " will not handle this request because it is configured to not serve files from sub-folders");
                 return false;
+            }
 
             // Parse out pieces of the file name
             var lastPeriodIndex = fileName.LastIndexOf('.');
@@ -487,12 +515,18 @@ namespace OwinFramework.StaticFiles
 
             // Only serve files that have their extensions confgured
             if (fileContext.ExtensionConfiguration == null)
+            {
+                Trace(context, () => GetType().Name + " will not handle this request because " + extension + " file extensions are not configured");
                 return false;
+            }
 
             fileContext.PhysicalFile = new FileInfo(Path.Combine(fileContext.RootFolder, fileName));
 
             // Only serve files that exist on disk
-            return fileContext.PhysicalFile.Exists;
+            var file = fileContext.PhysicalFile;
+            var exists = file.Exists;
+            Trace(context, () => GetType().Name + " handling request with file " + file);
+            return exists;
         }
 
         #endregion

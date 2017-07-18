@@ -134,6 +134,7 @@ namespace OwinFramework.Less
                         }
                         catch (Exception ex)
                         {
+                            Trace(context, () => GetType().Name + " compilation error in LESS file, see response for details");
                             context.Response.Write("/* Compilation error in LESS file " + cssFileContext.PhysicalFile + Environment.NewLine);
                             while (ex != null)
                             {
@@ -422,21 +423,20 @@ namespace OwinFramework.Less
             var cssFileName = Path.Combine(_rootFolder, relativePath);
             var lessFileName = cssFileName.Substring(0, cssFileName.Length - 4) + ".less";
 
-            Trace(context, () => GetType().Name + " root folder is '" + _rootFolder + "'");
             Trace(context, () => GetType().Name + " path to CSS file is '" + cssFileName + "'");
-            Trace(context, () => GetType().Name + " path to LESS file is '" + lessFileName + "'");
 
             cssFileContext.PhysicalFile = new FileInfo(cssFileName);
             if (!cssFileContext.PhysicalFile.Exists)
             {
-                Trace(context, () => "CSS file does not exist, LESS file will be compiled");
+                Trace(context, () => GetType().Name + " CSS file does not exist, LESS file will be compiled");
                 cssFileContext.PhysicalFile = new FileInfo(lessFileName);
                 cssFileContext.NeedsCompiling = true;
             }
 
             var exists = cssFileContext.PhysicalFile.Exists;
 
-            Trace(context, () => GetType().Name + (exists ? " file exists on disk" : " file does not exist on disk"));
+            var filePath = cssFileContext.PhysicalFile.FullName;
+            Trace(context, () => GetType().Name + (exists ? " file exists on disk" : filePath + " does not exist on disk"));
 
             return exists;
         }
