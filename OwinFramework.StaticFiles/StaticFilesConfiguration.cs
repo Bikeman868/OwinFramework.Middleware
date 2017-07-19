@@ -26,14 +26,15 @@ namespace OwinFramework.StaticFiles
             IncludeSubFolders = true;
             FileExtensions = new [] 
             {
-                new ExtensionConfiguration{Extension = ".bmp", MimeType = "image/bmp"},
-                new ExtensionConfiguration{Extension = ".jpg", MimeType = "image/jpeg"},
-                new ExtensionConfiguration{Extension = ".png", MimeType = "image/png"},
-                new ExtensionConfiguration{Extension = ".html", MimeType = "text/html"},
-                new ExtensionConfiguration{Extension = ".htm", MimeType = "text/html"},
-                new ExtensionConfiguration{Extension = ".css", MimeType = "text/css"},
-                new ExtensionConfiguration{Extension = ".txt", MimeType = "text/plain"},
-                new ExtensionConfiguration{Extension = ".js", MimeType = "application/javascript"}
+                new ExtensionConfiguration{Extension = ".bmp", MimeType = "image/bmp", IsText = false },
+                new ExtensionConfiguration{Extension = ".jpg", MimeType = "image/jpeg", IsText = false },
+                new ExtensionConfiguration{Extension = ".png", MimeType = "image/png", IsText = false },
+                new ExtensionConfiguration{Extension = ".gif", MimeType = "image/gif", IsText = false },
+                new ExtensionConfiguration{Extension = ".html", MimeType = "text/html", IsText = true },
+                new ExtensionConfiguration{Extension = ".htm", MimeType = "text/html", IsText = true },
+                new ExtensionConfiguration{Extension = ".css", MimeType = "text/css", IsText = true },
+                new ExtensionConfiguration{Extension = ".txt", MimeType = "text/plain", IsText = true },
+                new ExtensionConfiguration{Extension = ".js", MimeType = "application/javascript", IsText = true }
             };
             MaximumFileSizeToCache = 32 * 1024;
             MaximumCacheTime = TimeSpan.FromHours(1);
@@ -44,5 +45,6 @@ namespace OwinFramework.StaticFiles
     {
         public string Extension { get; set; }
         public string MimeType { get; set; }
+        public bool IsText { get; set; }
     }
 }

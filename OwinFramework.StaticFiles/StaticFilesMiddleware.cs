@@ -134,20 +134,20 @@ namespace OwinFramework.StaticFiles
                 Trace(context, () => GetType().Name + " configured output cache " + outputCache.Category + " " + outputCache.Priority + " " + outputCache.MaximumCacheTime);
             }
 
-                context.Response.ContentType = extentionConfiguration.MimeType;
+            context.Response.ContentType = extentionConfiguration.MimeType;
 
-                if (extentionConfiguration.MimeType.StartsWith("text/", StringComparison.OrdinalIgnoreCase))
+            if (extentionConfiguration.IsText)
+            {
+                Trace(context, () => GetType().Name + " responding with a text file");
+                _textFilesServedCount++;
+
+                string text;
+                using (var streamReader = physicalFile.OpenText())
                 {
-                    Trace(context, () => GetType().Name + " responding with a text file");
-                    _textFilesServedCount++;
-
-                    string text;
-                    using (var streamReader = physicalFile.OpenText())
-                    {
-                        text = streamReader.ReadToEnd();
-                    }
-                    return context.Response.WriteAsync(text);
+                    text = streamReader.ReadToEnd();
                 }
+                return context.Response.WriteAsync(text);
+            }
 
             Trace(context, () => GetType().Name + " responding with a binary file");
             _binaryFilesServedCount++;
