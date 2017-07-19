@@ -37,12 +37,9 @@ namespace OwinFramework.ExceptionReporter
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
-            Trace(context, () => GetType().Name + " RouteRequest() starting " + context.Request.Uri);
             try
             {
-                var result = next();
-                Trace(context, () => GetType().Name + " RouteRequest() finished");
-                return result;
+                return next();
             }
             catch(HttpException httpException)
             {

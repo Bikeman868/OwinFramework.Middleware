@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Owin.Framework.Session</id>
-    <version>2.5.3</version>
+    <version>2.5.4</version>
     <title>Owin.Framework.Session</title>
     <authors>Martin Halliday</authors>
     <owners>Martin Halliday</owners>

@@ -37,7 +37,7 @@ namespace OwinFramework.Session
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
-            var session = new Session(_cache, context, _configuration);
+            var session = new Session(_cache, context, _configuration, this);
             context.SetFeature<IUpstreamSession>(session);
             context.SetFeature<ISession>(session);
 
@@ -83,6 +83,7 @@ namespace OwinFramework.Session
             private readonly ICache _cache;
             private readonly IOwinContext _context;
             private readonly SessionConfiguration _configuration;
+            private readonly ITraceable _traceable;
 
             private Dictionary<string, string> _cacheEntries;
             private IDictionary<string, CacheEntry> _sessionVariables;
@@ -94,11 +95,13 @@ namespace OwinFramework.Session
             public Session(
                 ICache cache, 
                 IOwinContext context,
-                SessionConfiguration configuration)
+                SessionConfiguration configuration,
+                ITraceable traceable)
             {
                 _cache = cache;
                 _context = context;
                 _configuration = configuration;
+                _traceable = traceable;
             }
 
             ~Session()
@@ -132,10 +135,14 @@ namespace OwinFramework.Session
             {
                 if (!HasSession || sessionId != null)
                 {
+                    _traceable.Trace(_context, () => GetType().Name + " establishing a session");
+
                     SessionId = sessionId ?? _context.Request.Cookies[_configuration.CookieName];
                     _cacheEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     if (string.IsNullOrWhiteSpace(SessionId))
                     {
+                        _traceable.Trace(_context, () => GetType().Name + " no session id cookie, creating a new session");
+
                         SessionId = Guid.NewGuid().ToShortString();
                         var cookieOptions = new CookieOptions
                             { 
@@ -147,6 +154,8 @@ namespace OwinFramework.Session
                     }
                     else
                     {
+                        _traceable.Trace(_context, () => GetType().Name + " retrieving existing session from cache");
+
                         var cacheEntries = _cache.Get<Dictionary<string, string>>(SessionId, null, null, _configuration.CacheCategory);
                         if (cacheEntries != null)
                         {
@@ -167,6 +176,8 @@ namespace OwinFramework.Session
                 CacheEntry cacheEntry;
                 if (!_sessionVariables.TryGetValue(name, out cacheEntry))
                 {
+                    _traceable.Trace(_context, () => GetType().Name + " retrieving session variable from cache '" + name + "'");
+
                     cacheEntry = new CacheEntry { Name = name };
 
                     string json;
@@ -186,10 +197,12 @@ namespace OwinFramework.Session
                     CacheEntry cacheEntry;
                     if (_sessionVariables.TryGetValue(name, out cacheEntry))
                     {
+                        _traceable.Trace(_context, () => GetType().Name + " updating existing session variable '" + name + "'");
                         cacheEntry.Value = value;
                     }
                     else
                     {
+                        _traceable.Trace(_context, () => GetType().Name + " adding new session variable '" + name + "'");
                         cacheEntry = new CacheEntry
                             {
                                 Name = name,
