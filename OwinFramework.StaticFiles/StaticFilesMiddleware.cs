@@ -108,7 +108,7 @@ namespace OwinFramework.StaticFiles
             }
 
             var staticFileContext = context.GetFeature<StaticFileContext>();
-            if (staticFileContext == null)
+            if (staticFileContext == null || !staticFileContext.FileExists)
             {
                 Trace(context, () => GetType().Name + " this is not a request for a static file");
                 return next();
@@ -524,11 +524,14 @@ namespace OwinFramework.StaticFiles
             fileContext.PhysicalFile = new FileInfo(Path.Combine(fileContext.RootFolder, fileName));
 
             var file = fileContext.PhysicalFile;
-            var exists = file.Exists;
-            Trace(context, () => GetType().Name + " this is a request for static file " + file);
+            fileContext.FileExists = file.Exists;
 
-            // Only serve files that exist on disk
-            return exists;
+            if (fileContext.FileExists)
+                Trace(context, () => GetType().Name + " this is a request for static file " + file);
+            else
+                Trace(context, () => GetType().Name + " static file '" + file + "' does not exist on disk");
+
+            return fileContext.FileExists;
         }
 
         #endregion
@@ -538,6 +541,7 @@ namespace OwinFramework.StaticFiles
         private class StaticFileContext
         {
             public FileInfo PhysicalFile;
+            public bool FileExists;
             public StaticFilesConfiguration Configuration;
             public ExtensionConfiguration ExtensionConfiguration;
             public string RootFolder;

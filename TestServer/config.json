@@ -33,10 +33,10 @@
             "enabled": true,
             "includeSubFolders": true,
             "fileExtensions": [
-                { "extension": ".html", "mimeType": "text/html" },
+                { "extension": ".html", "mimeType": "text/html", "isText": true },
                 { "extension": ".ico", "mimeType": "image/ico" },
-                { "extension": ".js", "mimeType": "application/javascript" },
-                { "extension": ".dart", "mimeType": "application/dart" }
+                { "extension": ".js", "mimeType": "application/javascript", "isText": true },
+                { "extension": ".dart", "mimeType": "application/dart", "isText": true }
             ],
             "maximumFileSizeToCache": 100000,
             "totalCacheSize": 10000000,

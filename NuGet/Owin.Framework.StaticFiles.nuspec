@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Owin.Framework.StaticFiles</id>
-    <version>2.5.2</version>
+    <version>2.5.3</version>
     <title>Owin.Framework.StaticFiles</title>
     <authors>Martin Halliday</authors>
     <owners>Martin Halliday</owners>
