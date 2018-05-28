@@ -13,6 +13,7 @@ using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.MiddlewareHelpers.SelfDocumenting;
 
 namespace OwinFramework.AnalysisReporter
 {
@@ -476,7 +477,11 @@ namespace OwinFramework.AnalysisReporter
 
         string ISelfDocumenting.LongDescription
         {
-            get { return "Allows you to extract analysis information about your middleware for visual inspection or for use in other applications such as health monitoring, trend analysis and system dashboard"; }
+            get { return 
+                "<p>Allows you to extract analysis information about your middleware for visual inspection "+
+                "or for use in other applications such as health monitoring, trend analysis and system dashboard.</p>"+
+                "<p>The results can be returned in different formats. Use the HTML standard <span class='code'>Accept</span> "+
+                "header to specify the formats that you can accept in order of preference.</p>"; }
         }
 
         string ISelfDocumenting.ShortDescription
@@ -494,6 +499,7 @@ namespace OwinFramework.AnalysisReporter
                     {
                         RelativePath = _configuration.Path,
                         Description = "Analytic information gathered from all the configured middleware that implements the IAnalysable interface.",
+                        Examples = "<div class='code'><pre>GET " + _configuration.Path + "\nAccept: text/html</pre></div>",
                         Attributes = new List<IEndpointAttributeDocumentation>
                         {
                             new EndpointAttributeDocumentation
@@ -531,21 +537,6 @@ namespace OwinFramework.AnalysisReporter
                 };
                 return documentation;
             }
-        }
-
-        private class EndpointDocumentation : IEndpointDocumentation
-        {
-            public string RelativePath { get; set; }
-            public string Description { get; set; }
-            public string Examples { get; set; }
-            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
-        }
-
-        private class EndpointAttributeDocumentation : IEndpointAttributeDocumentation
-        {
-            public string Type { get; set; }
-            public string Name { get; set; }
-            public string Description { get; set; }
         }
 
         #endregion

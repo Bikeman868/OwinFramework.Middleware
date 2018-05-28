@@ -4,13 +4,14 @@ using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Facilities;
 using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.Session;
 
 namespace OwinFramework.FormIdentification
 {
     [Package]
     internal class Package: IPackage
     {
-        public string Name { get { return "OWIN Framework Form Identification middleware"; } }
+        public string Name { get { return "OWIN Framework session middleware"; } }
 
         public IList<IocRegistration> IocRegistrations
         {
@@ -18,12 +19,9 @@ namespace OwinFramework.FormIdentification
             {
                 return new List<IocRegistration>
                 {
-                    new IocRegistration().Init<IMiddleware<IIdentification>, FormIdentificationMiddleware>(),
+                    new IocRegistration().Init<IMiddleware<ISession>, CacheSessionMiddleware>(),
 
-                    new IocRegistration().Init<IIdentityStore>(),
-                    new IocRegistration().Init<IIdentityDirectory>(),
-                    new IocRegistration().Init<IHostingEnvironment>(),
-                    new IocRegistration().Init<ITokenStore>()
+                    new IocRegistration().Init<ICache>()
                 };
             }
         }

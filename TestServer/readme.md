@@ -18,9 +18,9 @@ http://localhost:12345/owin/pipeline
 
 http://localhost:12345/owin/pipeline/docs/configuration
 
-http://localhost:12345/ui
-
 http://localhost:12345/
+
+http://localhost:12345/ui
 
 http://localhost:12345/does-not-exist
 

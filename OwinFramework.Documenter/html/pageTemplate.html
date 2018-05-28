@@ -1,43 +1,48 @@
 ﻿<html>
     <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Endpoint Documentation for Developers</title>
         <style type="text/css">
-             body{
+             body {
                  font-family: verdana,arial,sans-serif;
                  font-size: 11px;
              }
              
-             h1{
-                 color:darkblue;
+             h1 {
+                 color:maroon;
                  font-family: arial,sans-serif;
-                 font-size: 18px;
+                 font-size: 22px;
                  font-weight:bold;
+                 padding: 10px;
              }
 
-             h2{
-                 color:darkblue;
+             h2 {
+                 color:oldlace;
+                 background-color: darkgray;
+                 width: 95%;
+                 padding: 10px;
                  font-family: arial,sans-serif;
                  font-size: 16px;
                  font-weight:bold;
              }
 
-             h3{
+             h3 {
                  font-family: arial,sans-serif;
                  font-size: 13px;
                  font-weight:bold;
              }
 
-             span.code{
+             span.code {
                  font-family: 'Courier New';
                  font-size: 12px;
              }
 
-             div.margin{
+             div.margin {
                  width:10%;
                  display: inline-block;
              }
              
-             div.margin::before{
+             div.margin::before {
                   content:""
               }
 
@@ -47,8 +52,8 @@
                  border-width: 1px;
                  border-color: #666666;
                  border-collapse: collapse;
-                 width:90%;
-                 margin-left:50px;
+                 margin-left:20px;
+                 margin-right:30px;
              }
 
             table.attribute th {
@@ -66,6 +71,49 @@
                 border-style: solid;
                 border-color: #666666;
             }
+            .collapsible {
+                background-color: #f1f1f1;
+                color: darkblue;
+                cursor: pointer;
+                padding-left: 15px;
+                padding-right: 15px;
+                padding-top: 8px;
+                padding-bottom: 8px;
+                margin-left:15px;
+                width: 90%;
+                border: none;
+                text-align: left;
+                outline: none;
+                font-size: 13px;
+            }
+
+            .active {
+                background-color: #f1f1f1;
+            }
+
+            .collapsible:hover {
+                background-color: cornflowerblue;
+            }
+
+            .collapsible:after {
+                content: '\002B';
+                color: black;
+                font-weight: bold;
+                float: right;
+                margin-left: 5px;
+            }
+
+            .active:after {
+                content: "\2212";
+            }
+
+            .collapsible-content {
+                padding-top: 0;
+                padding-bottom: 0;
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.2s ease-out, padding-top 0.2s ease-out, padding-bottom 0.2s ease-out;
+            }
         </style>    
     </head>
     <body>
@@ -76,5 +124,40 @@
             If you want to include more information in this documentation, implement the
             <span class="code">ISelfDocumenting</span> interfaces in your middleware components.
         </p>
+
+        <script>
+            var collapsibles = document.getElementsByClassName("collapsible");
+            var i;
+
+            function collapse(content) {
+                content.style.maxHeight = null;
+                content.style.paddingTop = 0;
+                content.style.paddingBottom = 0;
+            }
+
+            function expand(content) {
+                content.style.maxHeight = content.scrollHeight + "px";
+                content.style.paddingTop = "10px";
+                content.style.paddingBottom = "20px";
+            }
+
+            function setCollapsible(collapsible) {
+                var content = collapsible.nextElementSibling;
+                if (collapsible.classList.contains("active")) {
+                    expand(content);
+                }
+                else {
+                    collapse(content);
+                }
+            }
+
+            for (i = 0; i < collapsibles.length; i++) {
+                setCollapsible(collapsibles[i]);
+                collapsibles[i].addEventListener("click", function () {
+                    this.classList.toggle("active");
+                    setCollapsible(this);
+              });
+            }
+        </script>
     </body>
 </html>

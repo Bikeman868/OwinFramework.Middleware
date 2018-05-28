@@ -17,6 +17,7 @@ using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.InterfacesV1.Upstream;
 using OwinFramework.MiddlewareHelpers.Analysable;
 using OwinFramework.MiddlewareHelpers.Identification;
+using OwinFramework.MiddlewareHelpers.SelfDocumenting;
 
 namespace OwinFramework.FormIdentification
 {
@@ -37,6 +38,7 @@ namespace OwinFramework.FormIdentification
         public Action<IOwinContext, Func<string>> Trace { get; set; }
 
         private readonly IIdentityStore _identityStore;
+        private readonly IIdentityDirectory _identityDirectory;
         private readonly ITokenStore _tokenStore;
         private readonly IHostingEnvironment _hostingEnvironment;
 
@@ -103,10 +105,12 @@ namespace OwinFramework.FormIdentification
 
         public FormIdentificationMiddleware(
             IIdentityStore identityStore, 
+            IIdentityDirectory identityDirectory,
             ITokenStore tokenStore,
             IHostingEnvironment hostingEnvironment)
         {
             _identityStore = identityStore;
+            _identityDirectory = identityDirectory;
             _tokenStore = tokenStore;
             _hostingEnvironment = hostingEnvironment;
 
@@ -263,7 +267,7 @@ namespace OwinFramework.FormIdentification
             string identity = null;
             try
             {
-                identity = _identityStore.CreateIdentity();
+                identity = _identityDirectory.CreateIdentity();
                 success = _identityStore.AddCredentials(identity, email, password);
             }
             catch
@@ -287,8 +291,8 @@ namespace OwinFramework.FormIdentification
                 if (authenticationResult.Status != AuthenticationStatus.Authenticated)
                     throw new Exception("Login failed on newly created account");
 
-                _identityStore.UpdateClaim(identity, new IdentityClaim(ClaimNames.Email, email, ClaimStatus.Unverified ));
-                var claims = _identityStore.GetClaims(authenticationResult.Identity);
+                _identityDirectory.UpdateClaim(identity, new IdentityClaim(ClaimNames.Email, email, ClaimStatus.Unverified));
+                var claims = _identityDirectory.GetClaims(authenticationResult.Identity);
 
                 SetSession(
                     session, 
@@ -361,7 +365,7 @@ namespace OwinFramework.FormIdentification
                 if (session == null || upstreamSession == null)
                     throw new Exception("Session middleware is required for Form Identification to work");
 
-                var claims = _identityStore.GetClaims(authenticationResult.Identity);
+                var claims = _identityDirectory.GetClaims(authenticationResult.Identity);
 
                 SetSession(
                     session, 
@@ -573,11 +577,11 @@ namespace OwinFramework.FormIdentification
             if (!_identityStore.AddCredentials(authenticationResult.Identity, newEmail, password))
                 return Redirect(context, _changeEmailFailPage.HasValue ? _changeEmailFailPage.Value : thisUrl);
 
-            _identityStore.UpdateClaim(
+            _identityDirectory.UpdateClaim(
                 authenticationResult.Identity, 
                 new IdentityClaim(ClaimNames.Email, newEmail, ClaimStatus.Unverified));
 
-            _identityStore.UpdateClaim(
+            _identityDirectory.UpdateClaim(
                 authenticationResult.Identity,
                 new IdentityClaim(ClaimNames.Username, newEmail, ClaimStatus.Verified));
 
@@ -676,7 +680,7 @@ namespace OwinFramework.FormIdentification
                 var token = _tokenStore.GetToken(_configuration.VerifyEmailTokenType, tokenString, email, identity);
                 if (token.Status == TokenStatus.Allowed)
                 {
-                    _identityStore.UpdateClaim(
+                    _identityDirectory.UpdateClaim(
                         identity,
                         new IdentityClaim(ClaimNames.Email, email, ClaimStatus.Verified));
                     _tokenStore.DeleteToken(tokenString);
@@ -728,11 +732,11 @@ namespace OwinFramework.FormIdentification
                 {
                     if (_identityStore.AddCredentials(identity, oldEmail, password))
                     {
-                        _identityStore.UpdateClaim(
+                        _identityDirectory.UpdateClaim(
                             identity,
                             new IdentityClaim(ClaimNames.Email, oldEmail, ClaimStatus.Unverified));
 
-                        _identityStore.UpdateClaim(
+                        _identityDirectory.UpdateClaim(
                             identity,
                             new IdentityClaim(ClaimNames.Username, oldEmail, ClaimStatus.Verified));
 
@@ -769,7 +773,7 @@ namespace OwinFramework.FormIdentification
                 !string.IsNullOrEmpty(identification.Identity) &&
                 identification.Identity != _anonymousUserIdentity)
             {
-                var emailClaim = _identityStore.GetClaims(identification.Identity).FirstOrDefault(c => string.Equals(c.Name, ClaimNames.Email));
+                var emailClaim = _identityDirectory.GetClaims(identification.Identity).FirstOrDefault(c => string.Equals(c.Name, ClaimNames.Email));
                 if (emailClaim != null)
                 {
                     SendWelcomeEmail(context, identification.Identity, emailClaim.Value);
@@ -822,7 +826,7 @@ namespace OwinFramework.FormIdentification
             }
 
             var authenticationResult = _identityStore.RememberMe(rememberMeToken);
-            var claims = _identityStore.GetClaims(authenticationResult.Identity);
+            var claims = _identityDirectory.GetClaims(authenticationResult.Identity);
             SetSession(
                 session,
                 authenticationResult.Identity ?? _anonymousUserIdentity, 
@@ -1531,21 +1535,6 @@ namespace OwinFramework.FormIdentification
 
                 return documentation;
             }
-        }
-
-        private class EndpointDocumentation : IEndpointDocumentation
-        {
-            public string RelativePath { get; set; }
-            public string Description { get; set; }
-            public string Examples { get; set; }
-            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
-        }
-
-        private class EndpointAttributeDocumentation : IEndpointAttributeDocumentation
-        {
-            public string Type { get; set; }
-            public string Name { get; set; }
-            public string Description { get; set; }
         }
 
         #endregion

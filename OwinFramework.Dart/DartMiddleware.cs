@@ -12,6 +12,7 @@ using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.MiddlewareHelpers.Analysable;
+using OwinFramework.MiddlewareHelpers.SelfDocumenting;
 
 namespace OwinFramework.Dart
 {
@@ -173,12 +174,12 @@ namespace OwinFramework.Dart
 
         public string LongDescription
         {
-            get { return "Rerwites requests for browsers that support Dart to Dart source files instead of compiled JavaScript"; }
+            get { return String.Empty; }
         }
 
         public string ShortDescription
         {
-            get { return "Rerwites requests for browsers that support Dart to Dart source files instead of compiled JavaScript"; }
+            get { return "Rerwites requests for browsers that support Dart. Serves Dart source files instead of compiled JavaScript"; }
         }
 
         public IList<IEndpointDocumentation> Endpoints 
@@ -226,21 +227,6 @@ namespace OwinFramework.Dart
             } 
         }
 
-        private class EndpointDocumentation : IEndpointDocumentation
-        {
-            public string RelativePath { get; set; }
-            public string Description { get; set; }
-            public string Examples { get; set; }
-            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
-        }
-
-        private class EndpointAttributeDocumentation : IEndpointAttributeDocumentation
-        {
-            public string Type { get; set; }
-            public string Name { get; set; }
-            public string Description { get; set; }
-        }
-        
         #endregion
 
         #region Embedded resources

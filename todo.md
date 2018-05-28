@@ -34,8 +34,6 @@
 
 * API key generation and management UI
 
-* Authorization system with roles, permissions, groups etc and full management UI
-
 * Response rendering using controllers, views and context handlers
 
 * Response rendering using templates and context handlers

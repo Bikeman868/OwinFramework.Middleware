@@ -9,13 +9,16 @@ using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
+using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.MiddlewareHelpers.SelfDocumenting;
 
 namespace OwinFramework.DefaultDocument
 {
     public class DefaultDocumentMiddleware:
         IMiddleware<IRequestRewriter>,
         IRoutingProcessor,
+        ISelfDocumenting,
         InterfacesV1.Capability.IConfigurable,
         InterfacesV1.Capability.ITraceable
     {
@@ -38,10 +41,6 @@ namespace OwinFramework.DefaultDocument
                 Trace(context, () => GetType().Name + " modifying request path to " + _defaultPage);
                 context.Request.Path = _defaultPage;
                 context.SetFeature<IRequestRewriter>(new DefaultDocumentContext());
-            }
-            else
-            {
-                Trace(context, () => GetType().Name + " is not handling this request");
             }
 
             return next();
@@ -110,6 +109,41 @@ namespace OwinFramework.DefaultDocument
             return context.Response.WriteAsync(document);
         }
 
+        public IList<IEndpointDocumentation> Endpoints
+        {
+            get
+            {
+                return new List<IEndpointDocumentation>
+                {
+                    new EndpointDocumentation
+                    {
+                        RelativePath = "/",
+                        Description = 
+                            "Requests for the root URL of the website "+
+                            "with no document specified will be rewritten to " + _defaultPage
+                    }
+                };
+            }
+        }
+
+        public Uri GetDocumentation(DocumentationTypes documentationType)
+        {
+            if (documentationType == DocumentationTypes.Configuration)
+                return new Uri(_configPage.ToString(), UriKind.Relative);
+
+            return null;
+        }
+
+        public string LongDescription
+        {
+            get { return string.Empty; }
+        }
+
+        public string ShortDescription
+        {
+            get { return "Redirects requests to the root of the web site to a page within the website"; }
+        }
+
         #endregion
 
         #region Embedded resources
@@ -139,6 +173,5 @@ namespace OwinFramework.DefaultDocument
         private class DefaultDocumentContext: IRequestRewriter
         {
         }
-
     }
 }
