@@ -9,8 +9,10 @@ using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
+using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.MiddlewareHelpers.SelfDocumenting;
 
 namespace OwinFramework.Documenter
 {
@@ -20,6 +22,7 @@ namespace OwinFramework.Documenter
         ISelfDocumenting,
         ITraceable
     {
+        private readonly IHostingEnvironment _hostingEnvironment;
         private const string ConfigDocsPath = "/docs/configuration";
 
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
@@ -28,8 +31,11 @@ namespace OwinFramework.Documenter
         public string Name { get; set; }
         public Action<IOwinContext, Func<string>> Trace { get; set; }
 
-        public DocumenterMiddleware()
+        public DocumenterMiddleware(
+            IHostingEnvironment hostingEnvironment)
         {
+            _hostingEnvironment = hostingEnvironment;
+
             this.RunAfter<IAuthorization>(null, false);
             this.RunAfter<IRequestRewriter>(null, false);
             this.RunAfter<IResponseRewriter>(null, false);
@@ -62,23 +68,35 @@ namespace OwinFramework.Documenter
 
             context.Response.ContentType = "text/html";
 
-            var pageTemplate = GetScriptResource("pageTemplate.html");
-            var endpointTemplate = GetScriptResource("endpointTemplate.html");
-            var attributeListTemplate = GetScriptResource("attributeListTemplate.html");
-            var attributeTemplate = GetScriptResource("attributeTemplate.html");
-            var examplesTemplate = GetScriptResource("examplesTemplate.html");
-            var documentationTemplate = GetScriptResource("documentationTemplate.html");
+            var pageTemplate = GetResource("pageTemplate.html");
+            var middlewareTemplate = GetResource("middlewareTemplate.html");
+            var endpointTemplate = GetResource("endpointTemplate.html");
+            var attributeListTemplate = GetResource("attributeListTemplate.html");
+            var attributeTemplate = GetResource("attributeTemplate.html");
+            var examplesTemplate = GetResource("examplesTemplate.html");
 
+            var middlwareContent = new StringBuilder();
             var endpointsContent = new StringBuilder();
             var attributesContent = new StringBuilder();
 
-            foreach (var endpoint in documentation)
+            foreach (var middleware in documentation)
+            {
+                var middlewareHtml = middlewareTemplate
+                        .Replace("{type}", middleware.SelfDocumenting.GetType().FullName)
+                        .Replace("{name}", middleware.Name)
+                        .Replace("{description}", middleware.Description);
+                middlwareContent.AppendLine(middlewareHtml);
+            }
+
+            var endpoints = ExtractEndpointDocumentation(documentation);
+
+            foreach (var endpoint in endpoints)
             {
                 var attributeListHtml = "";
-                if (endpoint.Documentation.Attributes != null && endpoint.Documentation.Attributes.Count > 0)
+                if (endpoint.Attributes != null && endpoint.Attributes.Count > 0)
                 {
                     attributesContent.Clear();
-                    foreach (var attribute in endpoint.Documentation.Attributes)
+                    foreach (var attribute in endpoint.Attributes)
                     {
                         var attributeHtml = attributeTemplate
                             .Replace("{type}", attribute.Type)
@@ -90,84 +108,85 @@ namespace OwinFramework.Documenter
                 }
 
                 var examplesHtml = "";
-                if (!string.IsNullOrEmpty(endpoint.Documentation.Examples))
+                if (!string.IsNullOrEmpty(endpoint.Examples))
                 {
-                    examplesHtml = examplesTemplate.Replace("{examples}", endpoint.Documentation.Examples);
+                    examplesHtml = examplesTemplate.Replace("{examples}", endpoint.Examples);
                 }
 
-                var documentationHtml = "";
-                if (!string.IsNullOrEmpty(endpoint.SelfDocumenting.LongDescription))
-                {
-                    documentationHtml = documentationTemplate.Replace("{documentation}", endpoint.SelfDocumenting.LongDescription);
-                }
-                
                 var endpointHtml = endpointTemplate
-                    .Replace("{path}", endpoint.Documentation.RelativePath)
-                    .Replace("{description}", endpoint.Documentation.Description)
+                    .Replace("{path}", endpoint.RelativePath)
+                    .Replace("{description}", endpoint.Description)
                     .Replace("{examples}", examplesHtml)
-                    .Replace("{attributes}", attributeListHtml)
-                    .Replace("{documentation}", documentationHtml);
+                    .Replace("{attributes}", attributeListHtml);
                 endpointsContent.AppendLine(endpointHtml);
             }
 
-            return context.Response.WriteAsync(pageTemplate.Replace("{endpoints}", endpointsContent.ToString()));
+            var pageHtml = pageTemplate
+                .Replace("{middleware}", middlwareContent.ToString())
+                .Replace("{endpoints}", endpointsContent.ToString());
+            return context.Response.WriteAsync(pageHtml);
         }
 
         #region Gathering documentation
 
-        private IList<Endpoint> GetDocumentation(IOwinContext context)
+        private IList<MiddlewareDocumentation> GetDocumentation(IOwinContext context)
         {
             var router = context.Get<IRouter>("OwinFramework.Router");
             if (router == null)
                 throw new Exception("The documenter can only be used if you used OwinFramework to build your OWIN pipeline.");
 
-            var endpoints = new List<Endpoint>();
-            var analysedMiddleware = new List<Type>();
-            AddDocumentation(endpoints, router, analysedMiddleware);
-
-            var documentation = new List<Endpoint>();
-            var priorPath = string.Empty;
-            foreach (var endpoint in endpoints.OrderBy(e => e.Documentation.RelativePath))
-            {
-                if (string.Equals(endpoint.Documentation.RelativePath, priorPath))
-                {
-                    var prior = documentation[documentation.Count - 1];
-                    var mergedDocument = new EndpointDocumentation
-                    {
-                        RelativePath = prior.Documentation.RelativePath,
-                        Description = prior.Documentation.Description,
-                        Examples = prior.Documentation.Examples,
-                        Attributes = new List<IEndpointAttributeDocumentation>()
-                    };
-
-                    if (string.IsNullOrEmpty(mergedDocument.Description))
-                        mergedDocument.Description = endpoint.Documentation.Description;
-
-                    if (string.IsNullOrEmpty(mergedDocument.Examples))
-                        mergedDocument.Examples = endpoint.Documentation.Examples;
-                    else if (!string.IsNullOrEmpty(endpoint.Documentation.Examples))
-                        mergedDocument.Examples += endpoint.Documentation.Examples;
-
-                    if (prior.Documentation.Attributes != null && prior.Documentation.Attributes.Count > 0)
-                        ((List<IEndpointAttributeDocumentation>)mergedDocument.Attributes).AddRange(prior.Documentation.Attributes);
-
-                    if (endpoint.Documentation.Attributes != null && endpoint.Documentation.Attributes.Count > 0)
-                        ((List<IEndpointAttributeDocumentation>)mergedDocument.Attributes).AddRange(endpoint.Documentation.Attributes);
-                }
-                else
-                {
-                    documentation.Add(endpoint);
-                }
-                priorPath = endpoint.Documentation.RelativePath;
-            }
+            var documentation = new List<MiddlewareDocumentation>();
+            AddDocumentation(documentation, router);
 
             return documentation;
         }
 
+        private IList<EndpointDocumentation> ExtractEndpointDocumentation(IEnumerable<MiddlewareDocumentation> documentation)
+        {
+            var endpoints = new List<EndpointDocumentation>();
+
+            foreach (var middleware in documentation.Where(d => d.Endpoints != null))
+            {
+                foreach (var endpointDocumentation in middleware.Endpoints)
+                {
+                    var newEndpoint = endpointDocumentation;
+                    var existingEndpoint = endpoints.FirstOrDefault(
+                            e => string.Equals(e.RelativePath, newEndpoint.RelativePath, StringComparison.InvariantCultureIgnoreCase));
+
+                    if (existingEndpoint == null)
+                    {
+                        endpoints.Add(new EndpointDocumentation 
+                        {
+                            RelativePath = newEndpoint.RelativePath,
+                            Description = newEndpoint.Description,
+                            Examples = newEndpoint.Examples,
+                            Attributes = newEndpoint.Attributes == null ? null : newEndpoint.Attributes.ToList()
+                        });
+                    }
+                    else
+                    {
+                        if (string.IsNullOrEmpty(existingEndpoint.Description))
+                            existingEndpoint.Description = newEndpoint.Description;
+
+                        if (string.IsNullOrEmpty(existingEndpoint.Examples))
+                            existingEndpoint.Examples = newEndpoint.Examples;
+                        else if (!string.IsNullOrEmpty(newEndpoint.Examples))
+                            existingEndpoint.Examples += newEndpoint.Examples;
+
+                        if (existingEndpoint.Attributes == null || existingEndpoint.Attributes.Count == 0)
+                            existingEndpoint.Attributes = newEndpoint.Attributes;
+                        else if (newEndpoint.Attributes != null && newEndpoint.Attributes.Count > 0)
+                            ((List<IEndpointAttributeDocumentation>)existingEndpoint.Attributes).AddRange(newEndpoint.Attributes);
+                    }
+                }
+            }
+
+            return endpoints.OrderBy(e => e.RelativePath).ToList();
+        }
+
         private void AddDocumentation(
-            IList<Endpoint> documentation, 
-            IRouter router, 
-            IList<Type> analysedMiddleware)
+            IList<MiddlewareDocumentation> documentation, 
+            IRouter router)
         {
             if (router.Segments != null)
             {
@@ -177,7 +196,7 @@ namespace OwinFramework.Documenter
                     {
                         foreach (var middleware in segment.Middleware)
                         {
-                            AddDocumentation(documentation, middleware, analysedMiddleware);
+                            AddDocumentation(documentation, middleware);
                         }
                     }
                 }
@@ -185,36 +204,35 @@ namespace OwinFramework.Documenter
         }
 
         private void AddDocumentation(
-            IList<Endpoint> documentation, 
-            IMiddleware middleware, 
-            IList<Type> analysedMiddleware)
+            IList<MiddlewareDocumentation> documentation, 
+            IMiddleware middleware)
         {
             var selfDocumenting = middleware as ISelfDocumenting;
             if (selfDocumenting != null)
             {
-                if (!analysedMiddleware.Contains(middleware.GetType()))
+                if (documentation.All(d => d.SelfDocumenting.GetType() != selfDocumenting.GetType()))
                 {
-                    analysedMiddleware.Add(middleware.GetType());
-                    if (selfDocumenting.Endpoints != null)
+                    var middlewareDocumentation = new MiddlewareDocumentation
                     {
-                        foreach (var endpoint in selfDocumenting.Endpoints)
-                            documentation.Add(new Endpoint 
-                            { 
-                                Documentation  = endpoint, 
-                                SelfDocumenting = selfDocumenting
-                            });
-                    }
+                        SelfDocumenting = selfDocumenting,
+                        Name = selfDocumenting.ShortDescription,
+                        Description = selfDocumenting.LongDescription,
+                        Endpoints = selfDocumenting.Endpoints == null ? null : selfDocumenting.Endpoints.ToList()
+                    };
+                    documentation.Add(middlewareDocumentation);
                 }
             }
 
             var router = middleware as IRouter;
-            if (router != null) AddDocumentation(documentation, router, analysedMiddleware);
+            if (router != null) AddDocumentation(documentation, router);
         }
 
-        private class Endpoint
+        private class MiddlewareDocumentation
         {
             public ISelfDocumenting SelfDocumenting { get; set; }
-            public IEndpointDocumentation Documentation { get; set; }
+            public string Name{ get; set; }
+            public string Description { get; set; }
+            public List<IEndpointDocumentation> Endpoints { get; set; }
         }
 
         #endregion
@@ -248,7 +266,7 @@ namespace OwinFramework.Documenter
 
         private Task DocumentConfiguration(IOwinContext context)
         {
-            var document = GetScriptResource("configuration.html");
+            var document = GetResource("configuration.html");
 
             document = document.Replace("{path}", _configuration.Path);
             document = document.Replace("{enabled}", _configuration.Enabled.ToString());
@@ -279,7 +297,7 @@ namespace OwinFramework.Documenter
 
         string ISelfDocumenting.LongDescription
         {
-            get { return "Produces documentation for the application developer about all of the installed middleware"; }
+            get { return GetResource("middlewareDescription.html"); }
         }
 
         string ISelfDocumenting.ShortDescription
@@ -349,24 +367,63 @@ namespace OwinFramework.Documenter
 
         #region Embedded resources
 
-        private string GetScriptResource(string filename)
+        private string GetResource(string filename)
         {
-            var scriptResourceName = Assembly.GetExecutingAssembly()
+            var physicalFile = _hostingEnvironment.MapPath(filename);
+
+            if (File.Exists(physicalFile))
+            {
+                using (var file = File.Open(physicalFile, FileMode.Open, FileAccess.Read))
+                {
+                    var buffer = new byte[file.Length];
+                    if (file.Read(buffer, 0, (int)file.Length) == file.Length)
+                    {
+                        int bomLength;
+                        var encoding = DetectEncoding(buffer, out bomLength);
+                        return encoding.GetString(buffer, bomLength, buffer.Length - bomLength);
+                    }
+                }
+            }
+
+            var resourceName = Assembly.GetExecutingAssembly()
                 .GetManifestResourceNames()
                 .FirstOrDefault(n => n.Contains(filename));
-            if (scriptResourceName == null)
+
+            if (resourceName == null)
                 throw new Exception("Failed to find embedded resource " + filename);
 
-            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(scriptResourceName))
+            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName))
             {
                 if (stream == null)
-                    throw new Exception("Failed to open embedded resource " + scriptResourceName);
+                    throw new Exception("Failed to open embedded resource " + resourceName);
 
                 using (var reader = new StreamReader(stream, Encoding.UTF8))
                 {
                     return reader.ReadToEnd();
                 }
             }
+        }
+
+        private Encoding DetectEncoding(byte[] fileContent, out int bomLength)
+        {
+            foreach (var encodingInfo in Encoding.GetEncodings())
+            {
+                var encoding = encodingInfo.GetEncoding();
+                if (encoding == null) continue;
+
+                var encodingBom = encoding.GetPreamble();
+                if (encodingBom == null || encodingBom.Length < fileContent.Length || encodingBom.Length == 0)
+                    continue;
+
+                for (var i = 0; i < encodingBom.Length; i++)
+                    if (fileContent[i] != encodingBom[i])
+                        continue;
+
+                bomLength = encodingBom.Length;
+                return encoding;
+            }
+            bomLength = 0;
+            return Encoding.UTF8;
         }
 
         #endregion

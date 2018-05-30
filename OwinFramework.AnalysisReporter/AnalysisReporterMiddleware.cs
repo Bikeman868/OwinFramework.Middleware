@@ -143,9 +143,9 @@ namespace OwinFramework.AnalysisReporter
 
         private Task RenderText(IOwinContext context, IEnumerable<AnalysableInfo> analysisData)
         {
-            var pageTemplate = GetScriptResource("pageTemplate.txt");
-            var analysableTemplate = GetScriptResource("analysableTemplate.txt");
-            var statisticTemplate = GetScriptResource("statisticTemplate.txt");
+            var pageTemplate = GetResource("pageTemplate.txt");
+            var analysableTemplate = GetResource("analysableTemplate.txt");
+            var statisticTemplate = GetResource("statisticTemplate.txt");
             var linkTemplate = "";
 
             return RenderTemplates(context, analysisData, pageTemplate, analysableTemplate, statisticTemplate, linkTemplate);
@@ -153,9 +153,9 @@ namespace OwinFramework.AnalysisReporter
 
         private Task RenderMarkdown(IOwinContext context, IEnumerable<AnalysableInfo> analysisData)
         {
-            var pageTemplate = GetScriptResource("pageTemplate.md");
-            var analysableTemplate = GetScriptResource("analysableTemplate.md");
-            var statisticTemplate = GetScriptResource("statisticTemplate.md");
+            var pageTemplate = GetResource("pageTemplate.md");
+            var analysableTemplate = GetResource("analysableTemplate.md");
+            var statisticTemplate = GetResource("statisticTemplate.md");
             var linkTemplate = "";
 
             return RenderTemplates(context, analysisData, pageTemplate, analysableTemplate, statisticTemplate, linkTemplate);
@@ -163,10 +163,10 @@ namespace OwinFramework.AnalysisReporter
 
         private Task RenderHtml(IOwinContext context, IEnumerable<AnalysableInfo> analysisData)
         {
-            var pageTemplate = GetScriptResource("pageTemplate.html");
-            var analysableTemplate = GetScriptResource("analysableTemplate.html");
-            var statisticTemplate = GetScriptResource("statisticTemplate.html");
-            var linkTemplate = GetScriptResource("linkTemplate.html");
+            var pageTemplate = GetResource("pageTemplate.html");
+            var analysableTemplate = GetResource("analysableTemplate.html");
+            var statisticTemplate = GetResource("statisticTemplate.html");
+            var linkTemplate = GetResource("linkTemplate.html");
 
             return RenderTemplates(context, analysisData, pageTemplate, analysableTemplate, statisticTemplate, linkTemplate);
         }
@@ -446,7 +446,7 @@ namespace OwinFramework.AnalysisReporter
 
         private Task DocumentConfiguration(IOwinContext context)
         {
-            var document = GetScriptResource("configuration.html");
+            var document = GetResource("configuration.html");
 
             document = document.Replace("{path}", _configuration.Path);
             document = document.Replace("{enabled}", _configuration.Enabled.ToString());
@@ -543,18 +543,19 @@ namespace OwinFramework.AnalysisReporter
 
         #region Embedded resources
 
-        private string GetScriptResource(string filename)
+        private string GetResource(string filename)
         {
-            var scriptResourceName = Assembly.GetExecutingAssembly()
+            var resourceName = Assembly.GetExecutingAssembly()
                 .GetManifestResourceNames()
                 .FirstOrDefault(n => n.Contains(filename));
-            if (scriptResourceName == null)
+
+            if (resourceName == null)
                 throw new Exception("Failed to find embedded resource " + filename);
 
-            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(scriptResourceName))
+            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName))
             {
                 if (stream == null)
-                    throw new Exception("Failed to open embedded resource " + scriptResourceName);
+                    throw new Exception("Failed to open embedded resource " + resourceName);
 
                 using (var reader = new StreamReader(stream, Encoding.UTF8))
                 {

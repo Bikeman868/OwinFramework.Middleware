@@ -1,0 +1,11 @@
+﻿<p>
+    This middleware traverses the OWIN pipeline and finds all of the middleware that implements 
+    the <span class="code">ISelfDocumenting</span> interface. It calls methods of this interface
+    to gather up all of the documentation for all of the installed middleware and formats in into
+    a big document that provides details of all of the installed components.
+</p>
+<p>
+    The document produced by this middleware is template driven. The default templates are embedded
+    in the assembly, but it looks on disk before using them, so you can override the templates
+    to customize the html and the css and produce the document in whatever format you want.
+</p>
