@@ -211,6 +211,9 @@
     <Content Include="FormId\verifyEmailFail.html" />
     <Content Include="FormId\changePasswordSuccess.html" />
     <Content Include="FormId\verifyEmailSuccess.html" />
+    <Content Include="html\attributeListTemplate.html">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="welcome.html" />
     <Content Include="ui\web\favicon.ico" />
     <Content Include="ui\web\index.html" />

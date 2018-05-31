@@ -12,6 +12,7 @@ using OwinFramework.Interfaces.Routing;
 using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
+using OwinFramework.MiddlewareHelpers.EmbeddedResources;
 using OwinFramework.MiddlewareHelpers.SelfDocumenting;
 
 namespace OwinFramework.Documenter
@@ -22,7 +23,7 @@ namespace OwinFramework.Documenter
         ISelfDocumenting,
         ITraceable
     {
-        private readonly IHostingEnvironment _hostingEnvironment;
+        private readonly ResourceManager _resourceManager;
         private const string ConfigDocsPath = "/docs/configuration";
 
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
@@ -34,7 +35,7 @@ namespace OwinFramework.Documenter
         public DocumenterMiddleware(
             IHostingEnvironment hostingEnvironment)
         {
-            _hostingEnvironment = hostingEnvironment;
+            _resourceManager = new ResourceManager(hostingEnvironment, new MimeTypeEvaluator());
 
             this.RunAfter<IAuthorization>(null, false);
             this.RunAfter<IRequestRewriter>(null, false);
@@ -125,6 +126,15 @@ namespace OwinFramework.Documenter
                 .Replace("{middleware}", middlwareContent.ToString())
                 .Replace("{endpoints}", endpointsContent.ToString());
             return context.Response.WriteAsync(pageHtml);
+        }
+
+        private string GetResource(string fileName)
+        {
+            var resource = _resourceManager.GetResource(Assembly.GetExecutingAssembly(), fileName.ToLower());
+            if (resource == null || resource.Content == null)
+                return string.Empty;
+
+            return Encoding.UTF8.GetString(resource.Content);
         }
 
         #region Gathering documentation
@@ -256,7 +266,13 @@ namespace OwinFramework.Documenter
         void IConfigurable.Configure(IConfiguration configuration, string path)
         {
             _configurationRegistration = configuration.Register(
-                path, cfg => _configuration = cfg, new DocumenterConfiguration());
+                path, 
+                cfg => 
+                    {
+                        _configuration = cfg;
+                        _resourceManager.LocalResourcePath = cfg.LocalFilePath;
+                    }, 
+                new DocumenterConfiguration());
         }
 
 
@@ -346,84 +362,6 @@ namespace OwinFramework.Documenter
                 }
                 return documentation;
             }
-        }
-
-        private class EndpointDocumentation : IEndpointDocumentation
-        {
-            public string RelativePath { get; set; }
-            public string Description { get; set; }
-            public string Examples { get; set; }
-            public IList<IEndpointAttributeDocumentation> Attributes { get; set; }
-        }
-
-        private class EndpointAttributeDocumentation : IEndpointAttributeDocumentation
-        {
-            public string Type { get; set; }
-            public string Name { get; set; }
-            public string Description { get; set; }
-        }
-
-        #endregion
-
-        #region Embedded resources
-
-        private string GetResource(string filename)
-        {
-            var physicalFile = _hostingEnvironment.MapPath(filename);
-
-            if (File.Exists(physicalFile))
-            {
-                using (var file = File.Open(physicalFile, FileMode.Open, FileAccess.Read))
-                {
-                    var buffer = new byte[file.Length];
-                    if (file.Read(buffer, 0, (int)file.Length) == file.Length)
-                    {
-                        int bomLength;
-                        var encoding = DetectEncoding(buffer, out bomLength);
-                        return encoding.GetString(buffer, bomLength, buffer.Length - bomLength);
-                    }
-                }
-            }
-
-            var resourceName = Assembly.GetExecutingAssembly()
-                .GetManifestResourceNames()
-                .FirstOrDefault(n => n.Contains(filename));
-
-            if (resourceName == null)
-                throw new Exception("Failed to find embedded resource " + filename);
-
-            using (var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(resourceName))
-            {
-                if (stream == null)
-                    throw new Exception("Failed to open embedded resource " + resourceName);
-
-                using (var reader = new StreamReader(stream, Encoding.UTF8))
-                {
-                    return reader.ReadToEnd();
-                }
-            }
-        }
-
-        private Encoding DetectEncoding(byte[] fileContent, out int bomLength)
-        {
-            foreach (var encodingInfo in Encoding.GetEncodings())
-            {
-                var encoding = encodingInfo.GetEncoding();
-                if (encoding == null) continue;
-
-                var encodingBom = encoding.GetPreamble();
-                if (encodingBom == null || encodingBom.Length < fileContent.Length || encodingBom.Length == 0)
-                    continue;
-
-                for (var i = 0; i < encodingBom.Length; i++)
-                    if (fileContent[i] != encodingBom[i])
-                        continue;
-
-                bomLength = encodingBom.Length;
-                return encoding;
-            }
-            bomLength = 0;
-            return Encoding.UTF8;
         }
 
         #endregion

@@ -14,7 +14,8 @@
         "documenter": {
             "path": "/owin/endpoints",
             "enabled": true,
-            "requiredPermission": ""
+          "requiredPermission": "",
+          "localFilePath": "html\\"
         },
         "exceptions": {
             "message": "<p>This is a <i>custom</i> message.</p>",

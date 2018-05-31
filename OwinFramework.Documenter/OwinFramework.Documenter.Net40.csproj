@@ -85,10 +85,10 @@
     <EmbeddedResource Include="html\examplesTemplate.html" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="html\documentationTemplate.html" />
+    <EmbeddedResource Include="html\middlewareDescription.html" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="html\middlewareDescription.html" />
+    <EmbeddedResource Include="html\middlewareTemplate.html" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
