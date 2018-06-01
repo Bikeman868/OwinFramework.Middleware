@@ -81,14 +81,49 @@ namespace OwinFramework.Documenter
             var attributeTemplate = GetResource("attributeTemplate.html");
             var examplesTemplate = GetResource("examplesTemplate.html");
 
+            var indexTemplate = GetResource("indexTemplate.html");
+            var endpointIndexEntryTemplate = GetResource("endpointIndexEntryTemplate.html");
+            var middlewareIndexEntryTemplate = GetResource("middlewareIndexEntryTemplate.html");
+
             var middlwareContent = new StringBuilder();
             var endpointsContent = new StringBuilder();
             var attributesContent = new StringBuilder();
+            var indexContent = new StringBuilder();
 
             foreach (var middleware in documentation)
             {
+                var type = middleware.SelfDocumenting.GetType();
+                var middlewareHtml = middlewareIndexEntryTemplate
+                        .Replace("{id}", type.FullName)
+                        .Replace("{name}", type.Name)
+                        .Replace("{description}", middleware.Name);
+                indexContent.AppendLine(middlewareHtml);
+
+                if (middleware.Endpoints != null)
+                {
+                    foreach (var endpoint in middleware.Endpoints)
+                    {
+                        var methods = endpoint.Attributes == null 
+                            ? string.Empty 
+                            : string.Join(", ", endpoint.Attributes
+                                .Where(a => string.Equals("method", a.Type, StringComparison.OrdinalIgnoreCase))
+                                .Select(a => a.Name.ToUpper()));
+
+                        var endpointHtml = endpointIndexEntryTemplate
+                            .Replace("{id}", endpoint.RelativePath.Replace("/", "_"))
+                            .Replace("{methods}", methods)
+                            .Replace("{path}", endpoint.RelativePath);
+                        indexContent.AppendLine(endpointHtml);
+                    }
+                }
+            }
+
+            foreach (var middleware in documentation)
+            {
+                var type = middleware.SelfDocumenting.GetType();
                 var middlewareHtml = middlewareTemplate
-                        .Replace("{type}", middleware.SelfDocumenting.GetType().FullName)
+                        .Replace("{id}", type.FullName)
+                        .Replace("{type}", type.FullName)
                         .Replace("{name}", middleware.Name)
                         .Replace("{description}", middleware.Description);
                 middlwareContent.AppendLine(middlewareHtml);
@@ -120,6 +155,7 @@ namespace OwinFramework.Documenter
                 }
 
                 var endpointHtml = endpointTemplate
+                    .Replace("{id}", endpoint.RelativePath.Replace("/", "_"))
                     .Replace("{path}", endpoint.RelativePath)
                     .Replace("{description}", endpoint.Description)
                     .Replace("{examples}", examplesHtml)
@@ -128,6 +164,7 @@ namespace OwinFramework.Documenter
             }
 
             var pageHtml = pageTemplate
+                .Replace("{index}", indexTemplate.Replace("{index}", indexContent.ToString()))
                 .Replace("{middleware}", middlwareContent.ToString())
                 .Replace("{endpoints}", endpointsContent.ToString());
             return context.Response.WriteAsync(pageHtml);
@@ -153,7 +190,7 @@ namespace OwinFramework.Documenter
             var documentation = new List<MiddlewareDocumentation>();
             AddDocumentation(documentation, router);
 
-            return documentation;
+            return documentation.OrderBy(m => m.ClassName).ToList();
         }
 
         private IList<EndpointDocumentation> ExtractEndpointDocumentation(IEnumerable<MiddlewareDocumentation> documentation)
@@ -230,9 +267,12 @@ namespace OwinFramework.Documenter
                     var middlewareDocumentation = new MiddlewareDocumentation
                     {
                         SelfDocumenting = selfDocumenting,
+                        ClassName = selfDocumenting.GetType().FullName,
                         Name = selfDocumenting.ShortDescription,
                         Description = selfDocumenting.LongDescription,
-                        Endpoints = selfDocumenting.Endpoints == null ? null : selfDocumenting.Endpoints.ToList()
+                        Endpoints = selfDocumenting.Endpoints == null 
+                            ? null 
+                            : selfDocumenting.Endpoints.OrderBy(e => e.RelativePath).ToList()
                     };
                     documentation.Add(middlewareDocumentation);
                 }
@@ -245,7 +285,8 @@ namespace OwinFramework.Documenter
         private class MiddlewareDocumentation
         {
             public ISelfDocumenting SelfDocumenting { get; set; }
-            public string Name{ get; set; }
+            public string ClassName{ get; set; }
+            public string Name { get; set; }
             public string Description { get; set; }
             public List<IEndpointDocumentation> Endpoints { get; set; }
         }

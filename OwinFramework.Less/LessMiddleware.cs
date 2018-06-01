@@ -15,6 +15,7 @@ using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.MiddlewareHelpers.Analysable;
 using OwinFramework.MiddlewareHelpers.SelfDocumenting;
+using OwinFramework.MiddlewareHelpers.Traceable;
 
 namespace OwinFramework.Less
 {
@@ -37,12 +38,19 @@ namespace OwinFramework.Less
         private int _fileModificationCount;
         private int _filesCompiledCount;
 
-        public LessMiddleware(IHostingEnvironment hostingEnvironment)
+        private readonly TraceFilter _traceFilter;
+
+        public LessMiddleware(
+            IConfiguration configuration,
+            IHostingEnvironment hostingEnvironment)
         {
             _hostingEnvironment = hostingEnvironment;
+
             this.RunAfter<IOutputCache>(null, false);
             this.RunAfter<IRequestRewriter>(null, false);
             this.RunAfter<IResponseRewriter>(null, false);
+
+            _traceFilter = new TraceFilter(configuration, this);
         }
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
@@ -64,21 +72,22 @@ namespace OwinFramework.Less
                     var timeSinceFileChanged = DateTime.UtcNow - cssFileContext.PhysicalFile.LastWriteTimeUtc;
                     if (outputCache.TimeInCache.Value > timeSinceFileChanged)
                     {
-                        Trace(context, () => GetType().Name + " file has changed since output was cached. Output cache will not be used");
+                        _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " file has changed since output was cached. Output cache will not be used");
                         outputCache.UseCachedContent = false;
                         _fileModificationCount++;
                     }
                     else
                     {
-                        Trace(context, () => GetType().Name + " instructing output cache to use cached output");
+                        _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " instructing output cache to use cached output");
                         outputCache.UseCachedContent = true;
                     }
                 }
             }
 
-            Trace(context, () => 
+            _traceFilter.Trace(context, TraceLevel.Information, () => 
                 GetType().Name + " this is a css file request" +
                 (cssFileContext.NeedsCompiling ? " that needs compiling" : ""));
+
             return null;
         }
         
@@ -88,22 +97,19 @@ namespace OwinFramework.Less
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl,
                     StringComparison.OrdinalIgnoreCase))
             {
-                Trace(context, () => GetType().Name + " returning configuration documentation");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 
             var cssFileContext = context.GetFeature<CssFileContext>();
             if (cssFileContext == null || cssFileContext.PhysicalFile == null)
-            {
-                Trace(context, () => GetType().Name + " not handling this request");
                 return next();
-            }
 
             var outputCache = context.GetFeature<IOutputCache>();
             if (outputCache != null)
             {
                 outputCache.Priority = cssFileContext.NeedsCompiling ? CachePriority.High : CachePriority.Medium;
-                Trace(context, () => GetType().Name + " setting output cache priority " + outputCache.Priority);
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " setting output cache priority " + outputCache.Priority);
             }
 
             return Task.Factory.StartNew(() =>
@@ -119,7 +125,7 @@ namespace OwinFramework.Less
                     context.Response.ContentType = "text/css";
                     if (cssFileContext.NeedsCompiling)
                     {
-                        Trace(context, () => GetType().Name + " compiling Less file to CSS");
+                        _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " compiling Less file to CSS");
                         try
                         {
                             var css = dotless.Core.Less.Parse(
@@ -134,7 +140,7 @@ namespace OwinFramework.Less
                         }
                         catch (Exception ex)
                         {
-                            Trace(context, () => GetType().Name + " compilation error in LESS file, see response for details");
+                            _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " compilation error in LESS file, see response for details");
                             context.Response.Write("/* Compilation error in LESS file " + cssFileContext.PhysicalFile + Environment.NewLine);
                             while (ex != null)
                             {
@@ -146,7 +152,7 @@ namespace OwinFramework.Less
                     }
                     else
                     {
-                        Trace(context, () => GetType().Name + " returning CSS from file system");
+                        _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " returning CSS from file system");
                         context.Response.Write(fileContent);
                     }
                 });
@@ -238,12 +244,26 @@ namespace OwinFramework.Less
 
         public string LongDescription
         {
-            get { return null; }
+            get 
+            { 
+                return 
+                "<p>Compiles LESS to CSS on demand using the dotless NuGet package. Note "+
+                "that the URL should end with .css even though a .less file is served "+
+                "because as far as the browser is concerned it is downloading a CSS file.</p>"+
+                "<p>If output caching is configured then it will be instructed to cache "+
+                "the compiled CSS. If the underlying LESS file changes them the output "+
+                "cache is invalidated so that the LESS will be recompiled the next time "+
+                "it is requested.</p>"+
+                "<p>If a CSS file exists on disk then this middleware will serve it as a "+
+                "static file.</p>" +
+                "<p>If there are compillation errors in the LESS file then the output will" +
+                "be a diagnostic message enclosed in comment delimiters.</p></p>";
+            }
         }
 
         public string ShortDescription
         {
-            get { return "Serves CSS files by compiling LESS files into CSS using the dotless NuGet package."; }
+            get { return "Serves CSS files by compiling LESS files into CSS"; }
         }
 
         public IList<IEndpointDocumentation> Endpoints 
