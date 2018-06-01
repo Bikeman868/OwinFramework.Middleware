@@ -14,6 +14,7 @@ using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.MiddlewareHelpers.EmbeddedResources;
 using OwinFramework.MiddlewareHelpers.SelfDocumenting;
+using OwinFramework.MiddlewareHelpers.Traceable;
 
 namespace OwinFramework.Documenter
 {
@@ -32,14 +33,18 @@ namespace OwinFramework.Documenter
         public string Name { get; set; }
         public Action<IOwinContext, Func<string>> Trace { get; set; }
 
+        private readonly TraceFilter _traceFilter;
+
         public DocumenterMiddleware(
+            IConfiguration configuration,
             IHostingEnvironment hostingEnvironment)
         {
-            _resourceManager = new ResourceManager(hostingEnvironment, new MimeTypeEvaluator());
-
             this.RunAfter<IAuthorization>(null, false);
             this.RunAfter<IRequestRewriter>(null, false);
             this.RunAfter<IResponseRewriter>(null, false);
+
+            _traceFilter = new TraceFilter(configuration, this);
+            _resourceManager = new ResourceManager(hostingEnvironment, new MimeTypeEvaluator());
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
@@ -50,13 +55,13 @@ namespace OwinFramework.Documenter
 
             if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
             {
-                Trace(context, () => GetType().Name + " returning middleware documentation");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " returning middleware documentation");
                 return GenerateDocumentation(context);
             }
 
             if (context.Request.Path.Value.Equals(path + ConfigDocsPath, StringComparison.OrdinalIgnoreCase))
             {
-                Trace(context, () => GetType().Name + " returning configuration documentation");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 

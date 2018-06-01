@@ -12,6 +12,7 @@ using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.MiddlewareHelpers.SelfDocumenting;
+using OwinFramework.MiddlewareHelpers.Traceable;
 
 namespace OwinFramework.DefaultDocument
 {
@@ -19,8 +20,8 @@ namespace OwinFramework.DefaultDocument
         IMiddleware<IRequestRewriter>,
         IRoutingProcessor,
         ISelfDocumenting,
-        InterfacesV1.Capability.IConfigurable,
-        InterfacesV1.Capability.ITraceable
+        IConfigurable,
+        ITraceable
     {
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         IList<IDependency> IMiddleware.Dependencies { get { return _dependencies; } }
@@ -28,8 +29,12 @@ namespace OwinFramework.DefaultDocument
         string IMiddleware.Name { get; set; }
         public Action<IOwinContext, Func<string>> Trace { get; set; }
 
-        public DefaultDocumentMiddleware()
+        private readonly TraceFilter _traceFilter;
+
+        public DefaultDocumentMiddleware(IConfiguration configuration)
         {
+            _traceFilter = new TraceFilter(configuration, this);
+
             ConfigurationChanged(new DefaultDocumentConfiguration());
             this.RunFirst();
         }

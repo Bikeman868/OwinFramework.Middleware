@@ -238,12 +238,12 @@ namespace OwinFramework.Less
 
         public string LongDescription
         {
-            get { return "Serves CSS files by compiling LESS files into CSS using the dotless NuGet package."; }
+            get { return null; }
         }
 
         public string ShortDescription
         {
-            get { return "Serves CSS files by compiling LESS files into CSS."; }
+            get { return "Serves CSS files by compiling LESS files into CSS using the dotless NuGet package."; }
         }
 
         public IList<IEndpointDocumentation> Endpoints 

@@ -547,7 +547,11 @@ namespace OwinFramework.RouteVisualizer
 
         string ISelfDocumenting.LongDescription
         {
-            get { return "Allows you to visually inspect your OWIN pipeline configuration to ensure that your application will work as expected."; }
+            get { return 
+                "<p>Allows you to visually inspect your OWIN pipeline configuration to ensure that "+
+                "your application will work as expected.</p>"+
+                "<p>This is especially important for things like ensuring identificationa and "+
+                "authorization middleware is running in front of middleware that needs to be secure.</p>"; }
         }
 
         string ISelfDocumenting.ShortDescription

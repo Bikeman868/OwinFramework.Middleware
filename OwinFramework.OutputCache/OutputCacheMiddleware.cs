@@ -15,6 +15,7 @@ using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.InterfacesV1.Upstream;
 using OwinFramework.MiddlewareHelpers.Analysable;
 using OwinFramework.MiddlewareHelpers.ResponseRewriter;
+using OwinFramework.MiddlewareHelpers.Traceable;
 
 namespace OwinFramework.OutputCache
 {
@@ -40,10 +41,15 @@ namespace OwinFramework.OutputCache
 
         private IDisposable _configurationRegistration;
         private OutputCacheConfiguration _configuration;
+        private readonly TraceFilter _traceFilter;
 
-        public OutputCacheMiddleware(ICache cache)
+        public OutputCacheMiddleware(
+            ICache cache,
+            IConfiguration configuration)
         {
             _cache = cache;
+            _traceFilter = new TraceFilter(configuration, this);
+
             ConfigurationChanged(new OutputCacheConfiguration());
         }
 
@@ -72,7 +78,7 @@ namespace OwinFramework.OutputCache
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
             {
-                Trace(context, () => GetType().Name + " returning configuration documentation");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
             
@@ -85,7 +91,7 @@ namespace OwinFramework.OutputCache
             if (outputCache.CachedContentIsAvailable
                 && outputCache.UseCachedContent)
             {
-                Trace(context, () => GetType().Name + " returning cached response");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " returning cached response");
                 _useCachedContentCount++;
                 return outputCache.SendCachedResponse();
             }
@@ -95,10 +101,10 @@ namespace OwinFramework.OutputCache
 
             return next().ContinueWith(t =>
             {
-                Trace(context, () => GetType().Name + " flushing captured response to actual response stream");
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " flushing captured response to actual response stream");
                 outputCache.SendCapturedOutput();
 
-                Trace(context, () => GetType().Name + " saving response to cache");
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " saving response to cache");
                 if (outputCache.SaveToCache())
                     _addedToCacheCount++;
             });
@@ -161,7 +167,9 @@ namespace OwinFramework.OutputCache
 
         public string LongDescription
         {
-            get { return "Captures output from downstream middleware and caches it only if the downstream middleware indicates that the response can be cached and reused."; }
+            get { return 
+                "<p>Captures output from downstream middleware and caches it only if the downstream "+
+                "middleware indicates that the response can be cached and reused.</p>"; }
         }
 
         public string ShortDescription

@@ -14,6 +14,7 @@ using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.MiddlewareHelpers.SelfDocumenting;
+using OwinFramework.MiddlewareHelpers.Traceable;
 
 namespace OwinFramework.AnalysisReporter
 {
@@ -23,7 +24,7 @@ namespace OwinFramework.AnalysisReporter
         ISelfDocumenting,
         ITraceable
     {
-        private const string ConfigDocsPath = "/docs/configuration";
+        private const string _configDocsPath = "/docs/configuration";
 
         private readonly IList<IDependency> _dependencies = new List<IDependency>();
         public IList<IDependency> Dependencies { get { return _dependencies; } }
@@ -31,13 +32,16 @@ namespace OwinFramework.AnalysisReporter
         public string Name { get; set; }
         public Action<IOwinContext, Func<string>> Trace { get; set; }
 
+        private readonly TraceFilter _traceFilter;
         private DateTime _nextUpdate;
 
-        public AnalysisReporterMiddleware()
+        public AnalysisReporterMiddleware(IConfiguration configuration)
         {
             this.RunAfter<IAuthorization>(null, false);
             this.RunAfter<IRequestRewriter>(null, false);
             this.RunAfter<IResponseRewriter>(null, false);
+
+            _traceFilter = new TraceFilter(configuration, this);
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
@@ -46,17 +50,17 @@ namespace OwinFramework.AnalysisReporter
             if (!IsForThisMiddleware(context, out path))
                 return next();
 
-            Trace(context, () => GetType().Name + " handling this request");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling this request");
 
             if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
             {
-                Trace(context, () => GetType().Name + " returning analysis report");
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " returning analysis report");
                 return ReportAnalysis(context);
             }
 
-            if (context.Request.Path.Value.Equals(path + ConfigDocsPath, StringComparison.OrdinalIgnoreCase))
+            if (context.Request.Path.Value.Equals(path + _configDocsPath, StringComparison.OrdinalIgnoreCase))
             {
-                Trace(context, () => GetType().Name + " returning configurartion documentation");
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " returning configurartion documentation");
                 return DocumentConfiguration(context);
             }
 
@@ -468,7 +472,7 @@ namespace OwinFramework.AnalysisReporter
             switch (documentationType)
             {
                 case DocumentationTypes.Configuration:
-                    return new Uri(_configuration.Path + ConfigDocsPath, UriKind.Relative);
+                    return new Uri(_configuration.Path + _configDocsPath, UriKind.Relative);
                 case DocumentationTypes.Overview:
                     return new Uri("https://github.com/Bikeman868/OwinFramework.Middleware", UriKind.Absolute);
             }
@@ -522,7 +526,7 @@ namespace OwinFramework.AnalysisReporter
                     },
                     new EndpointDocumentation
                     {
-                        RelativePath = _configuration.Path + ConfigDocsPath,
+                        RelativePath = _configuration.Path + _configDocsPath,
                         Description = "Documentation of the configuration options for the analysis reporter middleware",
                         Attributes = new List<IEndpointAttributeDocumentation>
                         {

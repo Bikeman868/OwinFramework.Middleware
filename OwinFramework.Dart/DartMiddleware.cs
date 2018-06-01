@@ -13,6 +13,7 @@ using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.MiddlewareHelpers.Analysable;
 using OwinFramework.MiddlewareHelpers.SelfDocumenting;
+using OwinFramework.MiddlewareHelpers.Traceable;
 
 namespace OwinFramework.Dart
 {
@@ -30,8 +31,15 @@ namespace OwinFramework.Dart
         string IMiddleware.Name { get; set; }
         public Action<IOwinContext, Func<string>> Trace { get; set; }
 
+        private readonly TraceFilter _traceFilter;
+
         private int _supportedBrowserRequestCount;
         private int _unsupportedBrowserRequestCount;
+
+        public DartMiddleware(IConfiguration configuration)
+        {
+            _traceFilter = new TraceFilter(configuration, this);
+        }
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
@@ -41,7 +49,7 @@ namespace OwinFramework.Dart
             {
                 if (!relativePath.HasValue || relativePath.Value == "/")
                 {
-                    Trace(context, () => GetType().Name + " selecting the default document " + _defaultDocument);
+                    _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " selecting the default document " + _defaultDocument);
                     relativePath = _defaultDocument;
                 }
 
@@ -50,18 +58,19 @@ namespace OwinFramework.Dart
                 context.SetFeature<IDart>(dartContext);
 
                 var userAgent = context.Request.Headers["user-agent"];
-                dartContext.IsDartSupported = userAgent != null &&
-                                              userAgent.IndexOf("(Dart)", StringComparison.OrdinalIgnoreCase) > -1;
+                dartContext.IsDartSupported = 
+                    userAgent != null &&
+                    userAgent.IndexOf("(Dart)", StringComparison.OrdinalIgnoreCase) > -1;
 
                 if (dartContext.IsDartSupported)
                 {
-                    Trace(context, () => GetType().Name + " the browser supports Dart");
+                    _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " the browser supports Dart");
                     context.Request.Path = _rootDartFolder + relativePath;
                     _supportedBrowserRequestCount++;
                 }
                 else
                 {
-                    Trace(context, () => GetType().Name + " the browser does not support Dart");
+                    _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " the browser does not support Dart");
                     context.Request.Path = _rootBuildFolder + relativePath;
                     _unsupportedBrowserRequestCount++;
                 }
@@ -69,7 +78,7 @@ namespace OwinFramework.Dart
                 var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
                 if (outputCache != null)
                 {
-                    Trace(context, () => GetType().Name + " disabling output caching");
+                    _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " disabling output caching");
                     outputCache.UseCachedContent = false;
                 }
             }
@@ -83,7 +92,7 @@ namespace OwinFramework.Dart
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl,
                     StringComparison.OrdinalIgnoreCase))
             {
-                Trace(context, () => GetType().Name + " returning configuration documentation");
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 
@@ -174,7 +183,7 @@ namespace OwinFramework.Dart
 
         public string LongDescription
         {
-            get { return String.Empty; }
+            get { return null; }
         }
 
         public string ShortDescription

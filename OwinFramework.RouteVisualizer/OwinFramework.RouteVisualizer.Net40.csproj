@@ -51,8 +51,8 @@
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OwinFramework, Version=2.6.5.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.2.6.5\lib\net40\OwinFramework.dll</HintPath>
+    <Reference Include="OwinFramework, Version=2.6.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.2.6.6\lib\net40\OwinFramework.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Svg, Version=2.2.1.39233, Culture=neutral, PublicKeyToken=12a0bac221edeae2, processorArchitecture=MSIL">

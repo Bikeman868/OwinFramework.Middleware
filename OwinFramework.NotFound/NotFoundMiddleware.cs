@@ -12,6 +12,7 @@ using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.MiddlewareHelpers.Analysable;
+using OwinFramework.MiddlewareHelpers.Traceable;
 
 namespace OwinFramework.NotFound
 {
@@ -29,6 +30,7 @@ namespace OwinFramework.NotFound
         string IMiddleware.Name { get; set; }
         public Action<IOwinContext, Func<string>> Trace { get; set; }
 
+        private readonly TraceFilter _traceFilter;
         private int _notFoundCount;
 
         private IDisposable _configurationRegistration;
@@ -36,25 +38,30 @@ namespace OwinFramework.NotFound
         private FileInfo _pageTemplateFile;
         private PathString _configPage;
 
-        public NotFoundMiddleware(IHostingEnvironment hostingEnvironment)
+        public NotFoundMiddleware(
+            IConfiguration configuration,
+            IHostingEnvironment hostingEnvironment)
         {
-            _hostingEnvironment = hostingEnvironment;
-            ConfigurationChanged(new NotFoundConfiguration());
             this.RunLast();
+
+            _hostingEnvironment = hostingEnvironment;
+
+            _traceFilter = new TraceFilter(configuration, this);
+            ConfigurationChanged(new NotFoundConfiguration());
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
             if (context.Request.Path == _configPage)
             {
-                Trace(context, () => GetType().Name + " returning configuration documentation");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 
             string template;
             if (_pageTemplateFile != null && _pageTemplateFile.Exists)
             {
-                Trace(context, () => GetType().Name + " returning template file");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " returning template file");
                 using (var stream = _pageTemplateFile.Open(FileMode.Open, FileAccess.Read, FileShare.Read))
                 {
                     var reader = new StreamReader(stream, true);
@@ -65,12 +72,12 @@ namespace OwinFramework.NotFound
                 if (outputCache != null)
                 {
                     outputCache.Priority = CachePriority.Low;
-                    Trace(context, () => GetType().Name + " setting output cache priority " + outputCache.Priority);
+                    _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " setting output cache priority " + outputCache.Priority);
                 }
             }
             else
             {
-                Trace(context, () => GetType().Name + " returning embedded template response");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " returning embedded template response");
                 template = GetEmbeddedResource("template.html");
             }
 
@@ -145,7 +152,9 @@ namespace OwinFramework.NotFound
 
         public string LongDescription
         {
-            get { return "Returns a templated response with a status code of 404 (not found)"; }
+            get { return 
+                "<p>Returns a templated response with a status code of 404 (not found). You can customize "+
+                "the response template to match the other pages on your website.</p>"; }
         }
 
         public string ShortDescription

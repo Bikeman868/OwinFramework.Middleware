@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Mail;
@@ -14,6 +13,7 @@ using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using System.Web;
+using OwinFramework.Routing;
 
 namespace OwinFramework.ExceptionReporter
 {
@@ -41,54 +41,81 @@ namespace OwinFramework.ExceptionReporter
             {
                 return next();
             }
-            catch(HttpException httpException)
+            catch (HttpException httpException)
             {
-                context.Response.StatusCode = httpException.GetHttpCode();
-                context.Response.ReasonPhrase = httpException.GetHtmlErrorMessage();
-                Trace(context, () => GetType().Name + " HttpException caught with status code " + context.Response.StatusCode);
-                return context.Response.WriteAsync("");
+                return HandleHttpException(context, httpException);
+            }
+            catch (RoutingException routingException)
+            {
+                var innerException = routingException.InnerException;
+                while (innerException != null)
+                {
+                    var httpException = innerException as HttpException;
+                    if (httpException != null)
+                        return HandleHttpException(context, httpException);
+
+                    routingException = innerException as RoutingException;
+                    if (routingException == null)
+                        return HandleException(context, innerException);
+
+                    innerException = innerException.InnerException;
+                }
+                return HandleException(context, routingException);
             }
             catch (Exception ex)
             {
-                Trace(context, () => GetType().Name + " Exception caught: " + ex.Message);
-                var isPrivate = false;
+                return HandleException(context, ex);
+            }
+        }
+
+        private Task HandleException(IOwinContext context, Exception ex)
+        {
+            Trace(context, () => GetType().Name + " Exception caught: " + ex.Message);
+            var isPrivate = false;
+            try
+            {
+                context.Response.StatusCode = 500;
+                context.Response.ReasonPhrase = "Server Error";
+
                 try
                 {
-                    context.Response.StatusCode = 500;
-                    context.Response.ReasonPhrase = "Server Error";
-
-                    try
-                    {
-                        SendEmail(context, ex);
-                    }
-                    catch (Exception mailException)
-                    {
-                        Trace(context, () => GetType().Name + " failed to send email: " + mailException.Message);
-                        System.Diagnostics.Trace.WriteLine(GetType().Name + " failed to send email: " + mailException.Message);
-                    }
-
-                    isPrivate = IsPrivate(context);
-                    if (isPrivate) return PrivateResponse(context, ex);
-
-                    return PublicResponse(context);
+                    SendEmail(context, ex);
                 }
-                catch (Exception ex2)
+                catch (Exception mailException)
                 {
-                    context.Response.ContentType = "text/plain";
-                    if (isPrivate)
-                    {
-                        return context.Response.WriteAsync(
-                            "An exception occurred and a report was being generated, but then a further exception " +
-                            "was thrown during the generation of that report. \nThe original exception that was throws was " +
-                            ex.Message + ". During report generation the exception thrown was " + ex2.Message + ".");
-                    }
+                    Trace(context, () => GetType().Name + " failed to send email: " + mailException.Message);
+                    System.Diagnostics.Trace.WriteLine(GetType().Name + " failed to send email: " + mailException.Message);
+                }
+
+                isPrivate = IsPrivate(context);
+                if (isPrivate) return PrivateResponse(context, ex);
+
+                return PublicResponse(context);
+            }
+            catch (Exception ex2)
+            {
+                context.Response.ContentType = "text/plain";
+                if (isPrivate)
+                {
                     return context.Response.WriteAsync(
                         "An exception occurred and a report was being generated, but then a further exception " +
-                        "was thrown during the generation of that report. Please contact support and provide " +
-                        "details of what you were doing at the time so that we can resolve this problem as soon " +
-                        "as possible. Thank you.");
+                        "was thrown during the generation of that report. \nThe original exception that was throws was " +
+                        ex.Message + ". During report generation the exception thrown was " + ex2.Message + ".");
                 }
+                return context.Response.WriteAsync(
+                    "An exception occurred and a report was being generated, but then a further exception " +
+                    "was thrown during the generation of that report. Please contact support and provide " +
+                    "details of what you were doing at the time so that we can resolve this problem as soon " +
+                    "as possible. Thank you.");
             }
+        }
+
+        private Task HandleHttpException(IOwinContext context, HttpException httpException)
+        {
+            context.Response.StatusCode = httpException.GetHttpCode();
+            context.Response.ReasonPhrase = httpException.GetHtmlErrorMessage();
+            Trace(context, () => GetType().Name + " HttpException caught with status code " + context.Response.StatusCode);
+            return context.Response.WriteAsync("");
         }
 
         private bool IsPrivate(IOwinContext context)

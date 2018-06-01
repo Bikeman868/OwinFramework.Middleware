@@ -283,7 +283,9 @@ namespace OwinFramework.StaticFiles
 
         public string LongDescription
         {
-            get { return "Serves static files by mapping a root URL onto a root folder in the file system. Can be restricted to root folder and only certain file extensions. Can require the caller to have permission."; }
+            get { return 
+                "<p>Serves static files by mapping a root URL onto a root folder in the file system. "+
+                "Can be restricted to root folder and only certain file extensions. Can require the caller to have permission.</p>"; }
         }
 
         public string ShortDescription
