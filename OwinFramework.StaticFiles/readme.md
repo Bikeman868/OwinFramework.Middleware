@@ -113,3 +113,23 @@ maximum total memory consumption of 1,000,000 bytes for all files. This featre r
 output caching middleware. If there is no output caching middleware configured in your OWIN pipeline
 then static files will not be cached.
 
+## Output caching
+
+You will frequently want to use the Static Files middleware in conjunction with the Output Cache middleware
+because static files by definition do not change and can be cached.
+
+When this Static Files middleware and any implementation of output caching are both configured on the 
+same route they will work together to produce the correct behavior - for example if the static file is
+updated then the Static Files middleware will tell the output cache to flush it from the cache.
+
+The output cache middleware is configured using categories and priorities. The category indicates the type
+if content and priority is a reflection of how expensive it is to fetch the data from backing store
+and therefore how beneficial it is to cache the data.
+
+For now when this Static Files middleware returns this information to the output cache it will either 
+send back "SmallStaticFile" or "LargeStaticFile" as the category and "High" or "Never" as the cache priority.
+You should use these names when configuring the output cache. In a future version of the Static Files 
+middleware these things should be made configurable.
+
+This Static Files middleware has a `maximumFileSizeToCache` configuration option. Files over this size will
+be categorized as "LargeStaticFile" and files under this size will be categorized as "SmallStaticFile".
