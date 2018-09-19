@@ -942,7 +942,10 @@ namespace OwinFramework.FormIdentification
 
         private string GetThisUrl(IOwinContext context)
         {
-            var thisUrl = GetNonSecurePrefix(context) + context.Request.Path;
+            var requestRewriter = context.GetFeature<IRequestRewriter>();
+            var path = requestRewriter == null ? context.Request.Path : requestRewriter.OriginalPath;
+
+            var thisUrl = GetNonSecurePrefix(context) + path;
             if (context.Request.QueryString.HasValue && !string.IsNullOrEmpty(context.Request.QueryString.Value))
                 thisUrl += "?" + context.Request.QueryString.Value;
             return thisUrl;

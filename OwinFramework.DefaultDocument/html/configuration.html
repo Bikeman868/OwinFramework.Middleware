@@ -52,7 +52,17 @@
                 <th>Description</th>
             </tr>
             <tr>
-                <td class="property">DefaultPage</td>
+                <td class="property">Enabled</td>
+                <td>{enabled.default}</td>
+                <td>{enabled}</td>
+                <td>
+                    <p>
+                        Set this to 'false' to disable the default document middleware
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">defaultPage</td>
                 <td>{defaultPage.default}</td>
                 <td>{defaultPage}</td>
                 <td>
@@ -64,12 +74,24 @@
                 </td>
             </tr>
             <tr>
-                <td class="property">DocumentationRootUrl</td>
+                <td class="property">documentationRootUrl</td>
                 <td>{configUrl.default}</td>
                 <td>{configUrl}</td>
                 <td>
                     <p>
-                        The relative path to this documentation page.
+                        The relative path to this documentation page. Set this to an
+                        empty string to disable the documentation endpoint.
+                    </p>
+                </td>
+            </tr>
+            <tr>
+                <td class="property">paths</td>
+                <td>{paths.default}</td>
+                <td>{paths}</td>
+                <td>
+                    <p>
+                        A list of additional sub-paths within the site where a default
+                        document is also required
                     </p>
                 </td>
             </tr>

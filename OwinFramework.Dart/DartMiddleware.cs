@@ -53,8 +53,11 @@ namespace OwinFramework.Dart
                     relativePath = _defaultDocument;
                 }
 
-                var dartContext = new DartContext();
-                context.SetFeature<IRequestRewriter>(dartContext);
+                var dartContext = new DartContext(context);
+
+                if (context.GetFeature<IRequestRewriter>() == null)
+                    context.SetFeature<IRequestRewriter>(dartContext);
+
                 context.SetFeature<IDart>(dartContext);
 
                 var userAgent = context.Request.Headers["user-agent"];
@@ -310,6 +313,14 @@ namespace OwinFramework.Dart
         private class DartContext : IDart
         {
             public bool IsDartSupported { get; set; }
+            public PathString OriginalPath { get; set; }
+            public Uri OriginalUrl { get; set; }
+
+            public DartContext(IOwinContext context)
+            {
+                OriginalUrl = new Uri(context.Request.Uri.ToString());
+                OriginalPath = new PathString(context.Request.Path.Value);
+            }
         }
 
     }

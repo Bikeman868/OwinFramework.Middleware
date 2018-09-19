@@ -45,7 +45,11 @@ namespace OwinFramework.Versioning
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
-            var versionContext = new VersioningContext(_configuration, this);
+            var versionContext = new VersioningContext(context, _configuration, this);
+
+            if (context.GetFeature<IRequestRewriter>() == null)
+                context.SetFeature<IRequestRewriter>(versionContext);
+
             context.SetFeature(versionContext);
 
             versionContext.RemoveVersionNumber(context);
@@ -241,7 +245,7 @@ namespace OwinFramework.Versioning
 
         #region Request specific context
 
-        private class VersioningContext
+        private class VersioningContext: IRequestRewriter
         {
             private readonly VersioningConfiguration _configuration;
             public bool IsVersioned;
@@ -253,10 +257,17 @@ namespace OwinFramework.Versioning
             private const string _versionPrefix = "_v";
             private const string _versionMarker = "{_v_}";
 
+            public Uri OriginalUrl { get; set; }
+            public PathString OriginalPath { get; set; }
+
             public VersioningContext(
+                IOwinContext context,
                 VersioningConfiguration configuration,
                 ITraceable traceable)
             {
+                OriginalUrl = new Uri(context.Request.Uri.ToString());
+                OriginalPath = new PathString(context.Request.Path.Value);
+
                 _configuration = configuration;
                 _traceable = traceable;
             }

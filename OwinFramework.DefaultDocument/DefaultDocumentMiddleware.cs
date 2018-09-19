@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Owin;
+using Newtonsoft.Json;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
 using OwinFramework.Interfaces.Routing;
@@ -41,11 +42,36 @@ namespace OwinFramework.DefaultDocument
 
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
+            var configuration = _configuration;
+            if (!configuration.Enabled) return next();
+
+            var requestRewriter = context.GetFeature<IRequestRewriter>() ?? new DefaultDocumentContext(context);
+
             if (!context.Request.Path.HasValue || context.Request.Path.Value == "/" || context.Request.Path.Value == "")
             {
-                Trace(context, () => GetType().Name + " modifying request path to " + _defaultPage);
-                context.Request.Path = _defaultPage;
-                context.SetFeature<IRequestRewriter>(new DefaultDocumentContext());
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " identified a request for the default document");
+                if (configuration.DefaultPageString.HasValue)
+                {
+                    _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " modifying request path to '" + configuration.DefaultPageString.Value + "'");
+                    context.Request.Path = configuration.DefaultPageString;
+                    context.SetFeature(requestRewriter);
+                    return next();
+                }
+            }
+
+            if (configuration.DefaultFolderPaths != null)
+            {
+                foreach(var path in configuration.DefaultFolderPaths)
+                {
+                    if (context.Request.Path.Equals(path.FolderPathString))
+                    {
+                        var p = path;
+                        _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " modifying '" + p.FolderPathString + "' path to '" + p.DefaultPageString.Value + "'");
+                        context.Request.Path = path.DefaultPageString;
+                        context.SetFeature(requestRewriter);
+                        return next();
+                    }
+                }
             }
 
             return next();
@@ -53,9 +79,12 @@ namespace OwinFramework.DefaultDocument
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
-            if (context.Request.Path == _configPage)
+            var configuration = _configuration;
+            if (!configuration.Enabled) return next();
+
+            if (configuration.DocumentationRootUrlString.HasValue && context.Request.Path.Equals(configuration.DocumentationRootUrlString))
             {
-                Trace(context, () => GetType().Name + " returning configuration documentation");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 
@@ -66,8 +95,6 @@ namespace OwinFramework.DefaultDocument
 
         private IDisposable _configurationRegistration;
         private DefaultDocumentConfiguration _configuration;
-        private PathString _defaultPage;
-        private PathString _configPage;
 
         public void Configure(IConfiguration configuration, string path)
         {
@@ -79,21 +106,7 @@ namespace OwinFramework.DefaultDocument
 
         private void ConfigurationChanged(DefaultDocumentConfiguration configuration)
         {
-            var defaultConfiguration = new DefaultDocumentConfiguration();
-
-            if (string.IsNullOrEmpty(configuration.DefaultPage))
-                configuration.DefaultPage = defaultConfiguration.DefaultPage;
-            else if (!configuration.DefaultPage.StartsWith("/"))
-                configuration.DefaultPage = "/" + configuration.DefaultPage;
-
-            if (string.IsNullOrEmpty(configuration.DocumentationRootUrl))
-                configuration.DocumentationRootUrl = null;
-            else if (!configuration.DocumentationRootUrl.StartsWith("/"))
-                configuration.DocumentationRootUrl = "/" + configuration.DocumentationRootUrl;
-
-            _configuration = configuration;
-            _defaultPage = new PathString(configuration.DefaultPage);
-            _configPage = configuration.DocumentationRootUrl == null ? PathString.Empty : new PathString(configuration.DocumentationRootUrl);
+            _configuration = configuration.Sanitize();
         }
 
         #endregion
@@ -103,12 +116,16 @@ namespace OwinFramework.DefaultDocument
         private Task DocumentConfiguration(IOwinContext context)
         {
             var document = GetEmbeddedResource("configuration.html");
-            document = document.Replace("{defaultPage}", _configuration.DefaultPage);
-            document = document.Replace("{configUrl}", _configuration.DocumentationRootUrl);
+            document = document.Replace("{enabled}", _configuration.Enabled.ToString());
+            document = document.Replace("{defaultPage}", _configuration.DefaultPageString.Value);
+            document = document.Replace("{configUrl}", _configuration.DocumentationRootUrlString.Value);
+            document = document.Replace("{paths}", _configuration.DefaultFolderPaths == null ? "" : JsonConvert.SerializeObject(_configuration.DefaultFolderPaths));
 
             var defaultConfiguration = new DefaultDocumentConfiguration();
-            document = document.Replace("{defaultPage.default}", defaultConfiguration.DefaultPage);
-            document = document.Replace("{configUrl.default}", defaultConfiguration.DocumentationRootUrl);
+            document = document.Replace("{enabled.default}", defaultConfiguration.Enabled.ToString());
+            document = document.Replace("{defaultPage.default}", defaultConfiguration.DefaultPageString.Value);
+            document = document.Replace("{configUrl.default}", defaultConfiguration.DocumentationRootUrlString.Value);
+            document = document.Replace("{paths.default}", defaultConfiguration.DefaultFolderPaths == null ? "" : JsonConvert.SerializeObject(defaultConfiguration.DefaultFolderPaths));
 
             context.Response.ContentType = "text/html";
             return context.Response.WriteAsync(document);
@@ -118,23 +135,41 @@ namespace OwinFramework.DefaultDocument
         {
             get
             {
-                return new List<IEndpointDocumentation>
+                var endpoints = new List<IEndpointDocumentation>();
+
+                if (_configuration.Enabled)
                 {
-                    new EndpointDocumentation
+                    if (_configuration.DefaultPageString.HasValue)
                     {
-                        RelativePath = "/",
-                        Description = 
-                            "Requests for the root URL of the website "+
-                            "with no document specified will be rewritten to " + _defaultPage
+                        endpoints.Add(new EndpointDocumentation
+                            {
+                                RelativePath = "/",
+                                Description =
+                                    "Requests for the root URL of the website " +
+                                    "with no document specified will be rewritten to " + _configuration.DefaultPageString.Value
+                            });
                     }
-                };
+
+                    if (_configuration.DefaultFolderPaths != null)
+                    {
+                        endpoints.AddRange(_configuration.DefaultFolderPaths.Select(fp =>
+                            new EndpointDocumentation
+                            {
+                                RelativePath = fp.FolderPathString.Value,
+                                Description = "Rewrite the request path to " + fp.DefaultPageString.Value
+                            }));
+                    }
+                }
+                return endpoints;
             }
         }
 
         public Uri GetDocumentation(DocumentationTypes documentationType)
         {
-            if (documentationType == DocumentationTypes.Configuration)
-                return new Uri(_configPage.ToString(), UriKind.Relative);
+            if (_configuration.Enabled && 
+                _configuration.DocumentationRootUrlString.HasValue &&
+                documentationType == DocumentationTypes.Configuration)
+                return new Uri(_configuration.DocumentationRootUrlString.Value, UriKind.Relative);
 
             return null;
         }
@@ -146,7 +181,7 @@ namespace OwinFramework.DefaultDocument
 
         public string ShortDescription
         {
-            get { return "Redirects requests to the root of the web site to a page within the website"; }
+            get { return "Redirects requests with no page specified to a specific page within the website"; }
         }
 
         #endregion
@@ -177,6 +212,14 @@ namespace OwinFramework.DefaultDocument
     
         private class DefaultDocumentContext: IRequestRewriter
         {
+            public Uri OriginalUrl { get; set; }
+            public PathString OriginalPath { get; set; }
+
+            public DefaultDocumentContext(IOwinContext context)
+            {
+                OriginalUrl = new Uri(context.Request.Uri.ToString());
+                OriginalPath = new PathString(context.Request.Path.Value);
+            }
         }
     }
 }
