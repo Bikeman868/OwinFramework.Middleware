@@ -35,47 +35,57 @@ can provide detailed documentation at run-time.
 
 Briefly, the middleware in this solution is:
 
-`AnalysisReporter` extracts analytics from middleware that implements `IAnalysable`
-and formats it into JSON, HTML, plain text etc.
+## AnalysisReporter
+The `AnalysisReporter` middleware extracts analytics from middleware that implements `IAnalysable` and formats it into JSON, HTML, plain text etc.
 
-`Dart` provides back-end support for including a UI written in the Dart programming 
+## Dart
+The `Dart` middleware provides back-end support for including a UI written in the Dart programming 
 language. It does this by detecting if the browser supports Dart and rewriting the
 request URL. You will probably want `StaticFiles` middleware to run after this one
 unless you plan to generate the content dynamically.
 
-`DefaultDocument` will rewrite requests for the root of your web site so that they
+## DefaultDocument
+The `DefaultDocument` middleware will rewrite requests for the root of your web site so that they
 return a specific document.
 
-`Documenter` will extract documentation from Middleware that implements `ISelfDocumenting`
+## Documenter
+The `Documenter` middleware will extract documentation from Middleware that implements `ISelfDocumenting`
 and present this in HTML.
 
-`ExceptionReporter` will wrap the downstream middleware in a try/catch block and report
+## ExceptionReporter
+The `ExceptionReporter` middleware will wrap the downstream middleware in a try/catch block and report
 exception details. It also allows you to return specific responses by throwing 
 `HttpException` in your middleware (for example to permenant redirect).
 
-`Less` will handle requests for CSS files. If a file exists with the requested name it
+## Less
+The `Less` middleware will handle requests for CSS files. If a file exists with the requested name it
 is served as a static file. If a file exists with a .less file extension it will compile
 this on the fly into CSS and return this to the browser. It is recommended that you
 put the `OutputCache` middleware in front of this one to avoid re-compiling the less
 on eac request.
 
-`NotFound` will always return a 404 response. Put this at the end of your Middleware
+## NotFound
+The `NotFound` middleware will always return a 404 response. Put this at the end of your Middleware
 pipeline to catch all requests not already handled.
 
-`OutputCache` will capture responses to requests and replay these responses from cache
+## OutputCache
+The `OutputCache` middleware will capture responses to requests and replay these responses from cache
 instead of rendering them again through the OWIN pipeline. You have full control over
 what is cached and for how long. This improves the performance and scaleability of your
 web site.
 
-`RouteVisualizer` will generate an SVG visualization of the OWIN pipeline. This lets
+## RouteVisualizer
+The `RouteVisualizer` middleware will generate an SVG visualization of the OWIN pipeline. This lets
 you see how your OWIN pipeline is configured.
 
-`StaticFiles` will map paths in the URL to the same relative file path, and if the
+## StaticFiles
+The `StaticFiles` middleware will map paths in the URL to the same relative file path, and if the
 file exists will return its contents. You can configure how each file type is handled.
 This provides the ability to deploy content in files and have those files requestable
 from the browser.
 
-`Versioning` will modify html before it is returned to the browser, and insert a version
+## Versioning
+The `Versioning` middleware will modify html before it is returned to the browser, and insert a version
 number into the URLs of static assets. When these assets are requested by the browser
 this middleware removes the version number from the request URL and adds response
 headers telling the browser to cache the asset. This has the effect of transparently
