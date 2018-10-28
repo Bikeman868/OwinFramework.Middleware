@@ -1,4 +1,4 @@
-﻿# OWIN Framework Form Identification Middleware
+# OWIN Framework Form Identification Middleware
 
 This middleware allows users of your site to:
 
@@ -8,31 +8,21 @@ redirects the user to a welcome page whose URL you can configure (defaults to `/
 On failure redirects the user to a failed/retry page whose URL you can configure
 (defaults to `/formId/signup`). Your application is responsible for delivering the UI, this
 middleware just accepts the POST, creates the account or not, and performs a redriection.
-
 * Ask for a remember me cookie to be stored on their browser so that they don't have to
 log in again each time they visit the web site.
-
 * Log into an existing account using the email address and password used to create the
 account. The email and password must be sent in an HTTPS POST to a URL that you can
 configure (defaults to `/formId/signin`). The POST will result in a redirect response. The URLs 
 for the success and fail cases can both be configured. Your application is responsible for 
 handling the HTTP(S) GET requests for these URLs.
-
 * Verify their email address by clicking a one-time activiation link in the welcome email.
-
 * Change their password by providing their current password and a new one.
-
 * Change their email address by providing their current email and password.
-
 * Confirm their new email address by clicking a link in the confirmation email.
-
 * Revert the email address change by clicking a link in an email that is sent to
 the original email address.
-
 * Logout, securing their account and deleting the remember me cookie.
-
 * Request a time-limited password reset email to be sent.
-
 * Click the single use link in the password reset email and reset their password
 without knowing their current password.
 
@@ -77,39 +67,34 @@ use `https://secure.mycompany.com/` for login, this is what happens when a user 
 your site:
 
 1. The very first time they visit `http://www.mycompany.com/` this middleware will notice 
-that there is no login token in session and will redirect the browser to a page on the
-secure sub-domain, for example https://secure.mycompany.com/renewSession` since this
-is their first visit and no cookies have been set, tihs will store a value in session
-indicating that they are an anonymous user and redirect them back to the page that
-they initially requested. Now when the browser re-requests  `http://www.mycompany.com/` 
-this middleware will find the anonymous token in session and serve the page as an
-unidentified user.
-
+   that there is no login token in session and will redirect the browser to a page on the
+   secure sub-domain, for example https://secure.mycompany.com/renewSession` since this
+   is their first visit and no cookies have been set, tihs will store a value in session
+   indicating that they are an anonymous user and redirect them back to the page that
+   they initially requested. Now when the browser re-requests  `http://www.mycompany.com/` 
+   this middleware will find the anonymous token in session and serve the page as an
+   unidentified user.
 2. For subsequent requests during the session, requests will continue to be processed as
-an unidentified user. When the session times out, the process will revert back to step 1.
-
+   an unidentified user. When the session times out, the process will revert back to step 1.
 3. If the user decides to sign in by POSTing to `https://secure.mycompany.com/signin` then
-this middleware will check their credentials and respond with a page containing a
-cookie that identifies the user and JavaScript to load `https://secure.mycompany.com/renewSession`.
-This will store the user identification cookie on the browser in the `secure.mycompany.com`
-domain and load `https://secure.mycompany.com/renewSession`.
-
+   this middleware will check their credentials and respond with a page containing a
+   cookie that identifies the user and JavaScript to load `https://secure.mycompany.com/renewSession`.
+   This will store the user identification cookie on the browser in the `secure.mycompany.com`
+   domain and load `https://secure.mycompany.com/renewSession`.
 4. When the browser makes a request to `https://secure.mycompany.com/renewSession` is will
-include the cookies for the `secure.mycompany.com` domain, including the user identification
-cookie. This middleware will handle this request by putting information into the users
-session about their identity, and redirecting back to the page they first came from on
-`http://www.mycompany.com/`. 
-
+   include the cookies for the `secure.mycompany.com` domain, including the user identification
+   cookie. This middleware will handle this request by putting information into the users
+   session about their identity, and redirecting back to the page they first came from on
+   `http://www.mycompany.com/`. 
 5. When this middleware receives a request for `http://www.mycompany.com/` it will see the
-user's identity in their session and process the request as that identified user. Note that
-the browser does not send the user identification cookie because this is for a different
-domain (`www.mycompany.com` instead of `secure.mycompany.com`).
-
+   user's identity in their session and process the request as that identified user. Note that
+   the browser does not send the user identification cookie because this is for a different
+   domain (`www.mycompany.com` instead of `secure.mycompany.com`).
 6. If the user's session expires whilst they are logged on, then this middleware will redirect
-the browser to  `https://secure.mycompany.com/renewSession`. When the browser makes this
-request, because it is for the `secure.mycompany.com` domain the user identification cookie
-will be included in the request. This middleware will handle this request by storing the
-user identity in the new session just like in step 4.
+   the browser to  `https://secure.mycompany.com/renewSession`. When the browser makes this
+   request, because it is for the `secure.mycompany.com` domain the user identification cookie
+   will be included in the request. This middleware will handle this request by storing the
+   user identity in the new session just like in step 4.
 
 ## Configuration
 
