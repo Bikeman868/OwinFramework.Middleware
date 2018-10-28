@@ -68,7 +68,7 @@ your site:
 
 1. The very first time they visit `http://www.mycompany.com/` this middleware will notice 
    that there is no login token in session and will redirect the browser to a page on the
-   secure sub-domain, for example https://secure.mycompany.com/renewSession` since this
+   secure sub-domain, for example `https://secure.mycompany.com/renewSession`. Since this
    is their first visit and no cookies have been set, tihs will store a value in session
    indicating that they are an anonymous user and redirect them back to the page that
    they initially requested. Now when the browser re-requests  `http://www.mycompany.com/` 
