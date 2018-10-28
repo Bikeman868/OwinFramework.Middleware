@@ -65,27 +65,18 @@ This configuration specifies that:
 If you want to add a Dart UI to your web site, follow these steps.
 
 1. Download and install the Dart SDK from http://www.dartlang.org/
-
 2. (optional) Download and install the Dartium browser.
-
 3. Create a `ui` folder within your web site.
-
 4. Create a `pubspec.yaml` file in the `ui` folder. See https://www.dartlang.org/tools/pub/get-started
-
 5. Open a command line window and change the working directory to the `ui` folder you just created.
-
 6. Execute the command `pub get`.
-
 7. Create a `web` folder inside the `ui` folder and add a `main.dart` file and an `index.html` file in that folder. 
    Use https://dartpad.dartlang.org/ to figure out whet to put in your first Dart app.
-
 8. From the command line window, make sure you are in the `ui` folder, then execute the 
    command `pub build`. This will create a `ui\build\web` folder containing the compiled
    JavaScript for your Dart app.
-
 9. Add `DartMiddleware` to your OWIN pipeline as described above. The default configuration will work
    if you followed the steps above.
-
 10. Open the `/ui` path of your web site in Dartium and other browsers. Use the developer tools built into the browser
     to see which ones run native Dart code and which ones run the compiled JavaScript.
 
