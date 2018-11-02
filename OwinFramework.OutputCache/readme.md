@@ -1,5 +1,3 @@
-﻿# OWIN Framework Output Cache Middleware
-
 This middleware will improve the performance of your web site by capturing the output from
 downstream middleware and saving it in the Cache facility, then using the cached response
 when another identical request is received.
@@ -107,11 +105,9 @@ This output cache configuration says that:
   all servers see the cache update. User profiles are cached on the server side for 30
   minutes maximum before being retrieved from the database again, and are cached on the
   browser for 10 minutes.
-
 * Products are cached on the local machine to avoid network latency of fetching themm from
   a shared cache. This means that when products are updated in the database some servers
   will serve the old cached version for while until the cache expires.
-
 * Different priority products have different cache times on the server and the browser.
 
 This configuration assumes that the cache facility is configured to store items in the "Shared"
