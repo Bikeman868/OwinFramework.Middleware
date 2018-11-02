@@ -1,30 +1,28 @@
-# OWIN Framework Form Identification Middleware
-
 This middleware allows users of your site to:
 
 * Create an account using an email address and a password by making an HTTPS POST
-request to the URL that you have configured (defaults to `/formId/signup`). On success
-redirects the user to a welcome page whose URL you can configure (defaults to `/welcome`).
-On failure redirects the user to a failed/retry page whose URL you can configure
-(defaults to `/formId/signup`). Your application is responsible for delivering the UI, this
-middleware just accepts the POST, creates the account or not, and performs a redriection.
+  request to the URL that you have configured (defaults to `/formId/signup`). On success
+  redirects the user to a welcome page whose URL you can configure (defaults to `/welcome`).
+  On failure redirects the user to a failed/retry page whose URL you can configure
+  (defaults to `/formId/signup`). Your application is responsible for delivering the UI, this
+  middleware just accepts the POST, creates the account or not, and performs a redriection.
 * Ask for a remember me cookie to be stored on their browser so that they don't have to
-log in again each time they visit the web site.
+  log in again each time they visit the web site.
 * Log into an existing account using the email address and password used to create the
-account. The email and password must be sent in an HTTPS POST to a URL that you can
-configure (defaults to `/formId/signin`). The POST will result in a redirect response. The URLs 
-for the success and fail cases can both be configured. Your application is responsible for 
-handling the HTTP(S) GET requests for these URLs.
+  account. The email and password must be sent in an HTTPS POST to a URL that you can
+  configure (defaults to `/formId/signin`). The POST will result in a redirect response. The URLs 
+  for the success and fail cases can both be configured. Your application is responsible for 
+  handling the HTTP(S) GET requests for these URLs.
 * Verify their email address by clicking a one-time activiation link in the welcome email.
 * Change their password by providing their current password and a new one.
 * Change their email address by providing their current email and password.
 * Confirm their new email address by clicking a link in the confirmation email.
 * Revert the email address change by clicking a link in an email that is sent to
-the original email address.
+  the original email address.
 * Logout, securing their account and deleting the remember me cookie.
 * Request a time-limited password reset email to be sent.
 * Click the single use link in the password reset email and reset their password
-without knowing their current password.
+  without knowing their current password.
 
 Note that there are other middleware packages that provide user identification from
 social media, shared secrets and certificates. These middleware packages will all work 
