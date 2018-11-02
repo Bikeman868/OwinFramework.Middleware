@@ -1,5 +1,3 @@
-﻿# OWIN Framework Route Visualizer
-
 This middleware is useful for during development and for diagnosing issues in production.
 It should not generally be exposed to the public users of your site.
 
@@ -52,10 +50,8 @@ configuration management then your configuration file can be set up like this:
 This configuration specifies that:
 
 * The route visualization will be available at http://mycompany.com/config/routes. Please ensure that 
-the route visualizer middleware is configured on the route that this request will be routed to.
-
+  the route visualizer middleware is configured on the route that this request will be routed to.
 * The route visualizer is enabled. This setting exists so that you can disable the visualizer in
-other environments via configuration.
-
+  other environments via configuration.
 * The route visualizer requires the "developer" permission. This setting only has any effect if you
-configured some authorization middleware to run before the route visualizer middleware.
+  configured some authorization middleware to run before the route visualizer middleware.
