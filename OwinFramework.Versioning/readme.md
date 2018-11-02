@@ -1,5 +1,3 @@
-# OWIN Framework Versioning Middleware
-
 This middleware will improve the performance of your web site by adding a version number to
 the URLs of static assets and instructing the browser to cache them indefinately.
 
