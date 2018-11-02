@@ -1,17 +1,12 @@
-﻿# OWIN Framework Exception Reporter
-
 This middleware adds the following behaviour:
 
 * Wraps the downstream OWIN pipeline in a `try/catch` block.
-
 * When exceptions are caught, if they are of type `HttpException` then the Http status code
-and message from the exception are send back to the client as a valid http response.
-
+  and message from the exception are send back to the client as a valid http response.
 * For other kinds of execptions the middleware returns either a public apology page or
-detailed technical information. The public apology page is templated and the default template
-allows a message to be inserted. For many applications you will want to change the template
-to match the design of the rest of your site.
-
+  detailed technical information. The public apology page is templated and the default template
+  allows a message to be inserted. For many applications you will want to change the template
+  to match the design of the rest of your site.
 * Optionally sends email with detailed technical information about the exception that occured.
 
 ## Configuration
@@ -57,13 +52,11 @@ configuration management then you configuration file can be set up like this:
 This configuration specifies that:
 
 * When requests from public visitors cause unhandled execptions in your web site, display the message
-"Oops, looks like something went wrong" using the standard built-in page template.
-
+  "Oops, looks like something went wrong" using the standard built-in page template.
 * If unhandled exceptions occur from a local browser (running on the web server) or if the user
-browsing the page has the 'developer' permission configured in the authorization middleware then
-instead of displaying the public apology message, display detailed technical information to assist
-in tracking down the issue.
-
+  browsing the page has the 'developer' permission configured in the authorization middleware then
+  instead of displaying the public apology message, display detailed technical information to assist
+  in tracking down the issue.
 * When unhandled exceptions occur, send email with detailed technical information to "support@mycompany.com"
-with the subject of "Unhandled exception on the web site". This will use the standard .Net `SmtpClient` class
-to send the email.
+  with the subject of "Unhandled exception on the web site". This will use the standard .Net `SmtpClient` class
+  to send the email.
