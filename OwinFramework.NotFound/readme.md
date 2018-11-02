@@ -1,5 +1,3 @@
-﻿# OWIN Framework Not Found Middleware
-
 This middleware will return a 404 response always. It will place itself after all other 
 middleware in the pipeline so that when no other middleware handled the request a 404
 response will be returned to the client.
@@ -44,8 +42,3 @@ configuration management then your configuration file can be set up like this:
 }
 
 ```
-
-This configuration specifies that:
-
-* The page template for 404 responses is in a file called "404.html" in a "templates" folder within 
-the web site.
