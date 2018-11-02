@@ -1,5 +1,3 @@
-﻿# OWIN Framework Default Document
-
 This middleware will rewrite the request path when requests are received for the root folder
 of the web iste. This allows you to serve a static file for example which is not possible
 otherwise.
@@ -45,8 +43,7 @@ configuration management then you configuration file can be set up like this:
 
 This configuration specifies that:
 
-* When users visit the web site http://mysite.com/ without specifying a path this will produce the same result
-as if they had requeted http://mysite.com/home.html.
-
+* When users visit the web site `http://mysite.com/` without specifying a path this will produce the same result
+  as if they had requeted `http://mysite.com/home.html`.
 * You can check the configuration of the default document middleware on the page 
-http://mysite.com/config/defaultDocument
+  `http://mysite.com/config/defaultDocument`
