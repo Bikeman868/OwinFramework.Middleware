@@ -1,5 +1,3 @@
-# OWIN Framework Middleware
-
 This solution compiles optional NuGet package that enhance the OWIN Framework
 by providing useful tools and default implementations of some standard types
 of middleware.
