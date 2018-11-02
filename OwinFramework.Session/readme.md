@@ -1,5 +1,3 @@
-﻿# OWIN Framework Session Middleware
-
 This middleware will store a cookie on the user agent to maintain server-side state per user.
 
 If you want this behaviour only on certain routes through the OWIN pipeline then you can
@@ -43,4 +41,3 @@ configuration management then your configuration file can be set up like this:
 }
 
 ```
-
