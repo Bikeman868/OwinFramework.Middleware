@@ -1,5 +1,3 @@
-﻿# OWIN Framework Dart Middleware
-
 This middleware will serve a UI written in Dart. Dart is a Google language that compiles to 
 JavaScript for older browsers that can not run Dart code natively. This middleware detects 
 browsers that support Dart natively and serves Dart code to them and compiled JavaScript otherwise.
@@ -57,7 +55,6 @@ This configuration specifies that:
 * The url `http://mysite.com/ui` is mapped to the files in the `\ui\web` sub-folder beneath the root folder of 
   the web site for browsers that natively support Dart, and the `\ui\build\web` sub-folder for browsers
   that do not support Dart natively. This is the folder structure that the Dart compiler uses by default.
-
 * The configuration of this middleware can examined by retreieving the url `http://mysite.com/config/dart`.
 
 ## Getting Started with Dart
