@@ -1,5 +1,3 @@
-﻿# OWIN Framework Analysis Reporter
-
 This middleware is useful for during development and for diagnosing issues in production.
 It should not generally be exposed to the public users of your site.
 
@@ -14,13 +12,9 @@ then JSON will be returned by default. If the `Accept` header is present but con
 no supported formats then a 406 response will be returned.
 
 * `text/html` returns a very simple HTML page with very little formatting.
-
 * `text/plain` returns unformatted text.
-
 * `text/markdown` returns plain text with [markdown](https://tools.ietf.org/html/rfc7763) format.
-
 * `application/json` returns a JSON formatted response.
-
 * `application/xml` returns an XML formatted response.
 
 ## Configuration
