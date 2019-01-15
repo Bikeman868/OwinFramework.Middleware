@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Mail;
 using System.Reflection;
 using System.Text;
@@ -94,19 +95,27 @@ namespace OwinFramework.ExceptionReporter
             }
             catch (Exception ex2)
             {
-                context.Response.ContentType = "text/plain";
+                string message;
                 if (isPrivate)
                 {
-                    return context.Response.WriteAsync(
+                    message = 
                         "An exception occurred and a report was being generated, but then a further exception " +
                         "was thrown during the generation of that report. \nThe original exception that was throws was " +
-                        ex.Message + ". During report generation the exception thrown was " + ex2.Message + ".");
+                        ex.Message + ". During report generation the exception thrown was " + ex2.Message + ".";
                 }
-                return context.Response.WriteAsync(
-                    "An exception occurred and a report was being generated, but then a further exception " +
-                    "was thrown during the generation of that report. Please contact support and provide " +
-                    "details of what you were doing at the time so that we can resolve this problem as soon " +
-                    "as possible. Thank you.");
+                else
+                {
+                    message =
+                        "An exception occurred and a report was being generated, but then a further exception " +
+                        "was thrown during the generation of that report. Please contact support and provide " +
+                        "details of what you were doing at the time so that we can resolve this problem as soon " +
+                        "as possible. Thank you.";
+                }
+                if (message.Length < 514) message += new string(' ', 514 - message.Length);
+
+                context.Response.ContentType = "text/plain";
+                context.Response.StatusCode = (int) HttpStatusCode.InternalServerError;
+                return context.Response.WriteAsync(message);
             }
         }
 
@@ -168,6 +177,7 @@ namespace OwinFramework.ExceptionReporter
             }
 
             context.Response.ContentType = "text/html";
+            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             return context.Response.WriteAsync(pageTemplate.Replace("{message}", _configuration.Message));
         }
 
@@ -253,6 +263,7 @@ namespace OwinFramework.ExceptionReporter
             var pageHtml = DocumentConfiguration(pageTemplate)
                 .Replace("{request}", requestContent.ToString())
                 .Replace("{exceptions}", exceptionsContent.ToString());
+            context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             return context.Response.WriteAsync(pageHtml);
         }
 

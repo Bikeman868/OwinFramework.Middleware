@@ -7,6 +7,7 @@ This middleware adds the following behaviour:
   detailed technical information. The public apology page is templated and the default template
   allows a message to be inserted. For many applications you will want to change the template
   to match the design of the rest of your site.
+* Returns a http status code of 500 (internal server error).
 * Optionally sends email with detailed technical information about the exception that occured.
 
 ## Configuration
