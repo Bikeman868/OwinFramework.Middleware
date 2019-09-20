@@ -8,7 +8,7 @@
     <owners>Martin Halliday</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to cache responses that are expensive to construct and don't change between requests</description>
-    <copyright>Copyright Martin Halliday 2016</copyright>
+    <copyright>Copyright Martin Halliday 2015-2019</copyright>
     <releaseNotes>Fixed race condition in evaluating the caching rule to use</releaseNotes>
     <summary>This middleware can be configured to short-circuit certain requests, serving a previously built request rather than hitting the rest of the middleware pipeline to render the response again</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.OutputCache</projectUrl>
