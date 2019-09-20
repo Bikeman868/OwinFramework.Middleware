@@ -424,7 +424,7 @@ namespace OwinFramework.OutputCache
 
                 _context.Response.OnSendingHeaders(c => 
                 {
-                    _rule = GetMatchingRule();
+                    _rule = _rule ?? GetMatchingRule();
                     if (_rule.BrowserCacheTime.HasValue)
                     {
                         _context.Response.Expires = DateTime.UtcNow + _rule.BrowserCacheTime;
@@ -450,6 +450,7 @@ namespace OwinFramework.OutputCache
             {
                 if (_responseCapture != null)
                 {
+                    _rule = _rule ?? GetMatchingRule();
                     if (_rule != null && _rule.ServerCacheTime.HasValue && _rule.ServerCacheTime.Value > TimeSpan.Zero)
                     {
                         if (_cachedResponse == null) _cachedResponse = new CachedResponse();
