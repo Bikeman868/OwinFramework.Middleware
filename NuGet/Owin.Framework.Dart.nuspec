@@ -8,7 +8,7 @@
     <owners>Martin Halliday</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to serve applications written in Dart</description>
-    <copyright>Copyright Martin Halliday 2016</copyright>
+    <copyright>Copyright Martin Halliday 2014-2019</copyright>
     <releaseNotes>Removed optional dependency on output cache. This middleware should run before the output cache.</releaseNotes>
     <summary>Serves an application written in the Dart programming language.</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Dart</projectUrl>

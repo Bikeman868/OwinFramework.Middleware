@@ -8,7 +8,7 @@
     <owners>Martin Halliday</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to generate visualization of the OWIN pipeline</description>
-    <copyright>Copyright Martin Halliday 2016</copyright>
+    <copyright>Copyright Martin Halliday 2014-2019</copyright>
     <releaseNotes>Updated to Owin Framework 2.2.8</releaseNotes>
     <summary>Generates an SVG visualization of the OWIN pipeline. Needs Owin.Framework to work.</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.RouteVisualizer</projectUrl>

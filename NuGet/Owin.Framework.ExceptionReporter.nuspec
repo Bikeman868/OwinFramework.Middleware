@@ -8,7 +8,7 @@
     <owners>Martin Halliday</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to catch and report exceptions</description>
-    <copyright>Copyright Martin Halliday 2019</copyright>
+    <copyright>Copyright Martin Halliday 2014-2019</copyright>
     <releaseNotes>Error reports are returned with an http status code of 500 and minimum length 512 so that the browser will display it</releaseNotes>
     <summary>Catches exceptions in middleware and reports them via email. If calling from local machine displays detailed technical information.</summary>
     <projectUrl>http://owinframework.net/content/project/owinframework.exceptionreporter/landing</projectUrl>

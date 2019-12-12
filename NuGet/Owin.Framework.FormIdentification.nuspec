@@ -8,7 +8,7 @@
     <owners>Martin Halliday</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Allows users to create an account and login to your web site using the form POST method. Has all supporting functions including verify email, change password, forgot password, change email, revert email change etc.</description>
-    <copyright>Copyright Martin Halliday 2017</copyright>
+    <copyright>Copyright Martin Halliday 2014-2019</copyright>
     <releaseNotes>Updated to Owin Framework 2.5.0</releaseNotes>
     <summary>Responds to POST requests on configurable URLs for creating user accounts, logging in, resetting password and logging out ec</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.FormIdentification</projectUrl>

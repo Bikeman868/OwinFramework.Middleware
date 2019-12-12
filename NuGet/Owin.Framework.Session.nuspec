@@ -8,7 +8,7 @@
     <owners>Martin Halliday</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to maintain sessions using cookies</description>
-    <copyright>Copyright Martin Halliday 2017</copyright>
+    <copyright>Copyright Martin Halliday 2014-2019</copyright>
     <releaseNotes>Session variables saved to cache as a dictionary rather thana  list</releaseNotes>
     <summary>This middleware provides a persistent session per user for other middleware to use</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Session</projectUrl>

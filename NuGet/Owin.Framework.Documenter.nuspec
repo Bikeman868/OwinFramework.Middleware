@@ -8,7 +8,7 @@
     <owners>Martin Halliday</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to document other Owin middleware</description>
-    <copyright>Copyright Martin Halliday 2016</copyright>
+    <copyright>Copyright Martin Halliday 2014-2019</copyright>
     <releaseNotes>Still documents middleware that is behind multiple instances of the same middleware</releaseNotes>
     <summary>Generates documentation of all endpoints in a web application.</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Documenter</projectUrl>

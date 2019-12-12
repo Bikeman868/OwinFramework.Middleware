@@ -8,7 +8,7 @@
     <owners>Martin Halliday</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to version static assets and cache them indefinitely on the browser</description>
-    <copyright>Copyright Martin Halliday 2016</copyright>
+    <copyright>Copyright Martin Halliday 2014-2019</copyright>
     <releaseNotes>Updated to Owin Framework 2.2.8</releaseNotes>
     <summary>This middleware can be configured to replace version markers in HTML output with a version number, then strip that version number off incomming requests</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.OutputCache</projectUrl>
