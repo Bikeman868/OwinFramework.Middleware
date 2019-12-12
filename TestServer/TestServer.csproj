@@ -36,17 +36,17 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Ioc.Modules, Version=1.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Ioc.Modules.1.3.2\lib\net45\Ioc.Modules.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Ioc.Modules, Version=1.4.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Ioc.Modules.1.4.1\lib\net45\Ioc.Modules.dll</HintPath>
     </Reference>
-    <Reference Include="Ioc.Modules.Ninject, Version=1.3.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Ioc.Modules.Ninject.1.3.1\lib\net45\Ioc.Modules.Ninject.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Ioc.Modules.Contract, Version=1.4.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Ioc.Modules.Contract.1.4.1\lib\net45\Ioc.Modules.Contract.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.Owin, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\packages\Microsoft.Owin.3.0.1\lib\net45\Microsoft.Owin.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Ioc.Modules.Ninject, Version=1.4.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Ioc.Modules.Ninject.1.4.1\lib\net45\Ioc.Modules.Ninject.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin, Version=3.1.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Owin.3.1.0\lib\net45\Microsoft.Owin.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Owin.Diagnostics, Version=3.0.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Owin.Diagnostics.3.0.1\lib\net45\Microsoft.Owin.Diagnostics.dll</HintPath>
@@ -76,37 +76,29 @@
       <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
       <Private>True</Private>
     </Reference>
-    <Reference Include="OwinFramework, Version=2.6.8.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.2.6.8\lib\net45\OwinFramework.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="OwinFramework, Version=2.7.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.2.7.0\lib\net45\OwinFramework.dll</HintPath>
     </Reference>
-    <Reference Include="OwinFramework.Configuration.Urchin, Version=2.6.8.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.Urchin.2.6.8\lib\net45\OwinFramework.Configuration.Urchin.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="OwinFramework.Facilities.Cache.Local, Version=2.7.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.Facilities.Cache.Local.2.7.2\lib\net45\OwinFramework.Facilities.Cache.Local.dll</HintPath>
     </Reference>
-    <Reference Include="OwinFramework.Facilities.Cache.Local, Version=2.6.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.Facilities.Cache.Local.2.6.0\lib\net45\OwinFramework.Facilities.Cache.Local.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="OwinFramework.Facilities.IdentityStore.Prius, Version=2.7.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.Facilities.IdentityStore.Prius.2.7.2\lib\net45\OwinFramework.Facilities.IdentityStore.Prius.dll</HintPath>
     </Reference>
-    <Reference Include="OwinFramework.Facilities.IdentityStore.Prius, Version=2.6.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.Facilities.IdentityStore.Prius.2.6.2\lib\net45\OwinFramework.Facilities.IdentityStore.Prius.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="OwinFramework.Facilities.TokenStore.Cache, Version=2.7.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.Facilities.TokenStore.Cache.2.7.2\lib\net45\OwinFramework.Facilities.TokenStore.Cache.dll</HintPath>
     </Reference>
-    <Reference Include="OwinFramework.Facilities.TokenStore.Cache, Version=2.6.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Owin.Framework.Facilities.TokenStore.Cache.2.6.0\lib\net45\OwinFramework.Facilities.TokenStore.Cache.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="OwinFramework.Urchin, Version=2.7.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.Framework.Urchin.2.7.0\lib\net45\OwinFramework.Urchin.dll</HintPath>
     </Reference>
-    <Reference Include="Prius.Contracts, Version=2.0.6.25, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Prius.2.0.6\lib\net45\Prius.Contracts.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Prius.Contracts, Version=2.1.1.27, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Prius.2.1.1\lib\net45\Prius.Contracts.dll</HintPath>
     </Reference>
-    <Reference Include="Prius.MySql, Version=2.0.6.25, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Prius.MySql.2.0.6\lib\net45\Prius.MySql.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Prius.MySql, Version=2.1.1.27, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Prius.MySql.2.1.1\lib\net45\Prius.MySql.dll</HintPath>
     </Reference>
-    <Reference Include="Prius.Orm, Version=2.0.6.25, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Prius.2.0.6\lib\net45\Prius.Orm.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Prius.Orm, Version=2.1.1.27, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Prius.2.1.1\lib\net45\Prius.Orm.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -115,9 +107,8 @@
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
-    <Reference Include="Urchin.Client, Version=1.2.4.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Urchin.Client.1.2.4\lib\net45\Urchin.Client.dll</HintPath>
-      <Private>True</Private>
+    <Reference Include="Urchin.Client, Version=1.3.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Urchin.Client.1.3.1\lib\net45\Urchin.Client.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>

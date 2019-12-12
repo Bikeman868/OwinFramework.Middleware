@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Owin.Framework.Less</id>
-    <version>2.6.2</version>
+    <version>2.7.0</version>
     <title>Owin.Framework.Less</title>
     <authors>Martin Halliday</authors>
     <owners>Martin Halliday</owners>
@@ -12,20 +12,31 @@
     <releaseNotes>Fixed a bug with less files in sub-directories</releaseNotes>
     <summary>Compiles LESS files to CSS files on the fly</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Less</projectUrl>
-    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <license type="expression">Apache-2.0</license>
     <tags>OWIN framework LESS compiler middleware</tags>
     <dependencies>
-      <dependency id="Owin.Framework" version="2.6.7" />
-      <dependency id="Ioc.Modules" version="1.3.1" />
-      <dependency id="Newtonsoft.Json" version="7.0.1" />
-      <dependency id="DotlessClientOnly" version="1.5.2" />
+      <group targetFramework="net40">
+        <dependency id="Owin.Framework" version="2.7.0" />
+        <dependency id="Ioc.Modules.Contract" version="1.4.1" />
+        <dependency id="Newtonsoft.Json" version="7.0.1" />
+        <dependency id="DotlessClientOnly" version="1.5.2" />
+      </group>
+      <group targetFramework="net45">
+        <dependency id="Owin.Framework" version="2.7.0" />
+        <dependency id="Ioc.Modules.Contract" version="1.4.1" />
+        <dependency id="Newtonsoft.Json" version="7.0.1" />
+        <dependency id="DotlessClientOnly" version="1.5.2" />
+      </group>
     </dependencies>
     <references>
+      <reference file="OwinFramework.Less.dll" />
     </references>
   </metadata>
   <files>
     <file src="..\OwinFramework.Less\bin\Net40\Release\OwinFramework.Less.dll" target="lib\net40"/>
     <file src="..\OwinFramework.Less\bin\Net45\Release\OwinFramework.Less.dll" target="lib\net45"/>
+    <file src="..\OwinFramework.Less\bin\Net40\Release\OwinFramework.Less.dll" target="ref\net40"/>
+    <file src="..\OwinFramework.Less\bin\Net45\Release\OwinFramework.Less.dll" target="ref\net45"/>
     <file src="..\*.md" target=""/>
   </files>
 </package>

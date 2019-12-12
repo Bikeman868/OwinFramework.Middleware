@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>Owin.Framework.Dart</id>
-    <version>2.6.3</version>
+    <version>2.7.0</version>
     <title>Owin.Framework.Dart</title>
     <authors>Martin Halliday</authors>
     <owners>Martin Halliday</owners>
@@ -12,19 +12,29 @@
     <releaseNotes>Removed optional dependency on output cache. This middleware should run before the output cache.</releaseNotes>
     <summary>Serves an application written in the Dart programming language.</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Dart</projectUrl>
-    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <license type="expression">Apache-2.0</license>
     <tags>OWIN framework Dart</tags>
     <dependencies>
-      <dependency id="Owin.Framework" version="2.6.8" />
-      <dependency id="Ioc.Modules" version="1.3.2" />
-      <dependency id="Newtonsoft.Json" version="7.0.1" />
+      <group targetFramework="net40">
+        <dependency id="Owin.Framework" version="2.7.0" />
+        <dependency id="Ioc.Modules.Contract" version="1.4.1" />
+        <dependency id="Newtonsoft.Json" version="7.0.1" />
+      </group>
+      <group targetFramework="net45">
+        <dependency id="Owin.Framework" version="2.7.0" />
+        <dependency id="Ioc.Modules.Contract" version="1.4.1" />
+        <dependency id="Newtonsoft.Json" version="7.0.1" />
+      </group>
     </dependencies>
     <references>
+      <reference file="OwinFramework.Dart.dll" />
     </references>
   </metadata>
   <files>
     <file src="..\OwinFramework.Dart\bin\Net40\Release\OwinFramework.Dart.dll" target="lib\net40"/>
     <file src="..\OwinFramework.Dart\bin\Net45\Release\OwinFramework.Dart.dll" target="lib\net45"/>
+    <file src="..\OwinFramework.Dart\bin\Net40\Release\OwinFramework.Dart.dll" target="ref\net40"/>
+    <file src="..\OwinFramework.Dart\bin\Net45\Release\OwinFramework.Dart.dll" target="ref\net45"/>
     <file src="..\*.md" target=""/>
   </files>
 </package>
