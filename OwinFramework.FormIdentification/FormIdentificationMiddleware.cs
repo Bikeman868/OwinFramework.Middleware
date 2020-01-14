@@ -185,7 +185,7 @@ namespace OwinFramework.FormIdentification
                 !string.IsNullOrEmpty(priorIdentification.Identity) &&
                 !priorIdentification.IsAnonymous)
             {
-                _traceFilter.Trace(context, TraceLevel.Information, () => "The user was already identified by prior middleware");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " the user was already identified by prior middleware");
                 return;
             }
 
@@ -194,7 +194,10 @@ namespace OwinFramework.FormIdentification
                 throw new Exception("Session middleware is required for Form Identification to work");
 
             if (!upstreamSession.EstablishSession())
+            {
+                Trace(context, () => GetType().Name + " the user can not be identified in the routing phase because session middleware was unable to establish a session during routing");
                 return;
+            }
 
             var session = context.GetFeature<ISession>();
             if (session == null)
@@ -237,9 +240,15 @@ namespace OwinFramework.FormIdentification
             renewSessionUrl += "&success=" + Uri.EscapeDataString(thisUrl);
 
             if (upstreamIdentification.AllowAnonymous)
-                renewSessionUrl += "&fail=" +  Uri.EscapeDataString(thisUrl);
+            {
+                renewSessionUrl += "&fail=" + Uri.EscapeDataString(thisUrl);
+                Trace(context, () => GetType().Name + " user is not required to sign in");
+            }
             else
+            {
                 renewSessionUrl += "&fail=" + Uri.EscapeDataString(signinUrl);
+                Trace(context, () => GetType().Name + " user must sign in if identity can not be recovered from cookie");
+            }
 
             _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " redirecting to " + renewSessionUrl);
             
@@ -273,8 +282,9 @@ namespace OwinFramework.FormIdentification
                 identity = _identityDirectory.CreateIdentity();
                 success = _identityStore.AddCredentials(identity, email, password);
             }
-            catch
+            catch (Exception ex)
             {
+                Trace(context, () => GetType().Name + " failed to create new identity: " + ex.Message);
                 success = false;
             }
 
@@ -321,14 +331,17 @@ namespace OwinFramework.FormIdentification
                     updateIdentityUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
                     updateIdentityUrl += "&success=" + Uri.EscapeDataString(signupSuccessPage);
 
+                    Trace(context, () => GetType().Name + " redirecting to " + updateIdentityUrl);
                     return Redirect(context, updateIdentityUrl);
                 }
 
+                Trace(context, () => GetType().Name + " redirecting to " + (_signupSuccessPage.HasValue ? _signupSuccessPage.Value : thisUrl));
                 return Redirect(context, _signupSuccessPage.HasValue ? _signupSuccessPage.Value : thisUrl);
             }
 
             _signupFailCount++;
 
+            Trace(context, () => GetType().Name + " redirecting to " + (_signupFailPage.HasValue ? _signupFailPage.Value : thisUrl));
             return Redirect(context, _signupFailPage.HasValue ? _signupFailPage.Value : thisUrl);
         }
 
@@ -881,18 +894,23 @@ namespace OwinFramework.FormIdentification
             GetSession(session, out identity, out purpose, out status, out rememberMeToken, out claims, out isAnonymous);
 
             if (string.IsNullOrEmpty(rememberMeToken))
+            {
+                Trace(context, () => GetType().Name + " deleting remember me cookie " + _cookieName);
                 context.Response.Cookies.Delete(_cookieName);
+            }
             else
+            {
+                Trace(context, () => GetType().Name + " setting remember me cookie " + _cookieName + "+" + rememberMeToken);
                 context.Response.Cookies.Append(
-                    _cookieName,
-                    rememberMeToken,
-                    new CookieOptions
-                    {
-                        HttpOnly = true,
-                        Secure = context.Request.IsSecure,
-                        Expires = DateTime.UtcNow + _configuration.RememberMeFor
-                    });
-
+                        _cookieName,
+                        rememberMeToken,
+                        new CookieOptions
+                        {
+                            HttpOnly = true,
+                            Secure = context.Request.IsSecure,
+                            Expires = DateTime.UtcNow + _configuration.RememberMeFor
+                        });
+            }
             _updateRememberMeCount++;
         }
 
@@ -978,6 +996,8 @@ namespace OwinFramework.FormIdentification
         {
             if (_verifyEmailPage.HasValue)
             {
+                Trace(context, () => GetType().Name + " sending welcome email to " + email);
+
                 var pageUrl = GetNonSecurePrefix(context) + _verifyEmailPage;
                 var tokenString = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, email, identity);
                 var emailHtml = GetEmbeddedResource("WelcomeEmail.html");
@@ -1000,8 +1020,7 @@ namespace OwinFramework.FormIdentification
                     fromEmail = "welcome@" + context.Request.Host;
 
                 var mailMessage = new MailMessage(fromEmail, email, _configuration.WelcomeEmailSubject, emailText);
-                mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(emailHtml,
-                    new ContentType("text/html")));
+                mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(emailHtml, new ContentType("text/html")));
 
                 var emailClient = new SmtpClient();
                 emailClient.Send(mailMessage);
