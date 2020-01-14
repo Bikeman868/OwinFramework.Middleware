@@ -14,6 +14,7 @@ using OwinFramework.Interfaces.Routing;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using System.Web;
+using OwinFramework.MiddlewareHelpers.Traceable;
 using OwinFramework.Routing;
 
 namespace OwinFramework.ExceptionReporter
@@ -30,6 +31,12 @@ namespace OwinFramework.ExceptionReporter
 
         public string Name { get; set; }
         public Action<IOwinContext, Func<string>> Trace { get; set; }
+        private readonly TraceFilter _traceFilter;
+
+        public ExceptionReporterMiddleware()
+        {
+            _traceFilter = new TraceFilter(null, this);
+        }
 
         Task IMiddleware.Invoke(IOwinContext context, Func<Task> next)
         {
@@ -71,7 +78,7 @@ namespace OwinFramework.ExceptionReporter
 
         private Task HandleException(IOwinContext context, Exception ex)
         {
-            Trace(context, () => GetType().Name + " Exception caught: " + ex.Message);
+            _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " Exception caught: " + ex.Message);
             var isPrivate = false;
             try
             {
@@ -84,7 +91,7 @@ namespace OwinFramework.ExceptionReporter
                 }
                 catch (Exception mailException)
                 {
-                    Trace(context, () => GetType().Name + " failed to send email: " + mailException.Message);
+                    _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " failed to send email: " + mailException.Message);
                     System.Diagnostics.Trace.WriteLine(GetType().Name + " failed to send email: " + mailException.Message);
                 }
 
@@ -123,7 +130,7 @@ namespace OwinFramework.ExceptionReporter
         {
             context.Response.StatusCode = httpException.GetHttpCode();
             context.Response.ReasonPhrase = httpException.GetHtmlErrorMessage();
-            Trace(context, () => GetType().Name + " HttpException caught with status code " + context.Response.StatusCode);
+            _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " HttpException caught with status code " + context.Response.StatusCode);
             return context.Response.WriteAsync("");
         }
 
@@ -302,6 +309,8 @@ namespace OwinFramework.ExceptionReporter
 
         void IConfigurable.Configure(IConfiguration configuration, string path)
         {
+            _traceFilter.ConfigureWith(configuration);
+
             _configurationRegistration = configuration.Register(
                 path, cfg => _configuration = cfg, new ExceptionReporterConfiguration());
         }

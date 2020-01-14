@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using dotless.Core.configuration;
+using dotless.Core.Loggers;
 using Microsoft.Owin;
 using OwinFramework.Builder;
 using OwinFramework.Interfaces.Builder;
@@ -33,15 +34,14 @@ namespace OwinFramework.Less
 
         string IMiddleware.Name { get; set; }
         public Action<IOwinContext, Func<string>> Trace { get; set; }
+        private readonly TraceFilter _traceFilter;
 
         private int _filesServedCount;
         private int _fileModificationCount;
         private int _filesCompiledCount;
 
-        private readonly TraceFilter _traceFilter;
 
         public LessMiddleware(
-            IConfiguration configuration,
             IHostingEnvironment hostingEnvironment)
         {
             _hostingEnvironment = hostingEnvironment;
@@ -50,7 +50,7 @@ namespace OwinFramework.Less
             this.RunAfter<IRequestRewriter>(null, false);
             this.RunAfter<IResponseRewriter>(null, false);
 
-            _traceFilter = new TraceFilter(configuration, this);
+            _traceFilter = new TraceFilter(null, this);
         }
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
@@ -168,6 +168,8 @@ namespace OwinFramework.Less
 
         public void Configure(IConfiguration configuration, string path)
         {
+            _traceFilter.ConfigureWith(configuration);
+
             _configurationRegistration = configuration.Register(
                 path, 
                 cfg => 
@@ -407,19 +409,19 @@ namespace OwinFramework.Less
 
             if (!string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
             {
-                Trace(context, () => GetType().Name + " only supports GET requests");
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " only supports GET requests");
                 return false;
             }
 
             if (!_configuration.Enabled)
             {
-                Trace(context, () => GetType().Name + " is turned off in configuration");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " is turned off in configuration");
                 return false;
             }
 
             if (!_rootUrl.HasValue)
             {
-                Trace(context, () => GetType().Name + " has no root URL configured");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " has no root URL configured");
                 return false;
             }
 
@@ -428,13 +430,13 @@ namespace OwinFramework.Less
             if (!path.HasValue ||
                 !path.Value.EndsWith(".css", StringComparison.OrdinalIgnoreCase))
             {
-                Trace(context, () => GetType().Name + " requested path does not end with '.css'");
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " requested path does not end with '.css'");
                 return false;
             }
 
             if (_rootUrl.Value != "/" && !path.StartsWithSegments(_rootUrl))
             {
-                Trace(context, () => GetType().Name + " requested path is not below the configured root path '" + _rootUrl + "'");
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " requested path is not below the configured root path '" + _rootUrl + "'");
                 return false;
             }
 
@@ -443,12 +445,12 @@ namespace OwinFramework.Less
             var cssFileName = Path.Combine(_rootFolder, relativePath);
             var lessFileName = cssFileName.Substring(0, cssFileName.Length - 4) + ".less";
 
-            Trace(context, () => GetType().Name + " path to CSS file is '" + cssFileName + "'");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " path to CSS file is '" + cssFileName + "'");
 
             cssFileContext.PhysicalFile = new FileInfo(cssFileName);
             if (!cssFileContext.PhysicalFile.Exists)
             {
-                Trace(context, () => GetType().Name + " CSS file does not exist, LESS file will be compiled");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " CSS file does not exist, LESS file will be compiled");
                 cssFileContext.PhysicalFile = new FileInfo(lessFileName);
                 cssFileContext.NeedsCompiling = true;
             }
@@ -456,7 +458,7 @@ namespace OwinFramework.Less
             var exists = cssFileContext.PhysicalFile.Exists;
 
             var filePath = cssFileContext.PhysicalFile.FullName;
-            Trace(context, () => GetType().Name + (exists ? " file exists on disk" : filePath + " does not exist on disk"));
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + (exists ? " file exists on disk" : filePath + " does not exist on disk"));
 
             return exists;
         }
@@ -475,49 +477,77 @@ namespace OwinFramework.Less
 
         private class DotLessCustomLogger: dotless.Core.Loggers.ILogger
         {
+            private readonly Action<TraceLevel, Func<string>> _traceAction;
+
+            public DotLessCustomLogger(Action<TraceLevel, Func<string>> traceAction)
+            {
+                _traceAction = traceAction;
+            }
+
             public void Debug(string message, params object[] args)
             {
                 WriteLine(message, args);
+                _traceAction(TraceLevel.Debug, () => string.Format(message, args));
             }
 
             public void Debug(string message)
             {
                 WriteLine(message);
+                _traceAction(TraceLevel.Debug, () => message);
             }
 
             public void Error(string message, params object[] args)
             {
                 WriteLine(message, args);
+                _traceAction(TraceLevel.Error, () => string.Format(message, args));
             }
 
             public void Error(string message)
             {
                 WriteLine(message);
+                _traceAction(TraceLevel.Error, () => message);
             }
 
             public void Info(string message, params object[] args)
             {
                 WriteLine(message, args);
+                _traceAction(TraceLevel.Information, () => string.Format(message, args));
             }
 
             public void Info(string message)
             {
                 WriteLine(message);
+                _traceAction(TraceLevel.Information, () => message);
             }
 
             public void Log(dotless.Core.Loggers.LogLevel level, string message)
             {
                 WriteLine(message);
+                switch (level)
+                {
+                    case LogLevel.Debug:
+                        _traceAction(TraceLevel.Debug, () => message);
+                        break;
+                    case LogLevel.Error:
+                    case LogLevel.Warn:
+                        _traceAction(TraceLevel.Error, () => message);
+                        break;
+                    case LogLevel.Info:
+                        _traceAction(TraceLevel.Information, () => message);
+                        break;
+                }
             }
 
             public void Warn(string message, params object[] args)
             {
                 WriteLine(message, args);
+                _traceAction(TraceLevel.Error, () => string.Format(message, args));
             }
 
             public void Warn(string message)
             {
                 WriteLine(message);
+                _traceAction(TraceLevel.Error, () => message);
             }
 
             private void WriteLine(string message, params object[] args)

@@ -29,8 +29,8 @@ namespace OwinFramework.NotFound
 
         string IMiddleware.Name { get; set; }
         public Action<IOwinContext, Func<string>> Trace { get; set; }
-
         private readonly TraceFilter _traceFilter;
+
         private int _notFoundCount;
 
         private IDisposable _configurationRegistration;
@@ -39,14 +39,13 @@ namespace OwinFramework.NotFound
         private PathString _configPage;
 
         public NotFoundMiddleware(
-            IConfiguration configuration,
             IHostingEnvironment hostingEnvironment)
         {
             this.RunLast();
 
             _hostingEnvironment = hostingEnvironment;
+            _traceFilter = new TraceFilter(null, this);
 
-            _traceFilter = new TraceFilter(configuration, this);
             ConfigurationChanged(new NotFoundConfiguration());
         }
 
@@ -91,6 +90,8 @@ namespace OwinFramework.NotFound
 
         public void Configure(IConfiguration configuration, string path)
         {
+            _traceFilter.ConfigureWith(configuration);
+
             _configurationRegistration = configuration.Register(
                 path,
                 ConfigurationChanged,

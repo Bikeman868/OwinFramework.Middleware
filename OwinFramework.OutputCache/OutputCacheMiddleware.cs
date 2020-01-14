@@ -44,11 +44,10 @@ namespace OwinFramework.OutputCache
         private readonly TraceFilter _traceFilter;
 
         public OutputCacheMiddleware(
-            ICache cache,
-            IConfiguration configuration)
+            ICache cache)
         {
             _cache = cache;
-            _traceFilter = new TraceFilter(configuration, this);
+            _traceFilter = new TraceFilter(null, this);
 
             ConfigurationChanged(new OutputCacheConfiguration());
         }
@@ -114,6 +113,7 @@ namespace OwinFramework.OutputCache
 
         public void Configure(IConfiguration configuration, string path)
         {
+            _traceFilter.ConfigureWith(configuration);
             _configurationRegistration = configuration.Register(path, ConfigurationChanged, _configuration);
         }
 

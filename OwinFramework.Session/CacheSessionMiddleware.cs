@@ -33,11 +33,10 @@ namespace OwinFramework.Session
         private SessionConfiguration _configuration;
 
         public CacheSessionMiddleware(
-            IConfiguration configuration,
             ICache cache)
         {
             _cache = cache;
-            _traceFilter = new TraceFilter(configuration, this);
+            _traceFilter = new TraceFilter(null, this);
 
             ConfigurationChanged(new SessionConfiguration());
         }
@@ -66,6 +65,8 @@ namespace OwinFramework.Session
 
         public void Configure(IConfiguration configuration, string path)
         {
+            _traceFilter.ConfigureWith(configuration);
+
             _configurationRegistration = configuration.Register(
                 path,
                 ConfigurationChanged,

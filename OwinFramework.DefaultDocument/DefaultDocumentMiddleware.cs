@@ -32,9 +32,9 @@ namespace OwinFramework.DefaultDocument
 
         private readonly TraceFilter _traceFilter;
 
-        public DefaultDocumentMiddleware(IConfiguration configuration)
+        public DefaultDocumentMiddleware()
         {
-            _traceFilter = new TraceFilter(configuration, this);
+            _traceFilter = new TraceFilter(null, this);
 
             ConfigurationChanged(new DefaultDocumentConfiguration());
             this.RunFirst();
@@ -98,6 +98,8 @@ namespace OwinFramework.DefaultDocument
 
         public void Configure(IConfiguration configuration, string path)
         {
+            _traceFilter.ConfigureWith(configuration);
+
             _configurationRegistration = configuration.Register(
                 path,
                 ConfigurationChanged,

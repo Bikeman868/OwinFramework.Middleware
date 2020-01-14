@@ -36,14 +36,13 @@ namespace OwinFramework.Documenter
         private readonly TraceFilter _traceFilter;
 
         public DocumenterMiddleware(
-            IConfiguration configuration,
             IHostingEnvironment hostingEnvironment)
         {
             this.RunAfter<IAuthorization>(null, false);
             this.RunAfter<IRequestRewriter>(null, false);
             this.RunAfter<IResponseRewriter>(null, false);
 
-            _traceFilter = new TraceFilter(configuration, this);
+            _traceFilter = new TraceFilter(null, this);
             _resourceManager = new ResourceManager(hostingEnvironment, new MimeTypeEvaluator());
         }
 
@@ -311,6 +310,8 @@ namespace OwinFramework.Documenter
 
         void IConfigurable.Configure(IConfiguration configuration, string path)
         {
+            _traceFilter.ConfigureWith(configuration);
+
             _configurationRegistration = configuration.Register(
                 path, 
                 cfg => 

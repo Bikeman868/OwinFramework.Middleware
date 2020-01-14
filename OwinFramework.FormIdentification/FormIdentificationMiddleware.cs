@@ -18,6 +18,7 @@ using OwinFramework.InterfacesV1.Upstream;
 using OwinFramework.MiddlewareHelpers.Analysable;
 using OwinFramework.MiddlewareHelpers.Identification;
 using OwinFramework.MiddlewareHelpers.SelfDocumenting;
+using OwinFramework.MiddlewareHelpers.Traceable;
 
 namespace OwinFramework.FormIdentification
 {
@@ -36,6 +37,7 @@ namespace OwinFramework.FormIdentification
 
         string IMiddleware.Name { get; set; }
         public Action<IOwinContext, Func<string>> Trace { get; set; }
+        private TraceFilter _traceFilter;
 
         private readonly IIdentityStore _identityStore;
         private readonly IIdentityDirectory _identityDirectory;
@@ -113,6 +115,7 @@ namespace OwinFramework.FormIdentification
             _identityDirectory = identityDirectory;
             _tokenStore = tokenStore;
             _hostingEnvironment = hostingEnvironment;
+            _traceFilter = new TraceFilter(null, this);
 
             ConfigurationChanged(new FormIdentificationConfiguration());
             this.RunAfter<ISession>();
@@ -182,7 +185,7 @@ namespace OwinFramework.FormIdentification
                 !string.IsNullOrEmpty(priorIdentification.Identity) &&
                 !priorIdentification.IsAnonymous)
             {
-                Trace(context, () => "The user was already identified by prior middleware");
+                _traceFilter.Trace(context, TraceLevel.Information, () => "The user was already identified by prior middleware");
                 return;
             }
 
@@ -216,7 +219,7 @@ namespace OwinFramework.FormIdentification
             IOwinContext context, 
             IUpstreamIdentification upstreamIdentification)
         {
-            Trace(context, () => GetType().Name + " renewing session");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " renewing session");
 
             var session = context.GetFeature<ISession>();
             var upstreamSession = context.GetFeature<IUpstreamSession>();
@@ -238,7 +241,7 @@ namespace OwinFramework.FormIdentification
             else
                 renewSessionUrl += "&fail=" + Uri.EscapeDataString(signinUrl);
 
-            Trace(context, () => GetType().Name + " redirecting to " + renewSessionUrl);
+            _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " redirecting to " + renewSessionUrl);
             
             context.Response.Redirect(renewSessionUrl);
             return context.Response.WriteAsync(string.Empty);
@@ -254,7 +257,7 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleSignup(IOwinContext context)
         {
-            Trace(context, () => GetType().Name + " handling sign up request");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling sign up request");
 
             var form = context.Request.ReadFormAsync().Result;
 
@@ -335,7 +338,7 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleSignin(IOwinContext context)
         {
-            Trace(context, () => GetType().Name + " handling sign in request");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling sign in request");
 
             var form = context.Request.ReadFormAsync().Result;
 
@@ -408,7 +411,7 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleSignout(IOwinContext context)
         {
-            Trace(context, () => GetType().Name + " handling sign out request");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling sign out request");
 
             var upstreamSession = context.GetFeature<IUpstreamSession>();
             var session = context.GetFeature<ISession>();
@@ -444,7 +447,7 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleChangePassword(IOwinContext context)
         {
-            Trace(context, () => GetType().Name + " handling change password request");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling change password request");
 
             var form = context.Request.ReadFormAsync().Result;
 
@@ -471,7 +474,7 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleSendPasswordReset(IOwinContext context)
         {
-            Trace(context, () => GetType().Name + " handling send password reset request");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling send password reset request");
 
             var form = context.Request.ReadFormAsync().Result;
             var email = form[_configuration.EmailFormField];
@@ -519,7 +522,7 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleResetPassword(IOwinContext context)
         {
-            Trace(context, () => GetType().Name + " handling reset password request");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling reset password request");
 
             var form = context.Request.ReadFormAsync().Result;
 
@@ -559,7 +562,7 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleChangeEmail(IOwinContext context)
         {
-            Trace(context, () => GetType().Name + " handling change email request");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling change email request");
 
             var form = context.Request.ReadFormAsync().Result;
             var email = form[_configuration.EmailFormField];
@@ -659,7 +662,7 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleVerifyEmail(IOwinContext context)
         {
-            Trace(context, () => GetType().Name + " handling verify email address request");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling verify email address request");
 
             var success = false;
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
@@ -706,7 +709,7 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleRevertEmail(IOwinContext context)
         {
-            Trace(context, () => GetType().Name + " handling revert email change request");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling revert email change request");
 
             var success = false;
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
@@ -762,7 +765,7 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleRequestVerifyEmail(IOwinContext context)
         {
-            Trace(context, () => GetType().Name + " handling request for new email verification email");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling request for new email verification email");
             
             var success = false;
             var trace = (TextWriter)context.Environment["host.TraceOutput"];
@@ -796,7 +799,7 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleRenewSession(IOwinContext context)
         {
-            Trace(context, () => GetType().Name + " handling session renewal request");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling session renewal request");
 
             var sessionId = context.Request.Query["sid"];
             var successUrl = context.Request.Query["success"];
@@ -849,7 +852,7 @@ namespace OwinFramework.FormIdentification
         /// </summary>
         private Task HandleRememberMe(IOwinContext context)
         {
-            Trace(context, () => GetType().Name + " handling remember me request");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling remember me request");
 
             var session = context.GetFeature<ISession>();
             var upstreamSession = context.GetFeature<IUpstreamSession>();
@@ -1011,6 +1014,7 @@ namespace OwinFramework.FormIdentification
 
         public void Configure(IConfiguration configuration, string path)
         {
+            _traceFilter.ConfigureWith(configuration);
             _configurationRegistration = configuration.Register(path, ConfigurationChanged, _configuration);
         }
 

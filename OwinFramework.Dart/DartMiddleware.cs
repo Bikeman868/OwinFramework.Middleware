@@ -36,14 +36,13 @@ namespace OwinFramework.Dart
         private int _supportedBrowserRequestCount;
         private int _unsupportedBrowserRequestCount;
 
-        public DartMiddleware(IConfiguration configuration)
+        public DartMiddleware()
         {
-            _traceFilter = new TraceFilter(configuration, this);
+            _traceFilter = new TraceFilter(null, this);
         }
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
-
             PathString relativePath;
             if (_rootUrl.HasValue && context.Request.Path.StartsWithSegments(_rootUrl, out relativePath))
             {
@@ -114,6 +113,8 @@ namespace OwinFramework.Dart
 
         public void Configure(IConfiguration configuration, string path)
         {
+            _traceFilter.ConfigureWith(configuration);
+
             _configurationRegistration = configuration.Register(
                 path, 
                 cfg => 

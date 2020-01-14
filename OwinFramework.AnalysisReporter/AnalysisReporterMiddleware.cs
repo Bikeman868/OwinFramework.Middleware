@@ -35,13 +35,13 @@ namespace OwinFramework.AnalysisReporter
         private readonly TraceFilter _traceFilter;
         private DateTime _nextUpdate;
 
-        public AnalysisReporterMiddleware(IConfiguration configuration)
+        public AnalysisReporterMiddleware()
         {
             this.RunAfter<IAuthorization>(null, false);
             this.RunAfter<IRequestRewriter>(null, false);
             this.RunAfter<IResponseRewriter>(null, false);
 
-            _traceFilter = new TraceFilter(configuration, this);
+            _traceFilter = new TraceFilter(null, this);
         }
 
         public Task Invoke(IOwinContext context, Func<Task> next)
@@ -49,8 +49,6 @@ namespace OwinFramework.AnalysisReporter
             string path;
             if (!IsForThisMiddleware(context, out path))
                 return next();
-
-            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling this request");
 
             if (context.Request.Path.Value.Equals(path, StringComparison.OrdinalIgnoreCase))
             {
@@ -60,7 +58,7 @@ namespace OwinFramework.AnalysisReporter
 
             if (context.Request.Path.Value.Equals(path + _configDocsPath, StringComparison.OrdinalIgnoreCase))
             {
-                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " returning configurartion documentation");
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 
@@ -431,14 +429,37 @@ namespace OwinFramework.AnalysisReporter
             // Note that the configuration can be changed at any time by another thread
             path = _configuration.Path;
 
-            return _configuration.Enabled
-                   && !string.IsNullOrEmpty(path)
-                   && context.Request.Path.HasValue
-                   && context.Request.Path.Value.StartsWith(path, StringComparison.OrdinalIgnoreCase);
+            if (!context.Request.Path.HasValue)
+            {
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " will not handle this request because it has no path");
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(path))
+            {
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " has no request path configured");
+                return false;
+            }
+
+            if (!context.Request.Path.Value.StartsWith(path, StringComparison.OrdinalIgnoreCase))
+            {
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " this request is not for this middleware");
+                return false;
+            }
+
+            if (!_configuration.Enabled)
+            {
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name+ " will not handle this request because it is disabled");
+                return false;
+            }
+
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " is handling this request");
+            return true;
         }
 
         void IConfigurable.Configure(IConfiguration configuration, string path)
         {
+            _traceFilter.ConfigureWith(configuration);
             _configurationRegistration = configuration.Register(
                 path, cfg => _configuration = cfg, new AnalysisReporterConfiguration());
         }

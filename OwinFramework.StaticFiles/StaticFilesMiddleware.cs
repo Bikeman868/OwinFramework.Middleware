@@ -13,6 +13,7 @@ using OwinFramework.Interfaces.Utility;
 using OwinFramework.InterfacesV1.Capability;
 using OwinFramework.InterfacesV1.Middleware;
 using OwinFramework.MiddlewareHelpers.Analysable;
+using OwinFramework.MiddlewareHelpers.Traceable;
 
 namespace OwinFramework.StaticFiles
 {
@@ -29,6 +30,7 @@ namespace OwinFramework.StaticFiles
 
         string IMiddleware.Name { get; set; }
         public Action<IOwinContext, Func<string>> Trace { get; set; }
+        private readonly TraceFilter _traceFilter;
 
         private readonly IHostingEnvironment _hostingEnvironment;
 
@@ -40,6 +42,7 @@ namespace OwinFramework.StaticFiles
         public StaticFilesMiddleware(IHostingEnvironment hostingEnvironment)
         {
             _hostingEnvironment = hostingEnvironment;
+            _traceFilter = new TraceFilter(null, this);
 
             this.RunAfter<IOutputCache>(null, false);
             this.RunAfter<IRequestRewriter>(null, false);
@@ -175,6 +178,8 @@ namespace OwinFramework.StaticFiles
 
         public void Configure(IConfiguration configuration, string path)
         {
+            _traceFilter.ConfigureWith(configuration);
+
             _configurationRegistration = configuration.Register(
                 path, 
                 cfg => 
