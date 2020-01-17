@@ -64,6 +64,7 @@ namespace OwinFramework.FormIdentification
         private string _sessionRememberMeName;
         private string _sessionClaimsName;
         private string _sessionIsAnonymousName;
+        private string _sessionMessageName;
 
         private PathString _documentationPage;
 
@@ -195,7 +196,7 @@ namespace OwinFramework.FormIdentification
 
             if (!upstreamSession.EstablishSession())
             {
-                Trace(context, () => GetType().Name + " the user can not be identified in the routing phase because session middleware was unable to establish a session during routing");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " the user can not be identified in the routing phase because session middleware was unable to establish a session during routing");
                 return;
             }
 
@@ -242,12 +243,12 @@ namespace OwinFramework.FormIdentification
             if (upstreamIdentification.AllowAnonymous)
             {
                 renewSessionUrl += "&fail=" + Uri.EscapeDataString(thisUrl);
-                Trace(context, () => GetType().Name + " user is not required to sign in");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " user is not required to sign in");
             }
             else
             {
                 renewSessionUrl += "&fail=" + Uri.EscapeDataString(signinUrl);
-                Trace(context, () => GetType().Name + " user must sign in if identity can not be recovered from cookie");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " user must sign in if identity can not be recovered from cookie");
             }
 
             _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " redirecting to " + renewSessionUrl);
@@ -275,16 +276,45 @@ namespace OwinFramework.FormIdentification
             var rememberMe = !string.IsNullOrEmpty(form[_configuration.RememberMeFormField]);
             var thisUrl = GetThisUrl(context);
 
+            var session = context.GetFeature<ISession>();
+            var upstreamSession = context.GetFeature<IUpstreamSession>();
+
+            if (session == null || upstreamSession == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
             bool success;
             string identity = null;
             try
             {
                 identity = _identityDirectory.CreateIdentity();
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " created new identity " + identity);
+
                 success = _identityStore.AddCredentials(identity, email, password);
+
+                if (success)
+                {
+                    _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " successfully replaced credentials for " + identity);
+                    SetSessionMessage(session, string.Empty);
+                }
+                else
+                {
+                    _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " failed to replace credentials for " + identity);
+                    SetSessionMessage(
+                        session, 
+                        "Your account was successfully created but something went wrong when saving your password. " +
+                        "If you are unable to sign in with this email and password, please choose the reset password option. "+
+                        "Applogies for the inconvenience.");
+                }
             }
             catch (Exception ex)
             {
-                Trace(context, () => GetType().Name + " failed to create new identity: " + ex.Message);
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " failed to create new identity: " + ex.Message);
+                SetSessionMessage(
+                    session, 
+                    "An account could not be created with those details. If your email address was already used "+
+                    "to sign up and do not know the password then please choose the password reset option. If " +
+                    "you are still unable to sign up please contact our support team and tell them that the "+
+                    "following error occurred: " + ex.Message);
                 success = false;
             }
 
@@ -292,29 +322,52 @@ namespace OwinFramework.FormIdentification
             {
                 _signupSuccessCount++;
 
-                SendWelcomeEmail(context, identity, email);
+                try
+                {
+                    SendWelcomeEmail(context, identity, email);
+                }
+                catch (Exception ex)
+                {
+                    _traceFilter.Trace(
+                        context, TraceLevel.Error, 
+                        () => GetType().Name + " failed to send welcome email to " + email + " for " + identity + ". " + ex.Message);
 
-                var session = context.GetFeature<ISession>();
-                var upstreamSession = context.GetFeature<IUpstreamSession>();
-                if (session == null || upstreamSession == null)
-                    throw new Exception("Session middleware is required for Form Identification to work");
+                    SetSessionMessage(
+                        session,
+                        "An account was created for you, but there was a problem sending the " +
+                        "welcome email that lets you confirm your email address. There is an option " +
+                        "on the account page to resent this email. Please use this option to resend this " + 
+                        "email. Our appoligies for this inconvenience.");
+                }
 
                 var authenticationResult = _identityStore.AuthenticateWithCredentials(email, password);
 
                 if (authenticationResult.Status != AuthenticationStatus.Authenticated)
-                    throw new Exception("Login failed on newly created account");
+                {
+                    _traceFilter.Trace(
+                        context, TraceLevel.Error,
+                        () => GetType().Name + " failed to authenticate as " + identity + " because " + authenticationResult.Status);
 
-                _identityDirectory.UpdateClaim(identity, new IdentityClaim(ClaimNames.Email, email, ClaimStatus.Unverified));
-                var claims = _identityDirectory.GetClaims(authenticationResult.Identity);
+                    SetSessionMessage(
+                        session,
+                        "An account was created for you, but there was a problem automatically logging you into the website. " +
+                        "Please login manually using the email address and password that you used to sign up. " +
+                        "Our appoligies for this inconvenience.");
+                }
+                else
+                {
+                    _identityDirectory.UpdateClaim(identity, new IdentityClaim(ClaimNames.Email, email, ClaimStatus.Unverified));
+                    var claims = _identityDirectory.GetClaims(authenticationResult.Identity);
 
-                SetSession(
-                    session, 
-                    identity, 
-                    authenticationResult.Purposes, 
-                    authenticationResult.Status, 
-                    rememberMe ? authenticationResult.RememberMeToken : null,
-                    claims,
-                    false);
+                    SetSession(
+                        session,
+                        identity,
+                        authenticationResult.Purposes,
+                        authenticationResult.Status,
+                        rememberMe ? authenticationResult.RememberMeToken : null,
+                        claims,
+                        false);
+                }
 
                 if (string.IsNullOrEmpty(_secureDomain))
                 {
@@ -331,17 +384,17 @@ namespace OwinFramework.FormIdentification
                     updateIdentityUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
                     updateIdentityUrl += "&success=" + Uri.EscapeDataString(signupSuccessPage);
 
-                    Trace(context, () => GetType().Name + " redirecting to " + updateIdentityUrl);
+                    _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " redirecting to " + updateIdentityUrl);
                     return Redirect(context, updateIdentityUrl);
                 }
 
-                Trace(context, () => GetType().Name + " redirecting to " + (_signupSuccessPage.HasValue ? _signupSuccessPage.Value : thisUrl));
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " redirecting to " + (_signupSuccessPage.HasValue ? _signupSuccessPage.Value : thisUrl));
                 return Redirect(context, _signupSuccessPage.HasValue ? _signupSuccessPage.Value : thisUrl);
             }
 
             _signupFailCount++;
 
-            Trace(context, () => GetType().Name + " redirecting to " + (_signupFailPage.HasValue ? _signupFailPage.Value : thisUrl));
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " redirecting to " + (_signupFailPage.HasValue ? _signupFailPage.Value : thisUrl));
             return Redirect(context, _signupFailPage.HasValue ? _signupFailPage.Value : thisUrl);
         }
 
@@ -360,26 +413,44 @@ namespace OwinFramework.FormIdentification
             var rememberMe = !string.IsNullOrEmpty(form[_configuration.RememberMeFormField]);
             var thisUrl = GetThisUrl(context);
 
+            var session = context.GetFeature<ISession>();
+            var upstreamSession = context.GetFeature<IUpstreamSession>();
+            if (session == null || upstreamSession == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
             bool success;
             IAuthenticationResult authenticationResult = null;
             try
             {
                 authenticationResult = _identityStore.AuthenticateWithCredentials(email, password);
                 success = authenticationResult.Status == AuthenticationStatus.Authenticated;
+
+                if (success)
+                {
+                    _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " successfull login as " + authenticationResult.Identity);
+                    SetSessionMessage(session, string.Empty);
+                }
+                else
+                {
+                    _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " failed to login as " + email + " because " + authenticationResult.Status);
+                    SetSessionMessage(session, "Login failed. Please check your password and try again or select the password reset option.");
+                }
             }
-            catch
+            catch (Exception ex)
             {
                 success = false;
+
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " exception loging in as " + email + ". " + ex.Message);
+                SetSessionMessage(
+                    session, 
+                    "Something went wrong in out system, please try logging in again. " +
+                    "Our appologies for this inconvenience. If you see this message again " +
+                    "please contact our support team. Thank you.");
             }
 
             if (success)
             {
                 _signinSuccessCount++;
-
-                var session = context.GetFeature<ISession>();
-                var upstreamSession = context.GetFeature<IUpstreamSession>();
-                if (session == null || upstreamSession == null)
-                    throw new Exception("Session middleware is required for Form Identification to work");
 
                 var claims = _identityDirectory.GetClaims(authenticationResult.Identity);
 
@@ -410,11 +481,13 @@ namespace OwinFramework.FormIdentification
                     return Redirect(context, updateIdentityUrl);
                 }
 
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " redirecting to " + (_signinSuccessPage.HasValue ? _signinSuccessPage.Value : thisUrl));
                 return Redirect(context, _signinSuccessPage.HasValue ? _signinSuccessPage.Value : thisUrl);
             }
 
             _signinFailCount++;
 
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " redirecting to " + (_signinFailPage.HasValue ? _signinFailPage.Value : thisUrl));
             return Redirect(context, _signinFailPage.HasValue ? _signinFailPage.Value : thisUrl);
         }
 
@@ -433,24 +506,31 @@ namespace OwinFramework.FormIdentification
 
             _signoutCount++;
 
+            SetSessionMessage(session, string.Empty);
             SetSession(session, null, null, AuthenticationStatus.NotFound, null, null, true);
+
+            var nonSecurePrefix = GetNonSecurePrefix(context);
+            var thisUrl = GetThisUrl(context);
 
             if (string.IsNullOrEmpty(_secureDomain))
             {
                 UpdateRememberMeCookie(context);
-                return context.Response.WriteAsync(string.Empty);
+
+                var nonSecureSuccessUrl = _signoutSuccessPage.HasValue ? nonSecurePrefix + _signoutSuccessPage.Value : thisUrl;
+
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " no secure domain configured, redirecting to " + nonSecureSuccessUrl);
+                return RedirectWithCookies(context, nonSecureSuccessUrl);
             }
 
-            var nonSecurePrefix = GetNonSecurePrefix(context);
             var securePrefix = GetSecurePrefix();
-            var thisUrl = GetThisUrl(context);
 
-            var successUrl = _signoutSuccessPage.HasValue ? nonSecurePrefix + _signoutSuccessPage.Value : thisUrl;
+            var secureSuccessUrl = _signoutSuccessPage.HasValue ? nonSecurePrefix + _signoutSuccessPage.Value : thisUrl;
 
             var updateIdentityUrl = securePrefix + _updateIdentityPage.Value;
             updateIdentityUrl += "?sid=" + Uri.EscapeDataString(upstreamSession.SessionId);
-            updateIdentityUrl += "&success=" + Uri.EscapeDataString(successUrl);
+            updateIdentityUrl += "&success=" + Uri.EscapeDataString(secureSuccessUrl);
 
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " secure domain is configured, redirecting to " + updateIdentityUrl);
             return Redirect(context, updateIdentityUrl);
         }
 
@@ -478,6 +558,7 @@ namespace OwinFramework.FormIdentification
             if (_identityStore.ChangePassword(credential, newPassword))
                 return Redirect(context, _changePasswordSuccessPage.HasValue ? _changePasswordSuccessPage.Value : thisUrl);
 
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " secure domain is configured, redirecting to " + (_changePasswordFailPage.HasValue ? _changePasswordFailPage.Value : thisUrl));
             return Redirect(context, _changePasswordFailPage.HasValue ? _changePasswordFailPage.Value : thisUrl);
         }
 
@@ -489,14 +570,27 @@ namespace OwinFramework.FormIdentification
         {
             _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling send password reset request");
 
+            var session = context.GetFeature<ISession>();
+            if (session == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
             var form = context.Request.ReadFormAsync().Result;
             var email = form[_configuration.EmailFormField];
 
             var thisUrl = GetThisUrl(context);
 
             var credential = _identityStore.GetUsernameCredential(email);
+
             if (credential == null)
+            {
+                SetSessionMessage(session, "No accont was found with this email address. Please sign up.");
+
+                _traceFilter.Trace(
+                    context, TraceLevel.Error, 
+                    () => GetType().Name + " no credentals found for this email address, redirecting to " + 
+                    (_sendPasswordResetFailPage.HasValue ? _sendPasswordResetFailPage.Value : thisUrl));
                 return Redirect(context, _sendPasswordResetFailPage.HasValue ? _sendPasswordResetFailPage.Value : thisUrl);
+            }
 
             var tokenString = _tokenStore.CreateToken(_configuration.PasswordResetTokenType, "ResetPassword", email);
 
@@ -526,12 +620,16 @@ namespace OwinFramework.FormIdentification
             var emailClient = new SmtpClient();
             emailClient.Send(mailMessage);
 
+            _traceFilter.Trace(
+                context, TraceLevel.Error,
+                () => GetType().Name + " password reset email was sent, redirecting to " +
+                (_sendPasswordResetSuccessPage.HasValue ? _sendPasswordResetSuccessPage.Value : thisUrl));
             return Redirect(context, _sendPasswordResetSuccessPage.HasValue ? _sendPasswordResetSuccessPage.Value : thisUrl);
         }
 
         /// <summary>
-        /// This request is handled in the main site domain when the user POSTs
-        /// the reset password form.
+        /// This request is handled in the main site domain when the user follows the
+        /// link in a password reset email then POSTs the reset password form.
         /// </summary>
         private Task HandleResetPassword(IOwinContext context)
         {
@@ -549,6 +647,9 @@ namespace OwinFramework.FormIdentification
             var thisUrl = GetThisUrl(context);
 
             var token = _tokenStore.GetToken(_configuration.PasswordResetTokenType, tokenString, "ResetPassword", email);
+
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " password reset token status is " + token.Status);
+
             if (token.Status == TokenStatus.Allowed)
             {
                 var credential =_identityStore.GetUsernameCredential(email);
@@ -557,15 +658,19 @@ namespace OwinFramework.FormIdentification
                     if (_identityStore.ChangePassword(credential, newPassword))
                     {
                         _tokenStore.DeleteToken(tokenString);
-                        return Redirect(
-                            context,
-                            _resetPasswordSuccessPage.HasValue 
-                                ? _resetPasswordSuccessPage.Value 
-                                : thisUrl);
+                        _traceFilter.Trace(
+                            context, TraceLevel.Information,
+                            () => GetType().Name + " password was successfully changed, redirecting to " +
+                            (_resetPasswordSuccessPage.HasValue ? _resetPasswordSuccessPage.Value : thisUrl));
+                        return Redirect(context, _resetPasswordSuccessPage.HasValue ? _resetPasswordSuccessPage.Value : thisUrl);
                     }
                 }
             }
 
+            _traceFilter.Trace(
+                context, TraceLevel.Error,
+                () => GetType().Name + " password was successfully reset, redirecting to " +
+                (_resetPasswordFailPage.HasValue ? _resetPasswordFailPage.Value : thisUrl));
             return Redirect(context, _resetPasswordFailPage.HasValue ? _resetPasswordFailPage.Value : thisUrl);
         }
 
@@ -585,13 +690,19 @@ namespace OwinFramework.FormIdentification
             var thisUrl = GetThisUrl(context);
 
             var authenticationResult = _identityStore.AuthenticateWithCredentials(email, password);
-            if (authenticationResult == null || 
+            if (authenticationResult == null ||
                 authenticationResult.Status != AuthenticationStatus.Authenticated ||
                 (authenticationResult.Purposes != null && authenticationResult.Purposes.Count > 0))
+            {
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " unable to change email address with these credentials");
                 return Redirect(context, _changeEmailFailPage.HasValue ? _changeEmailFailPage.Value : thisUrl);
+            }
 
             if (!_identityStore.AddCredentials(authenticationResult.Identity, newEmail, password))
+            {
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " the identity store failed to update the email address");
                 return Redirect(context, _changeEmailFailPage.HasValue ? _changeEmailFailPage.Value : thisUrl);
+            }
 
             _identityDirectory.UpdateClaim(
                 authenticationResult.Identity, 
@@ -601,6 +712,8 @@ namespace OwinFramework.FormIdentification
                 authenticationResult.Identity,
                 new IdentityClaim(ClaimNames.Username, newEmail, ClaimStatus.Verified));
 
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " email address successfully changed");
+
             var fromEmail = _configuration.EmailChangeEmailFrom;
             if (string.IsNullOrWhiteSpace(fromEmail))
                 fromEmail = "email-change@" + context.Request.Host;
@@ -609,6 +722,8 @@ namespace OwinFramework.FormIdentification
 
             if (_revertEmailPage.HasValue)
             {
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " sending email to revert email address change");
+
                 var fromEmailHtml = GetEmbeddedResource("EmailChangeFromEmail.html");
                 var fromEmailText = GetEmbeddedResource("EmailChangeFromEmail.txt");
 
@@ -638,6 +753,8 @@ namespace OwinFramework.FormIdentification
 
             if (_verifyEmailPage.HasValue)
             {
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " sending email to confirm email address change");
+
                 var toEmailHtml = GetEmbeddedResource("EmailChangeToEmail.html");
                 var toEmailText = GetEmbeddedResource("EmailChangeToEmail.txt");
 
@@ -665,6 +782,10 @@ namespace OwinFramework.FormIdentification
                 emailClient.Send(mailMessage);
             }
 
+            _traceFilter.Trace(
+                context, TraceLevel.Information,
+                () => GetType().Name + " redirecting to " +
+                (_changeEmailSuccessPage.HasValue ? _changeEmailSuccessPage.Value : thisUrl));
             return Redirect(context, _changeEmailSuccessPage.HasValue ? _changeEmailSuccessPage.Value : thisUrl);
         }
 
@@ -678,7 +799,6 @@ namespace OwinFramework.FormIdentification
             _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling verify email address request");
 
             var success = false;
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
 
             var tokenString = context.Request.Query["token"];
             var identity = context.Request.Query["id"];
@@ -688,8 +808,7 @@ namespace OwinFramework.FormIdentification
                 string.IsNullOrEmpty(identity) ||
                 string.IsNullOrEmpty(email))
             {
-                if (trace != null)
-                    trace.WriteLine(GetType().Name + " email verification URL does not include all required query string parameters");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " email verification URL does not include all required query string parameters");
             }
             else
             {
@@ -707,9 +826,11 @@ namespace OwinFramework.FormIdentification
             var nextPage = success ? _verifyEmailSuccessPage : _verifyEmailFailPage;
             if (!nextPage.HasValue)
             {
-                if (trace != null) trace.WriteLine(GetType().Name + " must have email verification success and fail pages defined");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " no configuration for success and/or fail page. Please check your configuration.");
                 nextPage = _documentationPage;
             }
+
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " redirecting to " + nextPage);
             return Redirect(context, nextPage.Value);
         }
 
@@ -725,7 +846,6 @@ namespace OwinFramework.FormIdentification
             _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling revert email change request");
 
             var success = false;
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
 
             var form = context.Request.ReadFormAsync().Result;
             var tokenString = form[_configuration.TokenFormField];
@@ -738,8 +858,7 @@ namespace OwinFramework.FormIdentification
                 string.IsNullOrEmpty(oldEmail) ||
                 string.IsNullOrEmpty(password))
             {
-                if (trace != null)
-                    trace.WriteLine(GetType().Name + " email revert page does not include all required form variables");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " email revert page does not include all required form variables");
             }
             else
             {
@@ -766,9 +885,11 @@ namespace OwinFramework.FormIdentification
             var nextPage = success ? _revertEmailSuccessPage : _revertEmailFailPage;
             if (!nextPage.HasValue)
             {
-                if (trace != null) trace.WriteLine(GetType().Name + " must have revert email success and fail pages defined");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " no configuration for success and/or fail page. Please check your configuration.");
                 nextPage = _documentationPage;
             }
+
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " redirecting to " + nextPage);
             return Redirect(context, nextPage.Value);
         }
 
@@ -781,7 +902,6 @@ namespace OwinFramework.FormIdentification
             _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling request for new email verification email");
             
             var success = false;
-            var trace = (TextWriter)context.Environment["host.TraceOutput"];
 
             var identification = context.GetFeature<IIdentification>();
             if (identification != null &&
@@ -800,9 +920,11 @@ namespace OwinFramework.FormIdentification
             var nextPage = success ? _signupSuccessPage : _verifyEmailFailPage;
             if (!nextPage.HasValue)
             {
-                if (trace != null) trace.WriteLine(GetType().Name + " must have email verification success and fail pages defined");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " no configuration for success and/or fail page. Please check your configuration.");
                 nextPage = _documentationPage;
             }
+
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " redirecting to " + nextPage);
             return Redirect(context, nextPage.Value);
         }
 
@@ -852,10 +974,9 @@ namespace OwinFramework.FormIdentification
                 claims,
                 authenticationResult.Status == AuthenticationStatus.Anonymous);
 
-            return Redirect(
-                context, 
-                authenticationResult.Status == AuthenticationStatus.Authenticated 
-                    ? successUrl : failUrl);
+
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " redirecting to " + (authenticationResult.Status == AuthenticationStatus.Authenticated ? successUrl : failUrl));
+            return Redirect(context, authenticationResult.Status == AuthenticationStatus.Authenticated ? successUrl : failUrl);
         }
 
         /// <summary>
@@ -878,6 +999,7 @@ namespace OwinFramework.FormIdentification
             upstreamSession.EstablishSession(sessionId);
             UpdateRememberMeCookie(context);
 
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " redirecting to " + successUrl);
             return RedirectWithCookies(context, successUrl);
         }
 
@@ -885,22 +1007,23 @@ namespace OwinFramework.FormIdentification
         {
             var session = context.GetFeature<ISession>();
 
-            string identity;
-            List<string> purpose;
-            AuthenticationStatus status;
-            string rememberMeToken;
-            List<IdentityClaim> claims;
-            bool isAnonymous;
-            GetSession(session, out identity, out purpose, out status, out rememberMeToken, out claims, out isAnonymous);
+            GetSession(
+                session, 
+                out string identity, 
+                out List<string> purpose, 
+                out AuthenticationStatus status, 
+                out string rememberMeToken, 
+                out List<IdentityClaim> claims, 
+                out bool isAnonymous);
 
             if (string.IsNullOrEmpty(rememberMeToken))
             {
-                Trace(context, () => GetType().Name + " deleting remember me cookie " + _cookieName);
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " deleting remember me cookie " + _cookieName);
                 context.Response.Cookies.Delete(_cookieName);
             }
             else
             {
-                Trace(context, () => GetType().Name + " setting remember me cookie " + _cookieName + "+" + rememberMeToken);
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " setting remember me cookie " + _cookieName + "+" + rememberMeToken);
                 context.Response.Cookies.Append(
                         _cookieName,
                         rememberMeToken,
@@ -961,6 +1084,11 @@ namespace OwinFramework.FormIdentification
             isAnonymous = session.Get<bool>(_sessionIsAnonymousName);
         }
 
+        private void SetSessionMessage(ISession session, string message)
+        {
+            session.Set(_sessionMessageName, message);
+        }
+
         private string GetThisUrl(IOwinContext context)
         {
             var requestRewriter = context.GetFeature<IRequestRewriter>();
@@ -996,7 +1124,7 @@ namespace OwinFramework.FormIdentification
         {
             if (_verifyEmailPage.HasValue)
             {
-                Trace(context, () => GetType().Name + " sending welcome email to " + email);
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " sending welcome email to " + email);
 
                 var pageUrl = GetNonSecurePrefix(context) + _verifyEmailPage;
                 var tokenString = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, email, identity);
@@ -1097,6 +1225,8 @@ namespace OwinFramework.FormIdentification
             _sessionRememberMeName = (configuration.SessionRememberMeName ?? string.Empty).ToLower().Replace(' ', '-');
             _sessionClaimsName = (configuration.SessionClaimsName ?? string.Empty).ToLower().Replace(' ', '-');
             _sessionIsAnonymousName = (configuration.SessionIsAnonymousName ?? string.Empty).ToLower().Replace(' ', '-');
+            _sessionMessageName = (configuration.SessionMessageName ?? string.Empty).ToLower().Replace(' ', '-');
+            
         }
 
         #endregion
@@ -1148,6 +1278,7 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{sessionRememberMeName}", _sessionRememberMeName);
             document = document.Replace("{sessionClaimsName}", _sessionClaimsName);
             document = document.Replace("{sessionAnonymousName}", _sessionIsAnonymousName);
+            document = document.Replace("{sessionMessageName}", _sessionMessageName);
 
             document = document.Replace("{rememberMeFor}", _configuration.RememberMeFor.ToString());
 

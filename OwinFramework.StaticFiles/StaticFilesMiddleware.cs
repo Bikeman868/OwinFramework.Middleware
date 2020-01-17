@@ -52,8 +52,7 @@ namespace OwinFramework.StaticFiles
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
         {
-            StaticFileContext fileContext;
-            if (!ShouldServeThisFile(context, out fileContext))
+            if (!ShouldServeThisFile(context, out StaticFileContext fileContext))
                 return next();
 
             context.SetFeature(fileContext);
@@ -61,12 +60,12 @@ namespace OwinFramework.StaticFiles
             var outputCache = context.GetFeature<InterfacesV1.Upstream.IUpstreamOutputCache>();
             if (outputCache != null && outputCache.CachedContentIsAvailable)
             {
-                Trace(context, () => GetType().Name + " output cache has cached content available");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " output cache has cached content available");
                 if (outputCache.TimeInCache.HasValue)
                 {
                     if (outputCache.TimeInCache > fileContext.Configuration.MaximumCacheTime)
                     {
-                        Trace(context, () => GetType().Name + " cached output is too old and will not be used");
+                        _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " cached output is too old and will not be used");
                         _cachedContentExpiredCount++;
                         outputCache.UseCachedContent = false;
                     }
@@ -75,7 +74,7 @@ namespace OwinFramework.StaticFiles
                         var timeSinceLastUpdate = DateTime.UtcNow - fileContext.PhysicalFile.LastWriteTimeUtc;
                         if (outputCache.TimeInCache > timeSinceLastUpdate)
                         {
-                            Trace(context, () => GetType().Name + " file was modified since it was added to the output cache");
+                            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " file was modified since it was added to the output cache");
                             _fileModificationCount++;
                             outputCache.UseCachedContent = false;
                         }
@@ -88,16 +87,16 @@ namespace OwinFramework.StaticFiles
                 var authorization = context.GetFeature<InterfacesV1.Upstream.IUpstreamAuthorization>();
                 if (authorization == null)
                 {
-                    Trace(context, () => GetType().Name + " required permission will not be enforced because there is no upstream authorization middleware");
+                    _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " required permission will not be enforced because there is no upstream authorization middleware");
                 }
                 else
                 {
-                    Trace(context, () => GetType().Name + " file access requires " + fileContext.Configuration.RequiredPermission + " permission");
+                    _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " file access requires " + fileContext.Configuration.RequiredPermission + " permission");
                     authorization.AddRequiredPermission(fileContext.Configuration.RequiredPermission);
                 }
             }
 
-            Trace(context, () => GetType().Name + " ending the routing phase, this is a static file");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " ending the routing phase, this is a static file");
             return null;
         }
 
@@ -106,14 +105,14 @@ namespace OwinFramework.StaticFiles
             if (!string.IsNullOrEmpty(_configuration.DocumentationRootUrl) &&
                 context.Request.Path.Value.Equals(_configuration.DocumentationRootUrl, StringComparison.OrdinalIgnoreCase))
             {
-                Trace(context, () => GetType().Name + " returning configuration documentation");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " returning configuration documentation");
                 return DocumentConfiguration(context);
             }
 
             var staticFileContext = context.GetFeature<StaticFileContext>();
             if (staticFileContext == null || !staticFileContext.FileExists)
             {
-                Trace(context, () => GetType().Name + " this is not a request for a static file");
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " this is not a request for a static file");
                 return next();
             }
 
@@ -123,7 +122,7 @@ namespace OwinFramework.StaticFiles
 
             if (configuration == null || physicalFile == null || extentionConfiguration == null)
             {
-                Trace(context, () => GetType().Name + " required data is missing, file can not be served");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " required data is missing, file can not be served");
                 return next();
             }
 
@@ -134,14 +133,14 @@ namespace OwinFramework.StaticFiles
                 outputCache.Category = largeFile ? "LargeStaticFile" : "SmallStaticFile";
                 outputCache.MaximumCacheTime = configuration.MaximumCacheTime;
                 outputCache.Priority = largeFile ? CachePriority.Never : CachePriority.High;
-                Trace(context, () => GetType().Name + " configured output cache " + outputCache.Category + " " + outputCache.Priority + " " + outputCache.MaximumCacheTime);
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " configured output cache " + outputCache.Category + " " + outputCache.Priority + " " + outputCache.MaximumCacheTime);
             }
 
             context.Response.ContentType = extentionConfiguration.MimeType;
 
             if (extentionConfiguration.IsText)
             {
-                Trace(context, () => GetType().Name + " responding with a text file");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " responding with a text file");
                 _textFilesServedCount++;
 
                 string text;
@@ -152,7 +151,7 @@ namespace OwinFramework.StaticFiles
                 return context.Response.WriteAsync(text);
             }
 
-            Trace(context, () => GetType().Name + " responding with a binary file");
+            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " responding with a binary file");
             _binaryFilesServedCount++;
 
             var buffer = new byte[physicalFile.Length];
@@ -463,7 +462,7 @@ namespace OwinFramework.StaticFiles
 
             if (!string.Equals(context.Request.Method, "GET", StringComparison.OrdinalIgnoreCase))
             {
-                Trace(context, () => GetType().Name + " only handles GET requests");
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " only handles GET requests");
                 return false;
             }
 
@@ -471,25 +470,25 @@ namespace OwinFramework.StaticFiles
 
             if (!_configuration.Enabled)
             {
-                Trace(context, () => GetType().Name + " is disabled and will not serve this request");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " is disabled and will not serve this request");
                 return false;
             }
 
             if (!request.Path.HasValue)
             {
-                Trace(context, () => GetType().Name + " can not serve this request because the request path is empty");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " can not serve this request because the request path is empty");
                 return false;
             }
 
             if (!fileContext.RootUrl.HasValue)
             {
-                Trace(context, () => GetType().Name + " will not handle this request because the configured root URL is empty");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " will not handle this request because the configured root URL is empty");
                 return false;
             }
 
             if (!(fileContext.RootUrl.Value == "/" || request.Path.StartsWithSegments(fileContext.RootUrl))) 
             {
-                Trace(context, () => GetType().Name + " will not handle this request because the file is not in a sub-directory of the configured root");
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " will not handle this request because the file is not in a sub-directory of the configured root");
                 return false;
             }
 
@@ -500,7 +499,7 @@ namespace OwinFramework.StaticFiles
             // No filename case can't be handled by this middleware
             if (string.IsNullOrWhiteSpace(fileName) || fileName == "\\")
             {
-                Trace(context, () => GetType().Name + " will not handle this request because the file name is blank");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " will not handle this request because the file name is blank");
                 return false;
             }
 
@@ -509,7 +508,7 @@ namespace OwinFramework.StaticFiles
 
             if (!fileContext.Configuration.IncludeSubFolders && fileName.Contains("\\"))
             {
-                Trace(context, () => GetType().Name + " will not handle this request because it is configured to not serve files from sub-folders");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " will not handle this request because it is configured to not serve files from sub-folders");
                 return false;
             }
 
@@ -524,7 +523,7 @@ namespace OwinFramework.StaticFiles
             // Only serve files that have their extensions confgured
             if (fileContext.ExtensionConfiguration == null)
             {
-                Trace(context, () => GetType().Name + " will not handle this request because " + extension + " file extensions are not configured");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " will not handle this request because " + extension + " file extensions are not configured");
                 return false;
             }
 
@@ -534,9 +533,9 @@ namespace OwinFramework.StaticFiles
             fileContext.FileExists = file.Exists;
 
             if (fileContext.FileExists)
-                Trace(context, () => GetType().Name + " this is a request for static file " + file);
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " this is a request for static file " + file);
             else
-                Trace(context, () => GetType().Name + " static file '" + file + "' does not exist on disk");
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " static file '" + file + "' does not exist on disk");
 
             return fileContext.FileExists;
         }
