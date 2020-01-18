@@ -101,7 +101,7 @@
                 </p>
                 <p>
                     Leaving this blank or setting is to the same domain name as the site itself will also
-                    work, but in this case you must ensure that your entire site uses HTTPS and it 
+                    work, but in this case you must ensure that your entire site uses HTTPS and it
                     must never uses HTTP.
                 </p>
             </td>
@@ -150,11 +150,22 @@
                 </p>
             </td>
         </tr>
-        
+
         <tr>
             <td class="property">sessionEmailName</td>
             <td>{sessionEmailName.default}</td>
             <td>{sessionEmailName}</td>
+            <td>
+                <p>
+                    Specifies the name to use when saving the user email in the session store.
+                </p>
+            </td>
+        </tr>
+
+        <tr>
+            <td class="property">sessionMessageName</td>
+            <td>{sessionMessageName.default}</td>
+            <td>{sessionMessageName}</td>
             <td>
                 <p>
                     Specifies the name to use when saving the user email in the session store.
@@ -206,7 +217,7 @@
                 <p>
                     The Form Identification middleware will redirect the browser to this page whenever
                     the users session does not contain a user identity. This page will be handled by
-                    the Form Identification middleware by identifying the user and putting their 
+                    the Form Identification middleware by identifying the user and putting their
                     identity in session before redirecting back to the original page.
                 </p>
             </td>

@@ -1331,6 +1331,7 @@ namespace OwinFramework.FormIdentification
             document = document.Replace("{sessionRememberMeName.default}", defaultConfiguration.SessionRememberMeName);
             document = document.Replace("{sessionClaimsName.default}", defaultConfiguration.SessionClaimsName);
             document = document.Replace("{sessionAnonymousName.default}", defaultConfiguration.SessionIsAnonymousName);
+            document = document.Replace("{sessionMessageName.default}", defaultConfiguration.SessionMessageName);
 
             document = document.Replace("{rememberMeFor.default}", defaultConfiguration.RememberMeFor.ToString());
 
