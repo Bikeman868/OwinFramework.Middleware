@@ -131,7 +131,7 @@ namespace OwinFramework.ExceptionReporter
             context.Response.StatusCode = httpException.GetHttpCode();
             context.Response.ReasonPhrase = httpException.GetHtmlErrorMessage();
             _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " HttpException caught with status code " + context.Response.StatusCode);
-            return context.Response.WriteAsync("");
+            return Task.WhenAll();
         }
 
         private bool IsPrivate(IOwinContext context)

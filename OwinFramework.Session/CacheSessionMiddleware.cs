@@ -44,6 +44,7 @@ namespace OwinFramework.Session
         public Task RouteRequest(IOwinContext context, Func<Task> next)
         {
             var session = new Session(_cache, context, _configuration, _traceFilter);
+
             context.SetFeature<IUpstreamSession>(session);
             context.SetFeature<ISession>(session);
 
@@ -52,13 +53,11 @@ namespace OwinFramework.Session
 
         public Task Invoke(IOwinContext context, Func<Task> next)
         {
-            var result = next();
-
-            var session = context.GetFeature<ISession>() as Session;
-            if (session != null)
-                session.Dispose();
-
-            return result;
+            return next().ContinueWith(t => 
+            {
+                var session = context.GetFeature<ISession>() as Session;
+                session?.Dispose();
+            });
         }
 
         #region IConfigurable
@@ -93,8 +92,27 @@ namespace OwinFramework.Session
             private readonly SessionConfiguration _configuration;
             private readonly TraceFilter _traceFilter;
 
+            /// <summary>
+            /// This dictionary contains the information that was retrieved from the cache
+            /// facility. The values in this dictionary are serialized JSON. This is lazily
+            /// deserialized if the session variable is read and only re-serialized just before
+            /// writing changes back to the cache.
+            /// </summary>
             private Dictionary<string, string> _cacheEntries;
+
+            /// <summary>
+            /// This dictionary contains the deserialized version of _cacheEntries only for
+            /// session variables that have been accessed. When session variables are updated
+            /// they are only updated here. Modified session variables are only serialized to
+            /// JSON again once just before writing back to the cache.
+            /// </summary>
             private IDictionary<string, CacheEntry> _sessionVariables;
+
+            /// <summary>
+            /// This contains a list of the names of the session variables that were modified
+            /// by the request. These will be taken from _sessionVariables, serialized into
+            /// JSON and written to _cacheEntries before being written back to the cache.
+            /// </summary>
             private HashSet<string> _modifiedKeys;
 
             public string SessionId { get; private set; }
@@ -127,15 +145,15 @@ namespace OwinFramework.Session
             {
                 if (HasSession && _modifiedKeys.Count > 0)
                 {
-                    _cacheEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    var cacheEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
                     foreach (var key in _modifiedKeys)
                     {
                         var modifiedEntry = _sessionVariables[key];
-                        _cacheEntries[modifiedEntry.Name] = JsonConvert.SerializeObject(modifiedEntry.Value);
+                        cacheEntries[modifiedEntry.Name] = JsonConvert.SerializeObject(modifiedEntry.Value);
                     }
 
                     _sessionVariables = null;
-                    _cache.Put(SessionId, _cacheEntries, _configuration.SessionDuration, _configuration.CacheCategory);
+                    _cache.Put(SessionId, cacheEntries, _configuration.SessionDuration, _configuration.CacheCategory);
                 }
             }
 
@@ -146,40 +164,64 @@ namespace OwinFramework.Session
                 _traceFilter.Trace(_context, TraceLevel.Information, () => GetType().Name + " establishing a session");
 
                 SessionId = sessionId ?? _context.Request.Cookies[_configuration.CookieName];
-                _cacheEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
                 if (string.IsNullOrWhiteSpace(SessionId))
                 {
+                    _traceFilter.Trace(_context, TraceLevel.Information, () => GetType().Name + " no session id cookie, creating a new session " + SessionId);
+
                     SessionId = Guid.NewGuid().ToShortString();
 
-                    _traceFilter.Trace(_context, TraceLevel.Information, () => GetType().Name + " no session id cookie, creating a new session " + SessionId);
+                    // Setting this means that we do not need to get this from the cache, we already 
+                    // know it is empty because we just created a new session ID
+                    _cacheEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
                     var cookieOptions = new CookieOptions
                     { 
                         Expires = DateTime.UtcNow.AddDays(1)
                     };
 
-                    var cookieDomainname = _configuration.CookieDomainName;
-                    if (string.IsNullOrEmpty(cookieDomainname))
+                    var cookieDomainName = _configuration.CookieDomainName;
+                    if (string.IsNullOrEmpty(cookieDomainName))
                     {
                         _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " no cookie domain name configured");
                     }
                     else
                     {
-                        _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " cookie domain name is " + cookieDomainname);
-                        cookieOptions.Domain = cookieDomainname;
+                        _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " cookie domain name is " + cookieDomainName);
+                        cookieOptions.Domain = cookieDomainName;
                     }
 
-                    _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " appending session cookie to response");
+                    _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " appending session cookie to the response");
                     _context.Response.Cookies.Append(_configuration.CookieName, SessionId, cookieOptions);
                 }
                 else
                 {
                     _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " session cookie contains session id " + SessionId);
 
-                    _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " retrieving session from cache with category " + _configuration.CacheCategory);
-                    var cacheEntries = _cache.Get<Dictionary<string, string>>(SessionId, null, null, _configuration.CacheCategory);
+                    // Setting this to null causes the session to be retrieved from cache on first access
+                    _cacheEntries = null;
+                }
 
+                // We just loaded the session so nothing is modified yet
+                _modifiedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                _sessionVariables = new Dictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
+                return true;
+            }
+
+            public T Get<T>(string name)
+            {
+                if (!HasSession) return default(T);
+
+                if (_sessionVariables.TryGetValue(name, out var cacheEntry))
+                    return (T)cacheEntry.Value;
+
+                if (_cacheEntries == null)
+                {
+                    _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " retrieving session from cache with category " + _configuration.CacheCategory);
+                    
+                    _cacheEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                    var cacheEntries = _cache.Get<Dictionary<string, string>>(SessionId, null, null, _configuration.CacheCategory);
                     if (cacheEntries == null)
                     {
                         _traceFilter.Trace(_context, TraceLevel.Debug, () => 
@@ -196,29 +238,17 @@ namespace OwinFramework.Session
                             _cacheEntries[entry.Key] = entry.Value;
                     }
                 }
-                _modifiedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                _sessionVariables = new Dictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
-                return true;
-            }
 
-            public T Get<T>(string name)
-            {
-                if (!HasSession) return default(T);
+                _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " retrieving session variable from cache '" + name + "'");
 
-                CacheEntry cacheEntry;
-                if (!_sessionVariables.TryGetValue(name, out cacheEntry))
-                {
-                    _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " retrieving session variable from cache '" + name + "'");
+                cacheEntry = new CacheEntry { Name = name };
 
-                    cacheEntry = new CacheEntry { Name = name };
+                cacheEntry.Value = _cacheEntries.TryGetValue(name, out var json) 
+                    ? JsonConvert.DeserializeObject<T>(json)
+                    : default(T);
 
-                    string json;
-                    cacheEntry.Value = _cacheEntries.TryGetValue(name, out json) 
-                        ? JsonConvert.DeserializeObject<T>(json)
-                        : default(T);
+                _sessionVariables[name] = cacheEntry;
 
-                    _sessionVariables[name] = cacheEntry;
-                }
                 return (T)cacheEntry.Value;
             }
 
@@ -226,8 +256,7 @@ namespace OwinFramework.Session
             {
                 if (HasSession)
                 {
-                    CacheEntry cacheEntry;
-                    if (_sessionVariables.TryGetValue(name, out cacheEntry))
+                    if (_sessionVariables.TryGetValue(name, out var cacheEntry))
                     {
                         _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " updating existing session variable '" + name + "'");
                         cacheEntry.Value = value;

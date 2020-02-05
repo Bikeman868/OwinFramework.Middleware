@@ -25,7 +25,7 @@
             "subject": "Test server unhandled exception"
         },
         "session": { 
-            "sessionDuration": "00:01:00"
+            "sessionDuration": "00:05:00"
         },
         "staticFiles": {
             "staticFilesRootUrl": "/",
@@ -151,7 +151,7 @@
             {
                 "name":"Identity", 
                 "type":"MySql", 
-                "connectionString":"Server=localhost;Database=identity;Uid=test;Pwd=;"
+                "connectionString":"Server=localhost;Database=identity;Uid=svc_test;Pwd=password;"
             }
         ],
         "fallbackPolicies":[

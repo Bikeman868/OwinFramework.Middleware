@@ -204,13 +204,7 @@ namespace OwinFramework.FormIdentification
             if (session == null)
                 throw new Exception("Session middleware is required for Form Identification to work");
 
-            string identity;
-            List<string> purposes;
-            AuthenticationStatus status;
-            string rememberMe;
-            List<IdentityClaim> claims;
-            bool isAnonymous;
-            GetSession(session, out identity, out purposes, out status, out rememberMe, out claims, out isAnonymous);
+            GetSession(session, out var identity, out var purposes, out var status, out var rememberMe, out var claims, out var isAnonymous);
 
             var identification = new Identification(identity ?? string.Empty, claims, isAnonymous, purposes);
             context.SetFeature<IIdentification>(identification);
@@ -415,6 +409,7 @@ namespace OwinFramework.FormIdentification
 
             var session = context.GetFeature<ISession>();
             var upstreamSession = context.GetFeature<IUpstreamSession>();
+
             if (session == null || upstreamSession == null)
                 throw new Exception("Session middleware is required for Form Identification to work");
 
@@ -443,7 +438,7 @@ namespace OwinFramework.FormIdentification
                 _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " exception loging in as " + email + ". " + ex.Message);
                 SetSessionMessage(
                     session, 
-                    "Something went wrong in out system, please try logging in again. " +
+                    "Something went wrong in our system, please try logging in again. " +
                     "Our appologies for this inconvenience. If you see this message again " +
                     "please contact our support team. Thank you.");
             }
@@ -1007,14 +1002,7 @@ namespace OwinFramework.FormIdentification
         {
             var session = context.GetFeature<ISession>();
 
-            GetSession(
-                session, 
-                out string identity, 
-                out List<string> purpose, 
-                out AuthenticationStatus status, 
-                out string rememberMeToken, 
-                out List<IdentityClaim> claims, 
-                out bool isAnonymous);
+            GetSession(session, out var identity, out var purpose, out var status, out var rememberMeToken, out var claims, out var isAnonymous);
 
             if (string.IsNullOrEmpty(rememberMeToken))
             {
@@ -1047,7 +1035,7 @@ namespace OwinFramework.FormIdentification
         private Task Redirect(IOwinContext context, string url)
         {
             context.Response.Redirect(url);
-            return context.Response.WriteAsync(string.Empty);
+            return Task.WhenAll();
         }
 
         private void SetSession(
