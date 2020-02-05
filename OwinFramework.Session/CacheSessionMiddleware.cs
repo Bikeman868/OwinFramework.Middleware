@@ -145,15 +145,61 @@ namespace OwinFramework.Session
             {
                 if (HasSession && _modifiedKeys.Count > 0)
                 {
-                    var cacheEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                    foreach (var key in _modifiedKeys)
+                    /*
+                    if (_cache.CanMerge)
                     {
-                        var modifiedEntry = _sessionVariables[key];
-                        cacheEntries[modifiedEntry.Name] = JsonConvert.SerializeObject(modifiedEntry.Value);
-                    }
+                        var cacheEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                        foreach (var key in _modifiedKeys)
+                        {
+                            var modifiedEntry = _sessionVariables[key];
+                            cacheEntries[modifiedEntry.Name] = JsonConvert.SerializeObject(modifiedEntry.Value);
+                        }
 
-                    _sessionVariables = null;
-                    _cache.Put(SessionId, cacheEntries, _configuration.SessionDuration, _configuration.CacheCategory);
+                        _sessionVariables = null;
+                        _cache.Merge(SessionId, cacheEntries, _configuration.SessionDuration, _configuration.CacheCategory);
+                    }
+                    else
+                    */
+                    {
+                        // If the cache does not support merge then we must write back all of the session variables
+
+                        EnsureCacheEntries();
+
+                        foreach (var key in _modifiedKeys)
+                        {
+                            var modifiedEntry = _sessionVariables[key];
+                            _cacheEntries[modifiedEntry.Name] = JsonConvert.SerializeObject(modifiedEntry.Value);
+                        }
+                        _sessionVariables = null;
+                        _cache.Put(SessionId, _cacheEntries, _configuration.SessionDuration, _configuration.CacheCategory);
+                    }
+                }
+            }
+
+            private void EnsureCacheEntries()
+            {
+                if (_cacheEntries == null)
+                {
+                    _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " retrieving session from cache with category " + _configuration.CacheCategory);
+                    
+                    _cacheEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+                    var cacheEntries = _cache.Get<Dictionary<string, string>>(SessionId, null, null, _configuration.CacheCategory);
+                    if (cacheEntries == null)
+                    {
+                        _traceFilter.Trace(_context, TraceLevel.Debug, () => 
+                            GetType().Name + " no session was found in the cache for " + SessionId +
+                            " all session variables will have default values");
+                    }
+                    else
+                    {
+                        _traceFilter.Trace(_context, TraceLevel.Debug, () => 
+                            GetType().Name + " found a session in the cache for " + SessionId + 
+                            " with " + cacheEntries.Count + " session variables");
+
+                        foreach (var entry in cacheEntries)
+                            _cacheEntries[entry.Key] = entry.Value;
+                    }
                 }
             }
 
@@ -215,29 +261,7 @@ namespace OwinFramework.Session
                 if (_sessionVariables.TryGetValue(name, out var cacheEntry))
                     return (T)cacheEntry.Value;
 
-                if (_cacheEntries == null)
-                {
-                    _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " retrieving session from cache with category " + _configuration.CacheCategory);
-                    
-                    _cacheEntries = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-                    var cacheEntries = _cache.Get<Dictionary<string, string>>(SessionId, null, null, _configuration.CacheCategory);
-                    if (cacheEntries == null)
-                    {
-                        _traceFilter.Trace(_context, TraceLevel.Debug, () => 
-                            GetType().Name + " no session was found in the cache for " + SessionId +
-                            " all session variables will have default values");
-                    }
-                    else
-                    {
-                        _traceFilter.Trace(_context, TraceLevel.Debug, () => 
-                            GetType().Name + " found a session in the cache for " + SessionId + 
-                            " with " + cacheEntries.Count + " session variables");
-
-                        foreach (var entry in cacheEntries)
-                            _cacheEntries[entry.Key] = entry.Value;
-                    }
-                }
+                EnsureCacheEntries();
 
                 _traceFilter.Trace(_context, TraceLevel.Debug, () => GetType().Name + " retrieving session variable from cache '" + name + "'");
 
