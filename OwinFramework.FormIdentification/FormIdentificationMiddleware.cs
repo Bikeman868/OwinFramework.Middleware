@@ -1035,7 +1035,7 @@ namespace OwinFramework.FormIdentification
         private Task Redirect(IOwinContext context, string url)
         {
             context.Response.Redirect(url);
-            return Task.WhenAll();
+            return Task.Factory.StartNew(() => { });
         }
 
         private void SetSession(

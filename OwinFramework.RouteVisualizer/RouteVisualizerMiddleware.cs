@@ -236,7 +236,7 @@ namespace OwinFramework.RouteVisualizer
                 if (string.IsNullOrEmpty(svg))
                 {
                     context.Response.StatusCode = (int)HttpStatusCode.NoContent;
-                    return Task.WhenAll();
+                    return Task.Factory.StartNew(() => { });
                 }
 
                 context.Response.ContentType = "image/svg+xml";

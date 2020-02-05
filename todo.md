@@ -2,19 +2,9 @@
 
 ## Short term
 
-* Add analytics to all middleware
-
-* Analytics can be turned off via config
-
 * Analysis reporter does not report on middleware with no analytics
 
-* Only output trace information in Debug build
-
-* Indented trace output
-
 * Forms identification email verification and change email address
-
-* Identification middleware exposes claims to downstream middleware
 
 ## Medium term
 
