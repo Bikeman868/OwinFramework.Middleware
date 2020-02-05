@@ -9,7 +9,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to map requests for the site root to a specific page on the site</description>
     <copyright>Copyright Martin Halliday 2014-2019</copyright>
-    <releaseNotes>Trace information is less verbose by default but filtering can be configured</releaseNotes>
+    <releaseNotes>Updated to Owin Framework version 2.8.0</releaseNotes>
     <summary>When a request is received for the root document, the request URL is rewriten to the default document url</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.DefaultDocument</projectUrl>
     <license type="expression">Apache-2.0</license>

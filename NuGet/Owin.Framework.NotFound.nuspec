@@ -9,7 +9,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to return 404 responses</description>
     <copyright>Copyright Martin Halliday 2014-2019</copyright>
-    <releaseNotes>Trace information is less verbose by default but filtering can be configured</releaseNotes>
+    <releaseNotes>Updated to Owin Framework version 2.8.0</releaseNotes>
     <summary>This middleware always returns a 404 response when no other middleware handled the request</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.NotFound</projectUrl>
     <license type="expression">Apache-2.0</license>

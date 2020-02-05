@@ -9,7 +9,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to catch and report exceptions</description>
     <copyright>Copyright Martin Halliday 2014-2019</copyright>
-    <releaseNotes>Trace information is less verbose by default but filtering can be configured</releaseNotes>
+    <releaseNotes>Updated to Owin Framework version 2.8.0</releaseNotes>
     <summary>Catches exceptions in middleware and reports them via email. If calling from local machine displays detailed technical information.</summary>
     <projectUrl>http://owinframework.net/content/project/owinframework.exceptionreporter/landing</projectUrl>
     <license type="expression">Apache-2.0</license>

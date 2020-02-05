@@ -9,7 +9,7 @@
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to version static assets and cache them indefinitely on the browser</description>
     <copyright>Copyright Martin Halliday 2014-2019</copyright>
-    <releaseNotes>Trace information is less verbose by default but filtering can be configured</releaseNotes>
+    <releaseNotes>Updated to Owin Framework version 2.8.0</releaseNotes>
     <summary>This middleware can be configured to replace version markers in HTML output with a version number, then strip that version number off incomming requests</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.OutputCache</projectUrl>
     <license type="expression">Apache-2.0</license>
