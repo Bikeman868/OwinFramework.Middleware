@@ -1004,24 +1004,25 @@ namespace OwinFramework.FormIdentification
 
             GetSession(session, out var identity, out var purpose, out var status, out var rememberMeToken, out var claims, out var isAnonymous);
 
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = context.Request.IsSecure
+            };
+
             if (string.IsNullOrEmpty(rememberMeToken))
             {
                 _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " deleting remember me cookie " + _cookieName);
-                context.Response.Cookies.Delete(_cookieName);
+                cookieOptions.Expires = DateTime.MinValue;
+                context.Response.Cookies.Delete(_cookieName, cookieOptions);
             }
             else
             {
                 _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " setting remember me cookie " + _cookieName + "+" + rememberMeToken);
-                context.Response.Cookies.Append(
-                        _cookieName,
-                        rememberMeToken,
-                        new CookieOptions
-                        {
-                            HttpOnly = true,
-                            Secure = context.Request.IsSecure,
-                            Expires = DateTime.UtcNow + _configuration.RememberMeFor
-                        });
+                cookieOptions.Expires = DateTime.UtcNow + _configuration.RememberMeFor;
             }
+
+            context.Response.Cookies.Append(_cookieName, rememberMeToken, cookieOptions);
             _updateRememberMeCount++;
         }
 
