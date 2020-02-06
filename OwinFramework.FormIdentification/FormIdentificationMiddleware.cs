@@ -578,7 +578,7 @@ namespace OwinFramework.FormIdentification
 
             if (credential == null)
             {
-                SetSessionMessage(session, "No accont was found with this email address. Please sign up.");
+                SetSessionMessage(session, "No account was found with this email address. Please sign up.");
 
                 _traceFilter.Trace(
                     context, TraceLevel.Error, 
@@ -592,7 +592,7 @@ namespace OwinFramework.FormIdentification
             var emailHtml = GetEmbeddedResource("PasswordResetEmail.html");
             var emailText = GetEmbeddedResource("PasswordResetEmail.txt");
 
-            var pageUrl = GetNonSecurePrefix(context) + _resetPasswordPage;
+            var pageUrl = context.Request.Scheme + "://" + context.Request.Host + _resetPasswordPage;
 
             emailHtml = emailHtml
                 .Replace("{email}", email)
@@ -723,7 +723,7 @@ namespace OwinFramework.FormIdentification
                 var fromEmailText = GetEmbeddedResource("EmailChangeFromEmail.txt");
 
                 var revertTtoken = _tokenStore.CreateToken(_configuration.RevertEmailTokenType, email, authenticationResult.Identity);
-                var pageUrl = GetNonSecurePrefix(context) + _revertEmailPage;
+                var pageUrl = context.Request.Scheme + "://" + context.Request.Host + _revertEmailPage;
 
                 fromEmailHtml = fromEmailHtml
                     .Replace("{page}", pageUrl)
@@ -754,7 +754,7 @@ namespace OwinFramework.FormIdentification
                 var toEmailText = GetEmbeddedResource("EmailChangeToEmail.txt");
 
                 var verifyTtoken = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, newEmail, authenticationResult.Identity);
-                var pageUrl = GetNonSecurePrefix(context) + _verifyEmailPage;
+                var pageUrl = context.Request.Scheme + "://" + context.Request.Host + _verifyEmailPage;
 
                 toEmailHtml = toEmailHtml
                     .Replace("{page}", pageUrl)
@@ -1115,7 +1115,7 @@ namespace OwinFramework.FormIdentification
             {
                 _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " sending welcome email to " + email);
 
-                var pageUrl = GetNonSecurePrefix(context) + _verifyEmailPage;
+                var pageUrl = context.Request.Scheme + "://" + context.Request.Host + _verifyEmailPage;
                 var tokenString = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, email, identity);
                 var emailHtml = GetEmbeddedResource("WelcomeEmail.html");
                 var emailText = GetEmbeddedResource("WelcomeEmail.txt");

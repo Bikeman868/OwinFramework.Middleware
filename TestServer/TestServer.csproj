@@ -188,6 +188,8 @@
     <Content Include="exception.html" />
     <Content Include="favicon.ico" />
     <Content Include="FormId\resetPassword.html" />
+    <Content Include="FormId\sendPasswordReset.html" />
+    <Content Include="FormId\sendPasswordResetFail.html" />
     <Content Include="FormId\sendPasswordResetSuccess.html" />
     <Content Include="FormId\revertEmailSuccess.html" />
     <Content Include="FormId\revertEmailFail.html" />
