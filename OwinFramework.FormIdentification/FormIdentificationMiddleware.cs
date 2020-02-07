@@ -331,7 +331,7 @@ namespace OwinFramework.FormIdentification
                         "An account was created for you, but there was a problem sending the " +
                         "welcome email that lets you confirm your email address. There is an option " +
                         "on the account page to resent this email. Please use this option to resend this " + 
-                        "email. Our appoligies for this inconvenience.");
+                        "email.");
                 }
 
                 var authenticationResult = _identityStore.AuthenticateWithCredentials(email, password);
@@ -345,8 +345,7 @@ namespace OwinFramework.FormIdentification
                     SetSessionMessage(
                         session,
                         "An account was created for you, but there was a problem automatically logging you into the website. " +
-                        "Please login manually using the email address and password that you used to sign up. " +
-                        "Our appoligies for this inconvenience.");
+                        "Please login manually using the email address and password that you used to sign up.");
                 }
                 else
                 {
@@ -412,6 +411,7 @@ namespace OwinFramework.FormIdentification
 
             if (session == null || upstreamSession == null)
                 throw new Exception("Session middleware is required for Form Identification to work");
+
 
             bool success;
             IAuthenticationResult authenticationResult = null;
@@ -537,6 +537,13 @@ namespace OwinFramework.FormIdentification
         {
             _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling change password request");
 
+            var upstreamSession = context.GetFeature<IUpstreamSession>();
+            var session = context.GetFeature<ISession>();
+            if (upstreamSession == null || session == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
+            SetSessionMessage(session, string.Empty);
+
             var form = context.Request.ReadFormAsync().Result;
 
             var email = form[_configuration.EmailFormField];
@@ -545,14 +552,41 @@ namespace OwinFramework.FormIdentification
 
             var thisUrl = GetThisUrl(context);
 
-            var authenticationResult = _identityStore.AuthenticateWithCredentials(email, password);
-            if (authenticationResult.Status != AuthenticationStatus.Authenticated)
-                return Redirect(context, _changePasswordFailPage.HasValue ? _changePasswordFailPage.Value : thisUrl);
+            try
+            {
+                var authenticationResult = _identityStore.AuthenticateWithCredentials(email, password);
+                if (authenticationResult.Status != AuthenticationStatus.Authenticated)
+                {
+                    switch (authenticationResult.Status)
+                    {
+                        case AuthenticationStatus.Expired:
+                            SetSessionMessage(session, "Your account expiry date has passed. Please contact customer service to have your account re-activated.");
+                            break;
+                        case AuthenticationStatus.Locked:
+                            SetSessionMessage(session, "Your account is locked from too many failed login attempts. Please contact customer service to have your account unlocked.");
+                            break;
+                        case AuthenticationStatus.NotFound:
+                            SetSessionMessage(session, "The email address you supplied it not registered on the system.");
+                            break;
+                        case AuthenticationStatus.Unsupported:
+                            SetSessionMessage(session, "Changing passwords it not supported on your account.");
+                            break;
+                        default:
+                            SetSessionMessage(session, "There was a problem validating your credentials.");
+                            break;
+                    }
+                    return Redirect(context, _changePasswordFailPage.HasValue ? _changePasswordFailPage.Value : thisUrl);
+                }
 
-            var credential = _identityStore.GetRememberMeCredential(authenticationResult.RememberMeToken);
-            if (_identityStore.ChangePassword(credential, newPassword))
-                return Redirect(context, _changePasswordSuccessPage.HasValue ? _changePasswordSuccessPage.Value : thisUrl);
+                var credential = _identityStore.GetRememberMeCredential(authenticationResult.RememberMeToken);
 
+                if (_identityStore.ChangePassword(credential, newPassword))
+                    return Redirect(context, _changePasswordSuccessPage.HasValue ? _changePasswordSuccessPage.Value : thisUrl);
+            }
+            catch
+            {
+                SetSessionMessage(session, "An error occured that prevented yout password from being updated. Please contact customer service for assistance.");
+            }
             _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " secure domain is configured, redirecting to " + (_changePasswordFailPage.HasValue ? _changePasswordFailPage.Value : thisUrl));
             return Redirect(context, _changePasswordFailPage.HasValue ? _changePasswordFailPage.Value : thisUrl);
         }
@@ -581,39 +615,51 @@ namespace OwinFramework.FormIdentification
                 SetSessionMessage(session, "No account was found with this email address. Please sign up.");
 
                 _traceFilter.Trace(
-                    context, TraceLevel.Error, 
-                    () => GetType().Name + " no credentals found for this email address, redirecting to " + 
+                    context, TraceLevel.Error,
+                    () => GetType().Name + " no credentals found for this email address, redirecting to " +
                     (_sendPasswordResetFailPage.HasValue ? _sendPasswordResetFailPage.Value : thisUrl));
                 return Redirect(context, _sendPasswordResetFailPage.HasValue ? _sendPasswordResetFailPage.Value : thisUrl);
             }
+            else
+            {
+                SetSessionMessage(session, string.Empty);
+            }
 
-            var tokenString = _tokenStore.CreateToken(_configuration.PasswordResetTokenType, "ResetPassword", email);
+            try
+            {
+                var tokenString = _tokenStore.CreateToken(_configuration.PasswordResetTokenType, "ResetPassword", email);
 
-            var emailHtml = GetEmbeddedResource("PasswordResetEmail.html");
-            var emailText = GetEmbeddedResource("PasswordResetEmail.txt");
+                var emailHtml = GetEmbeddedResource("PasswordResetEmail.html");
+                var emailText = GetEmbeddedResource("PasswordResetEmail.txt");
 
-            var pageUrl = context.Request.Scheme + "://" + context.Request.Host + _resetPasswordPage;
+                var pageUrl = context.Request.Scheme + "://" + context.Request.Host + _resetPasswordPage;
 
-            emailHtml = emailHtml
-                .Replace("{email}", email)
-                .Replace("{page}", pageUrl)
-                .Replace("{token}", tokenString);
+                emailHtml = emailHtml
+                    .Replace("{email}", email)
+                    .Replace("{page}", pageUrl)
+                    .Replace("{token}", tokenString);
 
-            emailText = emailText
-                .Replace("{email}", email)
-                .Replace("{page}", pageUrl)
-                .Replace("{token}", tokenString);
+                emailText = emailText
+                    .Replace("{email}", email)
+                    .Replace("{page}", pageUrl)
+                    .Replace("{token}", tokenString);
 
-            var fromEmail = _configuration.PasswordResetEmailFrom;
-            if (string.IsNullOrWhiteSpace(fromEmail))
-                fromEmail = "password-reset@" + context.Request.Host;
+                var fromEmail = _configuration.PasswordResetEmailFrom;
+                if (string.IsNullOrWhiteSpace(fromEmail))
+                    fromEmail = "password-reset@" + context.Request.Host;
 
-            var mailMessage = new MailMessage(fromEmail, email, _configuration.PasswordResetEmailSubject, emailText);
-            mailMessage.Subject = _configuration.PasswordResetEmailSubject;
-            mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(emailHtml, new ContentType("text/html")));
+                var mailMessage = new MailMessage(fromEmail, email, _configuration.PasswordResetEmailSubject, emailText);
+                mailMessage.Subject = _configuration.PasswordResetEmailSubject;
+                mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(emailHtml, new ContentType("text/html")));
 
-            var emailClient = new SmtpClient();
-            emailClient.Send(mailMessage);
+                var emailClient = new SmtpClient();
+                emailClient.Send(mailMessage);
+            }
+            catch
+            {
+                SetSessionMessage(session, "An error occurred in the system that prevented your password reset email from being sent. Please contact customer service for assistance.");
+                return Redirect(context, _sendPasswordResetFailPage.HasValue ? _sendPasswordResetFailPage.Value : thisUrl);
+            }
 
             _traceFilter.Trace(
                 context, TraceLevel.Error,
@@ -629,6 +675,10 @@ namespace OwinFramework.FormIdentification
         private Task HandleResetPassword(IOwinContext context)
         {
             _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling reset password request");
+
+            var session = context.GetFeature<ISession>();
+            if (session == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
 
             var form = context.Request.ReadFormAsync().Result;
 
@@ -652,6 +702,7 @@ namespace OwinFramework.FormIdentification
                 {
                     if (_identityStore.ChangePassword(credential, newPassword))
                     {
+                        SetSessionMessage(session, string.Empty);
                         _tokenStore.DeleteToken(tokenString);
                         _traceFilter.Trace(
                             context, TraceLevel.Information,
@@ -664,8 +715,9 @@ namespace OwinFramework.FormIdentification
 
             _traceFilter.Trace(
                 context, TraceLevel.Error,
-                () => GetType().Name + " password was successfully reset, redirecting to " +
+                () => GetType().Name + " password was not reset, redirecting to " +
                 (_resetPasswordFailPage.HasValue ? _resetPasswordFailPage.Value : thisUrl));
+            SetSessionMessage(session, "An error occurred in the system that prevented your password from being reset. Please contact customer service for assistance.");
             return Redirect(context, _resetPasswordFailPage.HasValue ? _resetPasswordFailPage.Value : thisUrl);
         }
 
@@ -677,6 +729,12 @@ namespace OwinFramework.FormIdentification
         {
             _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling change email request");
 
+            var session = context.GetFeature<ISession>();
+            if (session == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
+            SetSessionMessage(session, string.Empty);
+
             var form = context.Request.ReadFormAsync().Result;
             var email = form[_configuration.EmailFormField];
             var password = form[_configuration.PasswordFormField];
@@ -685,96 +743,119 @@ namespace OwinFramework.FormIdentification
             var thisUrl = GetThisUrl(context);
 
             var authenticationResult = _identityStore.AuthenticateWithCredentials(email, password);
-            if (authenticationResult == null ||
-                authenticationResult.Status != AuthenticationStatus.Authenticated ||
-                (authenticationResult.Purposes != null && authenticationResult.Purposes.Count > 0))
+
+            if (authenticationResult == null)
             {
-                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " unable to change email address with these credentials");
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " no credentials match this email and password");
+                SetSessionMessage(session, "The email address and password you entered were not valid logon credentials");
+                return Redirect(context, _changeEmailFailPage.HasValue ? _changeEmailFailPage.Value : thisUrl);
+            }
+
+            if (authenticationResult.Status != AuthenticationStatus.Authenticated)
+            {
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + $" the result of authentication was {authenticationResult.Status}");
+                SetSessionMessage(session, "The credentials you provided are not valid for changing the email address on the account at this time.");
+                return Redirect(context, _changeEmailFailPage.HasValue ? _changeEmailFailPage.Value : thisUrl);
+            }
+
+            if (authenticationResult.Purposes != null && authenticationResult.Purposes.Count > 0)
+            {
+                _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " the authentication status was {}");
+                SetSessionMessage(session, "The credentials you provided give limited access to this account. You need full account priveledges to change the email address.");
                 return Redirect(context, _changeEmailFailPage.HasValue ? _changeEmailFailPage.Value : thisUrl);
             }
 
             if (!_identityStore.AddCredentials(authenticationResult.Identity, newEmail, password))
             {
                 _traceFilter.Trace(context, TraceLevel.Error, () => GetType().Name + " the identity store failed to update the email address");
+                SetSessionMessage(session, "The new email address you provided could not be associated with your account. This email address may be already associated with another account on the system.");
                 return Redirect(context, _changeEmailFailPage.HasValue ? _changeEmailFailPage.Value : thisUrl);
             }
 
-            _identityDirectory.UpdateClaim(
-                authenticationResult.Identity, 
-                new IdentityClaim(ClaimNames.Email, newEmail, ClaimStatus.Unverified));
-
-            _identityDirectory.UpdateClaim(
-                authenticationResult.Identity,
-                new IdentityClaim(ClaimNames.Username, newEmail, ClaimStatus.Verified));
-
-            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " email address successfully changed");
-
-            var fromEmail = _configuration.EmailChangeEmailFrom;
-            if (string.IsNullOrWhiteSpace(fromEmail))
-                fromEmail = "email-change@" + context.Request.Host;
-
-            var emailClient = new SmtpClient();
-
-            if (_revertEmailPage.HasValue)
+            try
             {
-                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " sending email to revert email address change");
+                _identityDirectory.UpdateClaim(
+                    authenticationResult.Identity,
+                    new IdentityClaim(ClaimNames.Email, newEmail, ClaimStatus.Unverified));
 
-                var fromEmailHtml = GetEmbeddedResource("EmailChangeFromEmail.html");
-                var fromEmailText = GetEmbeddedResource("EmailChangeFromEmail.txt");
+                _identityDirectory.UpdateClaim(
+                    authenticationResult.Identity,
+                    new IdentityClaim(ClaimNames.Username, newEmail, ClaimStatus.Verified));
 
-                var revertTtoken = _tokenStore.CreateToken(_configuration.RevertEmailTokenType, email, authenticationResult.Identity);
-                var pageUrl = context.Request.Scheme + "://" + context.Request.Host + _revertEmailPage;
+                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " email address successfully changed");
 
-                fromEmailHtml = fromEmailHtml
-                    .Replace("{page}", pageUrl)
-                    .Replace("{old-email}", email)
-                    .Replace("{new-email}", newEmail)
-                    .Replace("{token}", revertTtoken)
-                    .Replace("{id}", authenticationResult.Identity);
+                var fromEmail = _configuration.EmailChangeEmailFrom;
+                if (string.IsNullOrWhiteSpace(fromEmail))
+                    fromEmail = "email-change@" + context.Request.Host;
 
-                fromEmailText = fromEmailText
-                    .Replace("{page}", pageUrl)
-                    .Replace("{old-email}", email)
-                    .Replace("{new-email}", newEmail)
-                    .Replace("{token}", revertTtoken)
-                    .Replace("{id}", authenticationResult.Identity);
-            
-                var mailMessage = new MailMessage(fromEmail, email, _configuration.EmailChangeEmailSubject, fromEmailText);
-                mailMessage.Subject = _configuration.EmailChangeEmailSubject;
-                mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(fromEmailHtml, new ContentType("text/html")));
+                var emailClient = new SmtpClient();
 
-                emailClient.Send(mailMessage);
+                if (_revertEmailPage.HasValue)
+                {
+                    _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " sending email to revert email address change");
+
+                    var fromEmailHtml = GetEmbeddedResource("EmailChangeFromEmail.html");
+                    var fromEmailText = GetEmbeddedResource("EmailChangeFromEmail.txt");
+
+                    var revertTtoken = _tokenStore.CreateToken(_configuration.RevertEmailTokenType, email, authenticationResult.Identity);
+                    var pageUrl = context.Request.Scheme + "://" + context.Request.Host + _revertEmailPage;
+
+                    fromEmailHtml = fromEmailHtml
+                        .Replace("{page}", pageUrl)
+                        .Replace("{old-email}", email)
+                        .Replace("{new-email}", newEmail)
+                        .Replace("{token}", revertTtoken)
+                        .Replace("{id}", authenticationResult.Identity);
+
+                    fromEmailText = fromEmailText
+                        .Replace("{page}", pageUrl)
+                        .Replace("{old-email}", email)
+                        .Replace("{new-email}", newEmail)
+                        .Replace("{token}", revertTtoken)
+                        .Replace("{id}", authenticationResult.Identity);
+
+                    var mailMessage = new MailMessage(fromEmail, email, _configuration.EmailChangeEmailSubject, fromEmailText);
+                    mailMessage.Subject = _configuration.EmailChangeEmailSubject;
+                    mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(fromEmailHtml, new ContentType("text/html")));
+
+                    emailClient.Send(mailMessage);
+                }
+
+                if (_verifyEmailPage.HasValue)
+                {
+                    _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " sending email to confirm email address change");
+
+                    var toEmailHtml = GetEmbeddedResource("EmailChangeToEmail.html");
+                    var toEmailText = GetEmbeddedResource("EmailChangeToEmail.txt");
+
+                    var verifyTtoken = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, newEmail, authenticationResult.Identity);
+                    var pageUrl = context.Request.Scheme + "://" + context.Request.Host + _verifyEmailPage;
+
+                    toEmailHtml = toEmailHtml
+                        .Replace("{page}", pageUrl)
+                        .Replace("{old-email}", email)
+                        .Replace("{new-email}", newEmail)
+                        .Replace("{token}", verifyTtoken)
+                        .Replace("{id}", authenticationResult.Identity);
+
+                    toEmailText = toEmailText
+                        .Replace("{page}", pageUrl)
+                        .Replace("{old-email}", email)
+                        .Replace("{new-email}", newEmail)
+                        .Replace("{token}", verifyTtoken)
+                        .Replace("{id}", authenticationResult.Identity);
+
+                    var mailMessage = new MailMessage(fromEmail, newEmail, _configuration.EmailChangeEmailSubject, toEmailText);
+                    mailMessage.Subject = _configuration.EmailChangeEmailSubject;
+                    mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(toEmailHtml, new ContentType("text/html")));
+
+                    emailClient.Send(mailMessage);
+                }
             }
-
-            if (_verifyEmailPage.HasValue)
+            catch
             {
-                _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " sending email to confirm email address change");
-
-                var toEmailHtml = GetEmbeddedResource("EmailChangeToEmail.html");
-                var toEmailText = GetEmbeddedResource("EmailChangeToEmail.txt");
-
-                var verifyTtoken = _tokenStore.CreateToken(_configuration.VerifyEmailTokenType, newEmail, authenticationResult.Identity);
-                var pageUrl = context.Request.Scheme + "://" + context.Request.Host + _verifyEmailPage;
-
-                toEmailHtml = toEmailHtml
-                    .Replace("{page}", pageUrl)
-                    .Replace("{old-email}", email)
-                    .Replace("{new-email}", newEmail)
-                    .Replace("{token}", verifyTtoken)
-                    .Replace("{id}", authenticationResult.Identity);
-
-                toEmailText = toEmailText
-                    .Replace("{page}", pageUrl)
-                    .Replace("{old-email}", email)
-                    .Replace("{new-email}", newEmail)
-                    .Replace("{token}", verifyTtoken)
-                    .Replace("{id}", authenticationResult.Identity);
-
-                var mailMessage = new MailMessage(fromEmail, newEmail, _configuration.EmailChangeEmailSubject, toEmailText);
-                mailMessage.Subject = _configuration.EmailChangeEmailSubject;
-                mailMessage.AlternateViews.Add(AlternateView.CreateAlternateViewFromString(toEmailHtml, new ContentType("text/html")));
-
-                emailClient.Send(mailMessage);
+                SetSessionMessage(session, "Your email address was successfully updated in the system, but something went wrong when sending your confiirmation emails. If you accidentally changed your email address to the wrong one, please contact customer service for assistance in reverting this change.");
+                return Redirect(context, _changeEmailFailPage.HasValue ? _changeEmailFailPage.Value : thisUrl);
             }
 
             _traceFilter.Trace(
@@ -792,6 +873,12 @@ namespace OwinFramework.FormIdentification
         private Task HandleVerifyEmail(IOwinContext context)
         {
             _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling verify email address request");
+
+            var session = context.GetFeature<ISession>();
+            if (session == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
+            SetSessionMessage(session, string.Empty);
 
             var success = false;
 
@@ -839,6 +926,12 @@ namespace OwinFramework.FormIdentification
         private Task HandleRevertEmail(IOwinContext context)
         {
             _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling revert email change request");
+
+            var session = context.GetFeature<ISession>();
+            if (session == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
+            SetSessionMessage(session, string.Empty);
 
             var success = false;
 
@@ -896,6 +989,12 @@ namespace OwinFramework.FormIdentification
         {
             _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " handling request for new email verification email");
             
+            var session = context.GetFeature<ISession>();
+            if (session == null)
+                throw new Exception("Session middleware is required for Form Identification to work");
+
+            SetSessionMessage(session, string.Empty);
+
             var success = false;
 
             var identification = context.GetFeature<IIdentification>();
