@@ -8,20 +8,20 @@
     <owners>Martin Halliday</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to generate analytics report</description>
-    <copyright>Copyright Martin Halliday 2014-2019</copyright>
-    <releaseNotes>Updated to Owin Framework version 2.8.0</releaseNotes>
+    <copyright>Copyright Martin Halliday 2014-2020</copyright>
+    <releaseNotes>Updated to Owin Framework version 2.8.1</releaseNotes>
     <summary>Generates reports in various formats from the middleware components that gather analytics data.</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.AnalysisReporter</projectUrl>
     <license type="expression">Apache-2.0</license>
     <tags>OWIN framework analytics report</tags>
     <dependencies>
       <group targetFramework="net40">
-        <dependency id="Owin.Framework" version="2.8.0" />
+        <dependency id="Owin.Framework" version="2.8.1" />
         <dependency id="Ioc.Modules.Contract" version="1.4.1" />
         <dependency id="Newtonsoft.Json" version="7.0.1" />
       </group>
       <group targetFramework="net45">
-        <dependency id="Owin.Framework" version="2.8.0" />
+        <dependency id="Owin.Framework" version="2.8.1" />
         <dependency id="Ioc.Modules.Contract" version="1.4.1" />
         <dependency id="Newtonsoft.Json" version="7.0.1" />
       </group>

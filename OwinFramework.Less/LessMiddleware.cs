@@ -40,6 +40,7 @@ namespace OwinFramework.Less
         private int _fileModificationCount;
         private int _filesCompiledCount;
 
+        private Func<FileInfo, string, string> _preprocessor;
 
         public LessMiddleware(
             IHostingEnvironment hostingEnvironment)
@@ -51,6 +52,18 @@ namespace OwinFramework.Less
             this.RunAfter<IResponseRewriter>(null, false);
 
             _traceFilter = new TraceFilter(null, this);
+        }
+
+        /// <summary>
+        /// Call this method to install a hook that gets a chance to process
+        /// Less files after loading from disk and before compiling. This allows
+        /// you to perform search/replace on your less files, prepend common
+        /// variable defintions etc.
+        /// </summary>
+        public LessMiddleware ApplyPreProcessing(Func<FileInfo, string, string> preprocessor)
+        {
+            _preprocessor = preprocessor;
+            return this;
         }
 
         Task IRoutingProcessor.RouteRequest(IOwinContext context, Func<Task> next)
@@ -125,6 +138,12 @@ namespace OwinFramework.Less
                     context.Response.ContentType = "text/css";
                     if (cssFileContext.NeedsCompiling)
                     {
+                        if (_preprocessor != null)
+                        {
+                            _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " applying application defined pre-processing of Less file");
+                            fileContent = _preprocessor(cssFileContext.PhysicalFile, fileContent);
+                        }
+
                         _traceFilter.Trace(context, TraceLevel.Information, () => GetType().Name + " compiling Less file to CSS");
                         try
                         {
@@ -133,7 +152,8 @@ namespace OwinFramework.Less
                                 new DotlessConfiguration 
                                 {
                                     Logger = _configuration.TraceLog ? typeof(DotLessCustomLogger) : typeof(dotless.Core.Loggers.NullLogger),
-                                    MinifyOutput = _configuration.Minify
+                                    MinifyOutput = _configuration.Minify,
+                                    
                                 });
                             context.Response.Write(css);
                             _filesCompiledCount++;

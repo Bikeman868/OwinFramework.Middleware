@@ -8,7 +8,7 @@
     <owners>Martin Halliday</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Owin middleware to maintain sessions using cookies</description>
-    <copyright>Copyright Martin Halliday 2014-2019</copyright>
+    <copyright>Copyright Martin Halliday 2014-2020</copyright>
     <releaseNotes>Fixed a bug with incorrect use of ICache to store session data</releaseNotes>
     <summary>This middleware provides a persistent session per user for other middleware to use</summary>
     <projectUrl>https://github.com/Bikeman868/OwinFramework.Middleware/tree/master/OwinFramework.Session</projectUrl>
@@ -16,11 +16,11 @@
     <tags>OWIN framework session</tags>
     <dependencies>
       <group targetFramework="net40">
-        <dependency id="Owin.Framework" version="2.8.0" />
+        <dependency id="Owin.Framework" version="2.8.1" />
         <dependency id="Ioc.Modules.Contract" version="1.4.1" />
       </group>
       <group targetFramework="net45">
-        <dependency id="Owin.Framework" version="2.8.0" />
+        <dependency id="Owin.Framework" version="2.8.1" />
         <dependency id="Ioc.Modules.Contract" version="1.4.1" />
       </group>
     </dependencies>
