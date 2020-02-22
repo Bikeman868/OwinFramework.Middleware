@@ -121,8 +121,9 @@ namespace OwinFramework.Less
             var outputCache = context.GetFeature<IOutputCache>();
             if (outputCache != null)
             {
+                outputCache.Category = "Less";
                 outputCache.Priority = cssFileContext.NeedsCompiling ? CachePriority.High : CachePriority.Medium;
-                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " setting output cache priority " + outputCache.Priority);
+                _traceFilter.Trace(context, TraceLevel.Debug, () => GetType().Name + " setting output cache category='Less' and priority='" + outputCache.Priority + "'");
             }
 
             return Task.Factory.StartNew(() =>
