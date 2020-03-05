@@ -48,7 +48,8 @@
             "rootUrl": "/",
             "documentationRootUrl": "/owin/less",
             "rootDirectory": "~\\",
-            "enabled": true
+            "enabled": true,
+            "traceLog":  true
         },
         "defaultDocument": {
             "defaultPage": "/index.html",

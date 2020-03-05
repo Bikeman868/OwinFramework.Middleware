@@ -153,6 +153,7 @@ namespace OwinFramework.Less
                                 new DotlessConfiguration 
                                 {
                                     Logger = _configuration.TraceLog ? typeof(DotLessCustomLogger) : typeof(dotless.Core.Loggers.NullLogger),
+                                    LogLevel = _configuration.TraceLog ? LogLevel.Debug : LogLevel.Error,
                                     MinifyOutput = _configuration.Minify,
                                     
                                 });
@@ -500,9 +501,18 @@ namespace OwinFramework.Less
         {
             private readonly Action<TraceLevel, Func<string>> _traceAction;
 
+            /*
+            // This cannot work because dotLess needs the logger to have a 
+            // default public constructor
             public DotLessCustomLogger(Action<TraceLevel, Func<string>> traceAction)
             {
                 _traceAction = traceAction;
+            }
+            */
+
+            public DotLessCustomLogger()
+            {
+                _traceAction = (traceLevel, messageFunc) => { };
             }
 
             public void Debug(string message, params object[] args)

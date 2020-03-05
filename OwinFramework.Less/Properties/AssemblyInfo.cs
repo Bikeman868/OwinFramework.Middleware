@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("OwinFramework.StaticFiles")]
+[assembly: AssemblyTitle("OwinFramework.Less")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
@@ -12,5 +12,5 @@ using System.Runtime.InteropServices;
 
 [assembly: ComVisible(false)]
 
-[assembly: AssemblyVersion("2.8.1")]
-[assembly: AssemblyFileVersion("2.8.1")]
+[assembly: AssemblyVersion("2.8.2")]
+[assembly: AssemblyFileVersion("2.8.2")]
